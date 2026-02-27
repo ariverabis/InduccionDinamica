@@ -17,6 +17,15 @@ function App() {
   const [modalCierraGV1, setModalCierraGV1] = useState(false);
   const [modalCierraGV2, setModalCierraGV2] = useState(false);
 
+  // --- COBRANZA STATES ---
+  const [montoAbono, setMontoAbono] = useState('43,59');
+  const [montoDeposito, setMontoDeposito] = useState('0');
+  const [referenciaDeposito, setReferenciaDeposito] = useState('');
+  const [mostrarModalDeposito, setMostrarModalDeposito] = useState(false);
+  const [montoResta, setMontoResta] = useState('43,59');
+  const [mostrarModalFormasPagoRecibo, setMostrarModalFormasPagoRecibo] = useState(false);
+  const [formaPagoReciboSeleccionada, setFormaPagoReciboSeleccionada] = useState('PAGO GENERICO');
+
   // --- GHOST MOUSE STATE ---
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100, visible: false });
 
@@ -196,23 +205,133 @@ function App() {
     // 13. Mover a "Si" en modal 2
     setCursorPos({ x: 210, y: 380, visible: true });
     await sleep(1200);
-    setModalCierraGV2(false);
-    setPantalla('pedido_cerrado_gv');
-    await sleep(800);
-
     // Ocultar puntero
     await sleep(1000);
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
+  const runDemoCobranza = async () => {
+    // 0. Inicio en 073 Ventas Menu
+    setCursorPos({ x: 290, y: 60, visible: true }); // Cerca del botón de 3 puntos/Run
+    await sleep(1000);
+
+    // 1. Abrir submenú y seleccionar Cobranza
+    setMostrarSubmenu(true);
+    await sleep(800);
+    setCursorPos({ x: 200, y: 155, visible: true }); // Botón Cobranza en el submenú (ajustado por coordenadas)
+    await sleep(1000);
+    setPantalla('recibo_cliente');
+    setMostrarSubmenu(false);
+    await sleep(800);
+
+    // 2. Seleccionar cliente en recibocliente.jpg (088)
+    setCursorPos({ x: 160, y: 180, visible: true });
+    await sleep(1200);
+    setPantalla('recibo_menu');
+    await sleep(800);
+
+    // 3. Seleccionar botón "RECIBO" en recibomenu1.jpg
+    setCursorPos({ x: 160, y: 340, visible: true }); // Botón Recibo
+    await sleep(1200);
+    setPantalla('recibo_index');
+    await sleep(800);
+
+    // 4. Clic en botón "NUEVO" en recibo0.jpg
+    setCursorPos({ x: 100, y: 560, visible: true }); // Botón Nuevo abajo
+    await sleep(1200);
+    setPantalla('recibo_sel_factura');
+    setMostrarModalFormasPagoRecibo(true); // Se abre inmediatamente al entrar a 056
+    await sleep(1000);
+
+    // 4.5. Seleccionar "DEPOSITO $" en el overlay (reciboformapagos.jpg) sobre 056
+    setCursorPos({ x: 160, y: 345, visible: true }); // Opción DEPOSITO $
+    await sleep(1200);
+    setFormaPagoReciboSeleccionada('DEPOSITO $');
+    setMostrarModalFormasPagoRecibo(false); // Se cierra el overlay y queda 056
+    await sleep(800);
+
+    // 5. Seleccionar check de factura en reciboselfactura1.jpg (ahora sin overlay)
+    setCursorPos({ x: 25, y: 190, visible: true }); // Check a la izquierda
+    await sleep(1200);
+    setPantalla('recibo_incluidas');
+    setMontoResta('43,59');
+    await sleep(800);
+
+    // 6. Clic en barra azul para abono en reciboincluidas3.jpg
+    setCursorPos({ x: 160, y: 180, visible: true }); // Barra azul de factura
+    await sleep(1200);
+    setPantalla('recibo_abono');
+    await sleep(800);
+
+    // 7. Cambiar monto 43,59 a 40 en reciboabono4.jpg
+    setCursorPos({ x: 220, y: 220, visible: true }); // Campo monto
+    await sleep(1000);
+    setMontoAbono('40');
+    await sleep(800);
+    // Clic flecha arriba derecha para volver
+    setCursorPos({ x: 280, y: 70, visible: true });
+    await sleep(1000);
+    setPantalla('recibo_incluidas');
+    setMontoResta('40');
+    await sleep(800);
+
+    // 8. Clic en símbolo + (plus) en la mitad
+    setCursorPos({ x: 160, y: 335, visible: true }); // Símbolo plus central
+    await sleep(1200);
+    setMostrarModalDeposito(true);
+    await sleep(800);
+
+    // 9. Colocar monto 40 y referencia en recibodeposito5.jpg
+    setCursorPos({ x: 160, y: 300, visible: true }); // Campo monto
+    await sleep(1000);
+    setMontoDeposito('40');
+    await sleep(500);
+    setCursorPos({ x: 160, y: 350, visible: true }); // Campo referencia
+    await sleep(1000);
+    setReferenciaDeposito('REF-COBRO-001');
+    await sleep(800);
+
+    // 10. Clic OK
+    setCursorPos({ x: 160, y: 470, visible: true }); // Botón OK
+    await sleep(1000);
+    setMontoDeposito('0');
+    await sleep(800);
+
+    // 11. Clic X arriba derecha para cerrar popup
+    setCursorPos({ x: 280, y: 215, visible: true });
+    await sleep(1200);
+    setMostrarModalDeposito(false);
+    setPantalla('recibo_pagado');
+    await sleep(800);
+
+    // 12. Clic en botón FIN arriba en recibopagado6.jpg
+    setCursorPos({ x: 230, y: 110, visible: true });
+    await sleep(1200);
+    setPantalla('recibo_listo');
+    await sleep(1000);
+
+    // Ocultar puntero
+    setCursorPos({ x: -100, y: -100, visible: false });
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
-      <div className="w-[320px] h-[650px] bg-black rounded-[3rem] border-[8px] border-gray-800 shadow-2xl relative overflow-hidden flex flex-col">
+      <div
+        className="w-[320px] h-[650px] bg-black rounded-[3rem] border-[8px] border-gray-800 shadow-2xl relative overflow-hidden flex flex-col"
+        style={{
+          backgroundImage: 'url(preview.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/10 pointer-events-none"></div> {/* Capa sutil de brillo */}
         {/* PANTALLA 0: INICIO DE SESIÓN (La que ya tenías) */}
         {pantalla === 'inicio' && (
-          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col items-center justify-center p-6">
-            <h1 className="text-blue-600 font-black text-4xl mb-2">AFV</h1>
-            <p className="text-gray-400 text-[10px] tracking-widest mb-12">SAMSUNG ENTERPRISE</p>
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col items-center justify-center p-6 bg-gradient-to-b from-white to-gray-50">
+            <div className="w-40 h-40 mb-2 flex items-center justify-center">
+              <img src="logoafv.jpeg" alt="AFV Logo" className="max-w-full max-h-full object-contain" />
+            </div>
+            <p className="text-gray-400 text-[10px] tracking-widest mb-12 uppercase">Samsung Enterprise</p>
             <button
               onClick={() => setPantalla('escritorio')}
               title="Haga clic aquí para ingresar al sistema AFV"
@@ -231,7 +350,7 @@ function App() {
               {/* ICONO FEBECA */}
               <div onClick={() => setPantalla('config')} title="Ingresar al módulo de AFV Febeca" className="flex flex-col items-center cursor-pointer">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="/logo sds febeca.jpg" alt="Febeca" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logo sds febeca.jpg" alt="Febeca" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Febeca</span>
               </div>
@@ -239,7 +358,7 @@ function App() {
               {/* ICONO SILLACA */}
               <div title="Módulo AFV Sillaca (No disponible)" className="flex flex-col items-center opacity-70 cursor-help">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="/logo sds sillaca.jpg" alt="Sillaca" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logo sds sillaca.jpg" alt="Sillaca" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Sillaca</span>
               </div>
@@ -247,7 +366,7 @@ function App() {
               {/* ICONO BEVAL */}
               <div title="Módulo AFV Beval (No disponible)" className="flex flex-col items-center opacity-70 cursor-help">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="/logo sds beval.jpg" alt="Beval" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logo sds beval.jpg" alt="Beval" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Beval</span>
               </div>
@@ -255,7 +374,7 @@ function App() {
               {/* ICONO CATALOGO FEBECA */}
               <div title="Abrir Catálogo Digital" className="flex flex-col items-center opacity-70 cursor-pointer">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="/logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">Catálogo<br />Febeca</span>
               </div>
@@ -312,17 +431,27 @@ function App() {
                 <button onClick={() => setPantalla('config')} className="text-lg leading-none">←</button>
                 <span className="font-bold text-[11px] uppercase tracking-wider">073 - Ventas menu</span>
               </div>
-              <span onClick={() => setMostrarSubmenu(!mostrarSubmenu)} className="text-xl leading-none cursor-pointer">⋮</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={runDemoCobranza}
+                  title="Ejecutar simulación de Cobranza (Ghost Mouse)"
+                  className="bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded shadow-sm hover:bg-red-500 active:bg-red-700 transition-colors"
+                >
+                  Run
+                </button>
+                <span onClick={() => setMostrarSubmenu(!mostrarSubmenu)} className="text-xl leading-none cursor-pointer">⋮</span>
+              </div>
             </div>
 
             {/* PANTALLA 4: EL SUBMENÚ FLOTANTE */}
             {mostrarSubmenu && (
               <div className="absolute right-2 top-12 bg-white shadow-2xl rounded border border-gray-200 z-50 w-48 overflow-hidden">
-                {['Ventas', 'Cobranza'].map(item => (
-                  <button key={item} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100">
-                    {item}
-                  </button>
-                ))}
+                <button onClick={() => { setMostrarSubmenu(false); setPantalla('menu'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 border-b border-gray-100">
+                  Ventas
+                </button>
+                <button onClick={() => { setMostrarSubmenu(false); setPantalla('recibo_cliente'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100">
+                  Cobranza
+                </button>
               </div>
             )}
 
@@ -1438,8 +1567,568 @@ function App() {
           </div>
         )}
 
-        {/* PANTALLA 17: 023 - Consulta de Pedidos / Pedido Cerrado GV (pantallapedidocerrado.png) */}
-        {pantalla === 'pedido_cerrado_gv' && (
+        {/* --- MÓDULO DE COBRANZA --- */}
+
+        {/* PANTALLA: RECIBO CLIENTE (088 - recibocliente.jpg) */}
+        {pantalla === 'recibo_cliente' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-[8px] font-bold text-gray-800">f</span>
+                </div>
+                <span className="text-[13px] font-normal text-black font-sans">088 - Clientes</span>
+              </div>
+              <button onClick={() => setPantalla('menu')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
+                ←
+              </button>
+            </div>
+            <div className="flex-1 flex flex-col p-2 bg-gray-100 overflow-hidden">
+              <div className="flex items-center mb-2 gap-2">
+                <span className="text-[12px] font-bold text-gray-700 font-sans">Ruta:</span>
+                <select className="flex-1 bg-transparent text-[12px] font-sans text-gray-600 outline-none">
+                  <option>--- Todas ---</option>
+                </select>
+              </div>
+              <div className="flex items-center mb-2 gap-2">
+                <span className="text-[12px] font-bold text-gray-700 font-sans">Cliente:</span>
+                <input type="text" placeholder="Buscar..." className="bg-white border border-gray-400 text-black font-sans text-[13px] px-2 py-1 flex-1 outline-none" />
+                <button className="bg-[#e6e6e6] text-[#333] border border-gray-400 px-2 py-1 text-[11px] font-bold shadow-sm">B.</button>
+              </div>
+              <div className="flex-1 border border-gray-400 bg-white overflow-y-auto">
+                <div onClick={() => setPantalla('recibo_menu')} className="bg-[#00b0f0] text-black font-bold text-[11px] px-2 py-2 font-sans border-b border-gray-300 cursor-pointer">
+                  GRUPO ISO HOME, C.A - 2531318
+                </div>
+                {[
+                  'EMPACADURAS INDUSTRIALES DEL CI - 2531976',
+                  'GRUPO TRIFERCA, C.A - 2580160',
+                  'HIPER HIERRO, C.A - 2531151',
+                  'INVERSIONES C MIGUEL A C.A - 2525053'
+                ].map((cli, i) => (
+                  <div key={i} onClick={() => setPantalla('recibo_menu')} className="bg-white text-black font-bold text-[10px] px-2 py-2.5 font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100">
+                    {cli}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: RECIBO MENU (recibomenu1.jpg) */}
+        {pantalla === 'recibo_menu' && (
+          <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans uppercase tracking-tight">044 - Menú Cobranza</span>
+              </div>
+              <div className="text-[14px] font-bold">⋮</div>
+            </div>
+            <div className="flex flex-col flex-1">
+              <div className="flex items-center justify-between bg-[#c0c0c0] px-3 py-1.5 shadow-inner">
+                <span className="text-[12px] font-bold text-gray-800 font-sans truncate">GRUPO ISO HOME, C.A - 2531318</span>
+                <button
+                  onClick={() => setPantalla('recibo_cliente')}
+                  className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-[#808080] border-2 border-[#808080] shadow-sm transform hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                </button>
+              </div>
+              <div className="px-3 py-1 bg-white/50 border-b border-gray-300">
+                <span className="text-[10px] text-gray-600 font-bold">Código Cliente: 2531318</span>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center pt-8 gap-3.5 px-6">
+                <button className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors">
+                  ESTADO DE CUENTA
+                </button>
+                <button className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors">
+                  ANÁLISIS DE DEUDORES
+                </button>
+                <button className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors">
+                  RETENCIONES DE IVA
+                </button>
+                <button
+                  onClick={() => setPantalla('recibo_index')}
+                  className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors"
+                >
+                  RECIBOS DE COBRO
+                </button>
+                <button className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors">
+                  CALENDARIO
+                </button>
+              </div>
+
+              <div className="mt-auto pb-2 px-2">
+                <p className="text-center text-[8px] text-gray-500 font-sans tracking-tight">© Copyright Wholesale World Information Systems LTD, 2014</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: RECIBO INDEX (recibo0.jpg) */}
+        {pantalla === 'recibo_index' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans tracking-tight uppercase">060 - Recibos de Cobro</span>
+              </div>
+              <div className="text-[14px] font-bold">⋮</div>
+            </div>
+            <div className="p-1 flex flex-col flex-1 bg-[#f0f0f0]">
+              <div className="flex items-center justify-between bg-[#c0c0c0] px-3 py-1.5 shadow-inner mb-1">
+                <span className="text-[12px] font-bold text-gray-800 font-sans truncate">GRUPO ISO HOME, C.A - 2531318</span>
+                <button
+                  onClick={() => setPantalla('recibo_menu')}
+                  className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-[#808080] border-2 border-[#808080] shadow-sm transform hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                </button>
+              </div>
+
+              <div className="flex-1 border border-gray-500 flex flex-col bg-white">
+                <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] font-sans">
+                  <div className="w-8 text-center py-1 border-r border-gray-400">E</div>
+                  <div className="flex-1 text-center py-1 border-r border-gray-400">No.</div>
+                  <div className="flex-1 text-center py-1 border-r border-gray-400">Fecha</div>
+                  <div className="flex-1 text-center py-1">Monto (USD)</div>
+                </div>
+                <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px] italic">
+                  No hay recibos registrados
+                </div>
+                <div className="bg-[#d0d0d0] text-black font-bold text-[10px] py-1 text-center border-t border-gray-400">
+                  Total:
+                </div>
+              </div>
+
+              <div className="flex gap-2 p-3 justify-center">
+                <button
+                  onClick={() => { setPantalla('recibo_sel_factura'); setMostrarModalFormasPagoRecibo(true); }}
+                  className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300"
+                >
+                  NUEVO
+                </button>
+                <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300">ENVIAR EMAIL</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA 041: SELECCIÓN DE FACTURAS (056 - Por Cobrar / reciboselfactura1.jpg) */}
+        {pantalla === 'recibo_sel_factura' && (
+          <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans uppercase tracking-tight">056 - Por Cobrar</span>
+              </div>
+              <div className="text-[14px] font-bold">⋮</div>
+            </div>
+
+            <div className="flex flex-col flex-1 p-1">
+              {/* Toolbar */}
+              <div className="flex items-center justify-between bg-[#c0c0c0] px-2 py-1.5 shadow-inner mb-1 gap-1">
+                <span className="text-[11px] font-bold text-gray-800 font-sans truncate flex-1">ALTAMIRA FERRE-INDL</span>
+                <button className="bg-[#e0e0e0] text-[9px] font-bold px-2 py-1 border border-gray-400 shadow-sm active:bg-gray-300">INCLUIR</button>
+                <button className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-gray-500 border-2 border-gray-400 shadow-sm text-xs font-bold font-serif">?</button>
+                <button
+                  onClick={() => setPantalla('recibo_index')}
+                  className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-gray-500 border-2 border-gray-400 shadow-sm"
+                >
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                </button>
+              </div>
+
+              {/* Ordenar Por */}
+              <div className="px-1 py-1 flex items-center gap-2 mb-1">
+                <span className="text-[10px] text-gray-600">Ordenar Por:</span>
+                <div className="flex-1 bg-white border border-gray-300 text-[10px] px-2 py-0.5 flex justify-between items-center cursor-pointer">
+                  <span>Fecha Vencimiento</span>
+                  <span className="text-[8px]">▼</span>
+                </div>
+              </div>
+
+              {/* Tabla */}
+              <div className="flex-1 border border-gray-400 bg-white flex flex-col mb-1 overflow-hidden">
+                <div className="flex bg-[#a6a6a6] text-white font-bold text-[9px] font-sans">
+                  <div className="w-8 text-center py-1 border-r border-gray-300">T</div>
+                  <div className="flex-1 text-center py-1 border-r border-gray-300">No. Fiscal</div>
+                  <div className="flex-1 text-center py-1">Importe USD</div>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  <div onClick={() => setPantalla('recibo_incluidas')} className="flex bg-[#00b0f0] text-black text-[11px] font-bold font-sans items-center border-b border-gray-200 cursor-pointer">
+                    <div className="w-8 flex items-center justify-center border-r border-blue-400 py-2">
+                      <input type="checkbox" checked readOnly className="w-3 h-3 accent-blue-600" />
+                    </div>
+                    <div className="w-6 text-center border-r border-blue-400">A</div>
+                    <div className="flex-1 pl-2">06948862</div>
+                    <div className="flex-1 pr-2 text-right">58,87</div>
+                  </div>
+                  {[
+                    { n: '06956875', m: '46,86' },
+                    { n: '06956930', m: '850,79' },
+                    { n: '06965151', m: '955,43' },
+                    { n: '06965887', m: '122,95' },
+                    { n: '06966250', m: '122,13' },
+                    { n: '06966278', m: '172,65' },
+                    { n: '06966286', m: '38,65' }
+                  ].map((row, i) => (
+                    <div key={i} className="flex bg-white text-black text-[10px] font-sans items-center border-b border-gray-100 hover:bg-gray-50">
+                      <div className="w-8 flex items-center justify-center border-r border-gray-200 py-2">
+                        <input type="checkbox" className="w-3 h-3" />
+                      </div>
+                      <div className="w-6 text-center border-r border-gray-200">A</div>
+                      <div className="flex-1 pl-2">{row.n}</div>
+                      <div className="flex-1 pr-2 text-right font-bold">{row.m}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-[#d0d0d0] h-4 border-t border-gray-400"></div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-2 py-1 space-y-1">
+                <div className="flex items-center gap-1 mb-1">
+                  <input type="checkbox" className="w-3 h-3" />
+                  <span className="text-[10px] text-gray-800 font-bold">Seleccionar todo</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-gray-700">Sub-Total (USD):</span>
+                  <div className="bg-white border-b border-gray-400 px-2 text-[11px] font-bold min-w-[70px] text-right">50,22</div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-gray-700">Descuento (USD):</span>
+                  <div className="flex items-center gap-1">
+                    <div className="bg-white border-b border-gray-400 px-2 text-[11px] font-bold min-w-[70px] text-right">6,53</div>
+                    <button className="w-4 h-4 bg-gray-200 border border-gray-400 text-[10px] flex items-center justify-center rounded">+</button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-gray-700">Cargos (USD):</span>
+                  <div className="flex items-center gap-1">
+                    <div className="bg-white border-b border-gray-400 px-2 text-[11px] font-bold min-w-[70px] text-right">0,00</div>
+                    <button className="w-4 h-4 bg-gray-200 border border-gray-400 text-[10px] flex items-center justify-center rounded">+</button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-gray-300">
+                  <span className="text-[11px] font-bold text-gray-700">Total (USD):</span>
+                  <div className="bg-white border-b border-gray-400 px-2 text-[12px] font-bold min-w-[70px] text-right">43,69</div>
+                </div>
+              </div>
+            </div>
+
+            {/* MODAL FORMAS DE PAGO (reciboformapagos.jpg) - SOBRE LA 056 */}
+            {mostrarModalFormasPagoRecibo && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
+                <div className="bg-[#f0f0f0] w-full rounded shadow-2xl overflow-hidden border border-gray-300">
+                  <div className="p-3 border-b border-[#00b0f0] flex items-center gap-3 bg-white">
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shadow-inner">i</div>
+                    <h3 className="text-[14px] font-bold text-[#00b0f0] font-sans">Seleccione la forma de pago</h3>
+                  </div>
+                  <div className="bg-white">
+                    {[
+                      'DEPOSITO $',
+                      'DEPOSITO EN TRANSITO',
+                      'TRANSFERENCIA $ INTERNACION..',
+                      'TRANSFERENCIA BS'
+                    ].map((fp, i) => (
+                      <div
+                        key={i}
+                        onClick={() => { setFormaPagoReciboSeleccionada(fp); setMostrarModalFormasPagoRecibo(false); }}
+                        className="px-4 py-3 text-[13px] font-bold text-gray-800 font-sans border-b border-gray-100 active:bg-blue-50 cursor-pointer"
+                      >
+                        {fp}
+                      </div>
+                    ))}
+                  </div>
+                  <div onClick={() => setMostrarModalFormasPagoRecibo(false)} className="py-3 text-center text-[13px] font-bold text-gray-600 font-sans bg-gray-50 active:bg-gray-200 cursor-pointer">
+                    Cancelar
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PANTALLA 044: DETALLE RECIBO (059 - Detalle Recibo / reciboincluidas3.jpg) */}
+        {pantalla === 'recibo_incluidas' && (
+          <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans uppercase tracking-tight">059 - Detalle Recibo</span>
+              </div>
+              <div className="text-[14px] font-bold">⋮</div>
+            </div>
+
+            <div className="flex-1 flex flex-col p-1 overflow-hidden">
+              {/* Sección DOCUMENTOS */}
+              <div className="flex flex-col h-[40%] mb-1">
+                <div className="flex items-center justify-between bg-[#c0c0c0] px-2 py-0.5 shadow-inner">
+                  <span className="text-[9px] font-bold text-gray-700 uppercase">DOCUMENTOS</span>
+                  <div className="flex items-center gap-1.5">
+                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">👁</button>
+                    <button onClick={() => setPantalla('recibo_sel_factura')} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px] font-bold">+</button>
+                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">×</button>
+                    <button onClick={() => setPantalla('recibo_sel_factura')} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">←</button>
+                  </div>
+                </div>
+                <div className="flex-1 border border-gray-400 bg-white flex flex-col overflow-hidden">
+                  <div className="flex bg-[#a6a6a6] text-white font-bold text-[8px] font-sans">
+                    <div className="w-10 text-center py-0.5 border-r border-gray-300">Tipo</div>
+                    <div className="flex-1 text-center py-0.5 border-r border-gray-300">No. Fiscal</div>
+                    <div className="flex-1 text-center py-0.5 border-r border-gray-300">Forma de Pago</div>
+                    <div className="w-12 text-center py-0.5 border-l border-gray-300">Descu</div>
+                  </div>
+                  <div className="flex-1 bg-white overflow-y-auto">
+                    <div className="flex bg-[#00b0f0] text-black text-[9px] font-bold font-sans items-center border-b border-gray-200">
+                      <div className="w-10 text-center py-1 border-r border-blue-400">FAC</div>
+                      <div className="flex-1 pl-1 border-r border-blue-400">06948862</div>
+                      <div className="flex-1 pl-1 border-r border-blue-400 truncate text-[8px] uppercase">{formaPagoReciboSeleccionada}</div>
+                      <div className="w-12 text-center border-l border-blue-400"></div>
+                    </div>
+                  </div>
+                  <div className="bg-[#d0d0d0] text-black font-bold text-[9px] py-0.5 text-center border-t border-gray-400">
+                    Total:
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección PAGOS */}
+              <div className="flex flex-col flex-1 pb-1">
+                <div className="flex items-center justify-between bg-[#c0c0c0] px-2 py-0.5 shadow-inner">
+                  <div className="flex items-center gap-8">
+                    <span className="text-[9px] font-bold text-gray-700 uppercase">PAGOS</span>
+                    <span className="text-[9px] font-bold text-gray-500">0</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">×</button>
+                    <button onClick={() => setMostrarModalDeposito(true)} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px] font-bold">+</button>
+                  </div>
+                </div>
+                <div className="flex-1 border border-gray-400 bg-white flex flex-col overflow-hidden">
+                  <div className="flex bg-[#a6a6a6] text-white font-bold text-[8px] font-sans">
+                    <div className="flex-1 text-center py-0.5 border-r border-gray-300">Pago</div>
+                    <div className="flex-1 text-center py-0.5 border-r border-gray-300">Moneda</div>
+                    <div className="flex-1 text-center py-0.5">Monto</div>
+                  </div>
+                  <div className="flex-1 bg-white flex items-center justify-center">
+                    {/* Vacío */}
+                  </div>
+                </div>
+              </div>
+
+              {/* Barra de Resta Inferior */}
+              <div className="flex items-center gap-1 mt-auto bg-[#e6e6e6] p-1 border-t border-gray-300 h-10">
+                <span className="text-[10px] font-bold text-gray-600">Resta:</span>
+                <div className="flex-1 flex gap-1 h-full">
+                  <div className="flex-1 bg-[#b0b0b0] flex items-center justify-center border border-gray-400 shadow-inner">
+                    <span className="text-[12px] font-black text-red-600 font-sans tracking-tight">84,46 USD</span>
+                  </div>
+                  <div className="flex-1 bg-[#b0b0b0] flex items-center justify-center border border-gray-400 shadow-inner">
+                    <span className="text-[12px] font-black text-red-600 font-sans italic tracking-tighter">45.718,20 VES</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* MODAL DEPOSITO (recibodeposito5.jpg) */}
+            {mostrarModalDeposito && (
+              <div className="absolute inset-x-4 top-40 bg-white border-t-[3px] border-[#00b0f0] shadow-2xl z-50 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-[13px] font-bold text-gray-800">PAGO</h3>
+                  <button onClick={() => setMostrarModalDeposito(false)} className="w-6 h-6 bg-gray-300 flex items-center justify-center rounded-full text-white font-bold border border-white">X</button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold block mb-1">MONTO</label>
+                    <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] font-bold py-1 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold block mb-1">REFERENCIA</label>
+                    <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero Documento" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
+                  </div>
+                  <div className="flex justify-center pt-2">
+                    <button onClick={() => { setMontoDeposito('0'); setReferenciaDeposito(''); setMostrarModalDeposito(false); }} className="bg-gray-200 text-black font-bold px-8 py-2 border border-gray-400 text-[12px] active:bg-gray-300 shadow-sm">OK</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PANTALLA 042: RECIBO ABONO (046 - Recibo de Cobro / reciboabono4.jpg) */}
+        {pantalla === 'recibo_abono' && (
+          <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans uppercase tracking-tight">046 - Recibo de Cobro</span>
+              </div>
+              <div className="text-[14px] font-bold">⋮</div>
+            </div>
+
+            <div className="flex-1 flex flex-col p-1 overflow-y-auto">
+              <div className="space-y-1 mt-1">
+                {/* Tipo Doc */}
+                <div className="flex items-center gap-1">
+                  <label className="text-[9px] font-bold text-gray-500 w-16 text-right">Tipo Doc:</label>
+                  <div className="flex-1 bg-[#b0b0b0] border border-gray-400 px-2 py-0.5 text-[10px] font-bold text-gray-800">FACTURAS</div>
+                  <button onClick={() => setPantalla('recibo_incluidas')} className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-gray-500 border-2 border-gray-400 shadow-sm">
+                    <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                  </button>
+                </div>
+
+                {/* Nro Doc */}
+                <div className="flex items-center gap-1">
+                  <label className="text-[9px] font-bold text-gray-500 w-16 text-right">Nro. Doc:</label>
+                  <div className="flex-1 bg-[#b0b0b0] border border-gray-400 px-2 py-0.5 text-[10px] font-bold text-gray-800 flex justify-between">
+                    <span>06948862</span>
+                    <span className="bg-gray-200 px-1 border border-gray-400">P</span>
+                  </div>
+                </div>
+
+                {/* Fecha */}
+                <div className="flex items-center gap-1 justify-end mt-1">
+                  <label className="text-[9px] font-bold text-gray-400">Fecha:</label>
+                  <div className="bg-[#b0b0b0] border border-gray-400 px-3 py-0.5 text-[10px] font-bold text-gray-800 min-w-[80px]">09-12-2025</div>
+                </div>
+
+                {/* Importe */}
+                <div className="flex items-center gap-1">
+                  <label className="text-[9px] font-bold text-gray-500 w-16 text-right">Importe (USD):</label>
+                  <div className="flex-1 bg-[#b0b0b0] border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-800 text-right">58,87</div>
+                </div>
+
+                {/* Saldo */}
+                <div className="flex items-center gap-1">
+                  <label className="text-[9px] font-bold text-gray-500 w-16 text-right">Saldo (USD):</label>
+                  <div className="flex-1 bg-[#b0b0b0] border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-800 text-right">50,22</div>
+                </div>
+
+                {/* Fecha Dep/Trans */}
+                <div className="flex items-center gap-1">
+                  <label className="text-[8px] font-bold text-gray-500 w-16 text-right leading-tight">Fecha Dep / Trans:</label>
+                  <div className="w-6 bg-white border border-gray-400 px-1 text-[10px] text-center">X</div>
+                  <div className="flex-1 bg-[#b0b0b0] border border-gray-400 h-6"></div>
+                </div>
+
+                {/* P. Pago Row */}
+                <div className="flex items-center gap-2 pl-2 mt-2">
+                  <input type="checkbox" checked readOnly className="w-3 h-3" />
+                  <label className="text-[8px] font-bold text-gray-400">Desc Adic</label>
+                  <span className="text-[8px] text-gray-400">P. Pago</span>
+                  <div className="bg-[#b0b0b0] border border-gray-400 px-2 py-0.5 text-[10px] font-bold text-gray-800 min-w-[50px]">0,00</div>
+                  <div className="flex-1 bg-white border-b border-gray-400 text-[10px] px-2 py-0.5 font-bold">13,00</div>
+                  <input type="checkbox" checked readOnly className="w-3 h-3" />
+                </div>
+
+                {/* Excluir Retencion */}
+                <div className="flex items-center gap-1 pl-2 mb-2">
+                  <input type="checkbox" className="w-3 h-3" />
+                  <label className="text-[8px] font-bold text-gray-300 uppercase">Excluir Monto de retención</label>
+                </div>
+
+                {/* SECCION MONTO EDITABLE */}
+                <div className="px-2 pt-2 border-t border-gray-300 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-gray-700">Monto (USD):</span>
+                    <div className="flex-1 flex justify-end">
+                      <input
+                        type="text"
+                        value={montoAbono}
+                        onChange={(e) => setMontoAbono(e.target.value)}
+                        className="bg-white border-b border-gray-400 px-2 text-[12px] font-black min-w-[120px] text-right outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-gray-700">Descuento (USD):</span>
+                    <div className="bg-[#b0b0b0] border border-gray-400 px-2 text-[11px] font-bold min-w-[120px] text-right py-0.5">6,53</div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-gray-700">Retenciones (USD):</span>
+                    <div className="bg-[#b0b0b0] border border-gray-400 px-2 text-[11px] font-bold min-w-[120px] text-right py-0.5">0,00</div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-gray-700">Total (USD):</span>
+                    <div className="bg-[#b0b0b0] border border-gray-400 px-2 text-[11px] font-bold min-w-[120px] text-right py-1">50,22</div>
+                  </div>
+
+                  <div className="flex justify-between items-center bg-gray-200/50 p-1 rounded">
+                    <span className="text-[10px] font-bold text-gray-700">Saldo Pend. (USD):</span>
+                    <div className="bg-[#b0b0b0] border border-gray-400 px-2 text-[11px] font-bold min-w-[120px] text-right py-0.5">0,00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: RECIBO PAGADO (recibopagado6.jpg) */}
+        {pantalla === 'recibo_pagado' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-[8px] font-bold text-gray-800">f</span>
+                </div>
+                <span className="text-[13px] font-normal text-black font-sans">045 - Pago de Facuras</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPantalla('recibo_listo')} className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] px-3 py-1 border border-gray-400 shadow-sm active:bg-gray-300">FIN</button>
+                <button onClick={() => setPantalla('recibo_incluidas')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
+                  ←
+                </button>
+              </div>
+            </div>
+            <div className="p-2 flex-1 bg-gray-100 flex flex-col">
+              <div className="bg-[#d3d3d3] py-2 px-3 border border-gray-300 text-center mb-2">
+                <span className="text-[12px] font-bold text-gray-800 font-sans">GRUPO ISO HOME, C.A - 2531318</span>
+              </div>
+              <div className="flex-1 border border-gray-400 bg-white flex flex-col">
+                <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] font-sans">
+                  <div className="flex-[2] text-center py-1 border-r border-gray-300">Tipo de Pago</div>
+                  <div className="flex-1 text-center py-1 border-r border-gray-300">Nro. Ref.</div>
+                  <div className="flex-1 text-center py-1">Valor USD</div>
+                </div>
+                <div className="flex bg-[#00b0f0] text-black font-bold text-[11px] font-sans items-center border-b border-gray-300">
+                  <div className="flex-[2] pl-2 py-2 border-r border-blue-400">TRANSFERENCIA USD</div>
+                  <div className="flex-1 text-center border-r border-blue-400">22558</div>
+                  <div className="flex-1 pr-2 text-right">40,00</div>
+                </div>
+                <div className="flex-1 bg-white"></div>
+              </div>
+              <div className="mt-2 space-y-1">
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[11px] font-bold text-gray-700">Abono:</span>
+                  <span className="text-[12px] font-bold">40,00</span>
+                </div>
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[11px] font-bold text-gray-700">Diferencia:</span>
+                  <span className="text-[12px] font-bold">0,00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: RECIBO LISTO (recibolisto7.png) */}
+        {pantalla === 'recibo_listo' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
             <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
               <div className="flex items-center gap-2">
@@ -1452,35 +2141,28 @@ function App() {
                 ←
               </button>
             </div>
-
-            <div className="flex-1 flex flex-col bg-gray-100">
-              <div className="bg-white px-3 py-2 border-b border-gray-300">
+            <div className="flex-1 flex flex-col bg-gray-100 p-2">
+              <div className="bg-white px-3 py-2 border border-gray-300 mb-2">
                 <span className="text-[12px] font-bold text-black font-sans">GRUPO ISO HOME, C.A - 2531318</span>
               </div>
-
-              {/* Tabla de pedidos */}
-              <div className="flex-1 flex flex-col mx-2 mt-2 border border-gray-400">
+              <div className="flex-1 border border-gray-400 bg-white flex flex-col">
                 <div className="flex bg-[#a6a6a6] text-white font-bold text-[11px] font-sans">
                   <div className="w-8 text-center py-1.5 border-r border-gray-300">S</div>
-                  <div className="flex-1 text-center py-1.5 border-r border-gray-300">Pedido Origen</div>
-                  <div className="flex-1 text-center py-1.5">Pedido</div>
+                  <div className="flex-1 text-center py-1.5 border-r border-gray-300">Nro. Recibo</div>
+                  <div className="flex-1 text-center py-1.5">Recibo</div>
                 </div>
-                <div className="flex bg-[#00b0f0] text-black font-bold text-[12px] font-sans">
-                  <div className="w-8 text-center py-2 border-r border-gray-300">A</div>
-                  <div className="flex-1 text-center py-2 border-r border-gray-300">60063</div>
+                <div className="flex bg-[#00b0f0] text-black font-bold text-[12px] font-sans items-center">
+                  <div className="w-8 text-center py-2 border-r border-blue-400">A</div>
+                  <div className="flex-1 text-center py-2 border-r border-blue-400">60063</div>
                   <div className="flex-1 text-center py-2">60063</div>
                 </div>
                 <div className="flex-1 bg-white"></div>
               </div>
-
-              {/* Botones inferiores */}
               <div className="flex gap-2 p-3 justify-center">
-                <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-5 border border-[#a6a6a6] shadow-sm active:bg-[#d4d4d4]">Anular</button>
-                <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-5 border border-[#a6a6a6] shadow-sm active:bg-[#d4d4d4]">Nuevo</button>
-                <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[10px] py-2 px-3 border border-[#a6a6a6] shadow-sm active:bg-[#d4d4d4]">Enviar Email</button>
+                <button onClick={() => setPantalla('recibo_sel_factura')} className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-8 border border-gray-400 shadow-sm active:bg-gray-300">Nuevo</button>
+                <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-8 border border-gray-400 shadow-sm active:bg-gray-300">Enviar Email</button>
               </div>
-
-              <div className="text-center text-[7px] text-gray-400 font-sans pb-1">© Copyright Wholesale World Information Systems LTD, 2014</div>
+              <div className="text-center text-[7px] text-gray-400 font-sans pb-1 mt-auto uppercase tracking-tighter">© Copyright Wholesale World Information Systems LTD, 2014</div>
             </div>
           </div>
         )}
