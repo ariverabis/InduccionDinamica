@@ -258,7 +258,7 @@ function App() {
     await sleep(800);
 
     // 6. Clic en barra azul para abono en reciboincluidas3.jpg
-    setCursorPos({ x: 160, y: 180, visible: true }); // Barra azul de factura
+    setCursorPos({ x: 160, y: 150, visible: true }); // Barra azul de factura
     await sleep(1200);
     setPantalla('recibo_abono');
     await sleep(800);
@@ -282,7 +282,7 @@ function App() {
     await sleep(800);
 
     // 9. Colocar monto 40 y referencia en recibodeposito5.jpg
-    setCursorPos({ x: 160, y: 300, visible: true }); // Campo monto
+    setCursorPos({ x: 160, y: 100, visible: true }); // Campo monto
     await sleep(1000);
     setMontoDeposito('40');
     await sleep(500);
@@ -305,7 +305,7 @@ function App() {
     await sleep(800);
 
     // 12. Clic en botón FIN arriba en recibopagado6.jpg
-    setCursorPos({ x: 230, y: 110, visible: true });
+    setCursorPos({ x: 230, y: 55, visible: true });
     await sleep(1200);
     setPantalla('recibo_listo');
     await sleep(1000);
