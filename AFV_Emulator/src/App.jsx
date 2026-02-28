@@ -294,6 +294,11 @@ function App() {
     await triggerClick();
     setFacturaSeleccionada(true);
     await sleep(800);
+
+    // 5.5. Clic en botón "INCLUIR" arriba
+    setCursorPos({ x: 220, y: 115, visible: true }); // Botón INCLUIR
+    await sleep(1200);
+    await triggerClick();
     setPantalla('recibo_incluidas');
     setMontoResta('43,59');
     await sleep(800);
@@ -1788,7 +1793,12 @@ function App() {
               {/* Toolbar */}
               <div className="flex items-center justify-between bg-[#c0c0c0] px-2 py-1.5 shadow-inner mb-1 gap-1">
                 <span className="text-[11px] font-bold text-gray-800 font-sans truncate flex-1">ALTAMIRA FERRE-INDL</span>
-                <button className="bg-[#e0e0e0] text-[9px] font-bold px-2 py-1 border border-gray-400 shadow-sm active:bg-gray-300">INCLUIR</button>
+                <button
+                  onClick={() => { if (facturaSeleccionada) setPantalla('recibo_incluidas'); }}
+                  className={`${facturaSeleccionada ? 'bg-blue-600 text-white' : 'bg-[#e0e0e0] text-gray-500'} text-[9px] font-bold px-2 py-1 border border-gray-400 shadow-sm active:bg-gray-300`}
+                >
+                  INCLUIR
+                </button>
                 <button className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-gray-500 border-2 border-gray-400 shadow-sm text-xs font-bold font-serif">?</button>
                 <button
                   onClick={() => setPantalla('recibo_index')}
@@ -1815,7 +1825,7 @@ function App() {
                   <div className="flex-1 text-center py-1">Importe USD</div>
                 </div>
                 <div className="overflow-y-auto flex-1">
-                  <div onClick={() => { setFacturaSeleccionada(!facturaSeleccionada); setPantalla('recibo_incluidas'); }} className="flex bg-[#00b0f0] text-black text-[11px] font-bold font-sans items-center border-b border-gray-200 cursor-pointer">
+                  <div className="flex bg-[#00b0f0] text-black text-[11px] font-bold font-sans items-center border-b border-gray-200 cursor-pointer">
                     <div className="w-8 flex items-center justify-center border-r border-blue-400 py-2">
                       <input type="checkbox" checked={facturaSeleccionada} onChange={(e) => { e.stopPropagation(); setFacturaSeleccionada(e.target.checked); }} className="w-3 h-3 accent-blue-600" />
                     </div>
