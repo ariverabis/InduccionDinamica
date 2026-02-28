@@ -19,17 +19,25 @@ function App() {
 
   // --- COBRANZA STATES ---
   const [montoAbono, setMontoAbono] = useState('43,59');
-  const [montoDeposito, setMontoDeposito] = useState('0');
+  const [montoDeposito, setMontoDeposito] = useState('40');
   const [referenciaDeposito, setReferenciaDeposito] = useState('');
   const [mostrarModalDeposito, setMostrarModalDeposito] = useState(false);
   const [montoResta, setMontoResta] = useState('43,59');
   const [mostrarModalFormasPagoRecibo, setMostrarModalFormasPagoRecibo] = useState(false);
   const [formaPagoReciboSeleccionada, setFormaPagoReciboSeleccionada] = useState('PAGO GENERICO');
+  const [facturaSeleccionada, setFacturaSeleccionada] = useState(false);
 
   // --- GHOST MOUSE STATE ---
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100, visible: false });
+  const [isClicking, setIsClicking] = useState(false);
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const triggerClick = async () => {
+    setIsClicking(true);
+    await sleep(500); // Duración de la animación
+    setIsClicking(false);
+  };
 
   const runDemoCatalogo = async () => {
     // Inicia abajo oculto y lo muestra
@@ -39,31 +47,35 @@ function App() {
     // 1. Move to "PEDIDOS DEL CATÁLOGO" button
     setCursorPos({ x: 160, y: 130, visible: true });
     await sleep(1200);
-    //alert('Iniciando proceso de pedido automático');
+    await triggerClick();
     setPantalla('pedidos_catalogo');
     await sleep(800);
 
     // 2. Move to "Ver Detalles" on 118
     setCursorPos({ x: 230, y: 550, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('detalles_pedido');
     await sleep(800);
 
     // 3. Move to "Crear Cotización" on 119
     setCursorPos({ x: 160, y: 550, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('promociones_asociativas');
     await sleep(800);
 
     // 4. In Promociones Asociativas, "Si" button on modal 107
     setCursorPos({ x: 230, y: 355, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('finalizar_pedido');
     await sleep(800);
 
     // 5. Mover al combo "Forma Pago" in 016
     setCursorPos({ x: 180, y: 170, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarFormaPagoCombo(true);
     await sleep(1500);
     setMostrarFormaPagoCombo(false);
@@ -72,23 +84,27 @@ function App() {
     // 6. Mover al símbolo "+" Observaciones
     setCursorPos({ x: 290, y: 495, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarModalNegociacion(true);
     await sleep(800);
     // Mover a "X" close modal
     setCursorPos({ x: 270, y: 225, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarModalNegociacion(false);
     await sleep(500);
 
     // 7. Mover al botón "Fin"
     setCursorPos({ x: 280, y: 350, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarModalCierra1(true);
     await sleep(800);
 
     // 8. Mover a "No" (modal 1)
     setCursorPos({ x: 80, y: 390, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarModalCierra1(false);
     setMostrarModalCierra2(true);
     await sleep(800);
@@ -96,6 +112,7 @@ function App() {
     // 9. Mover a "Si" (modal 2)
     setCursorPos({ x: 240, y: 365, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarModalCierra2(false);
     setPantalla('consulta_pedidos');
 
@@ -112,25 +129,28 @@ function App() {
     // 1. Move to "GESTIÓN DE VENTAS" button in 073
     setCursorPos({ x: 160, y: 300, visible: true });
     await sleep(1200);
-    //alert('Iniciando demostración de Gestión de Ventas');
+    await triggerClick();
     setPantalla('clientes');
     await sleep(800);
 
     // 2. 088 (Clientes) - Mover y hacer clic en el cliente seleccionado
     setCursorPos({ x: 160, y: 200, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('gestion_ventas');
     await sleep(800);
 
     // 3. 028 (Gestión) - Mover a "NUEVO PEDIDO"
     setCursorPos({ x: 160, y: 180, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('detalle_pedido_nuevo');
     await sleep(800);
 
     // 4. 021 (Detalle Pedido) - Mover a "BUSCAR" abajo al centro
     setCursorPos({ x: 160, y: 565, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('productos_busqueda');
     setGrupoSeleccionado('--Seleccione--');
     await sleep(800);
@@ -138,12 +158,14 @@ function App() {
     // 5. 034 (Productos) - Mover al combo "Grupo"
     setCursorPos({ x: 200, y: 380, visible: true });
     await sleep(1200);
+    await triggerClick();
     // Abrir visualmente el combo
     setMostrarComboGrupo(true);
     await sleep(1000);
     // Mover al item "Grupo Todas" dentro del combo desplegado
     setCursorPos({ x: 200, y: 450, visible: true });
     await sleep(800);
+    await triggerClick();
     // Simular selección de "Grupo Todas"
     setGrupoSeleccionado('Grupo Todas');
     setMostrarComboGrupo(false);
@@ -152,6 +174,7 @@ function App() {
     // 6. 034 (Productos) - Mover al botón "Buscar" (abajo a la derecha)
     setCursorPos({ x: 230, y: 540, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('resultados_busqueda');
     setCantidadProducto('1');
     await sleep(800);
@@ -159,12 +182,14 @@ function App() {
     // 7. 080 (Productos) - Mover al campo "Cant" y cambiar a 12
     setCursorPos({ x: 220, y: 530, visible: true });
     await sleep(1200);
+    await triggerClick();
     setCantidadProducto('12');
     await sleep(800);
 
     // 8. 080 (Productos) - Mover al botón OK
     setCursorPos({ x: 280, y: 530, visible: true });
     await sleep(1000);
+    await triggerClick();
     // Navegar a detalle pedido con producto cargado
     setPantalla('detalle_pedido_con_producto');
     await sleep(800);
@@ -172,6 +197,7 @@ function App() {
     // 9. 021 (Detalle con producto) - Mover al botón FIN
     setCursorPos({ x: 230, y: 115, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('finalizar_pedido_gv');
     setNivelSeleccionado('MAYOREOD');
     await sleep(800);
@@ -179,11 +205,13 @@ function App() {
     // 10. 016 (Finalizar Pedido) - Mover al combo Nivel
     setCursorPos({ x: 200, y: 200, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarComboNivel(true);
     await sleep(1000);
     // Mover a MAYOREOB
     setCursorPos({ x: 200, y: 240, visible: true });
     await sleep(800);
+    await triggerClick();
     setNivelSeleccionado('MAYOREOB');
     setMostrarComboNivel(false);
     await sleep(800);
@@ -191,6 +219,7 @@ function App() {
     // 11. Mover al botón FIN del finalizar pedido
     setCursorPos({ x: 270, y: 430, visible: true });
     await sleep(1200);
+    await triggerClick();
     // Mostrar modal confirmación 1
     setModalCierraGV1(true);
     await sleep(800);
@@ -198,6 +227,7 @@ function App() {
     // 12. Mover a "No" en modal 1
     setCursorPos({ x: 110, y: 400, visible: true });
     await sleep(1200);
+    await triggerClick();
     setModalCierraGV1(false);
     setModalCierraGV2(true);
     await sleep(800);
@@ -205,6 +235,7 @@ function App() {
     // 13. Mover a "Si" en modal 2
     setCursorPos({ x: 210, y: 380, visible: true });
     await sleep(1200);
+    await triggerClick();
     // Ocultar puntero
     await sleep(1000);
     setCursorPos({ x: -100, y: -100, visible: false });
@@ -214,12 +245,14 @@ function App() {
     // 0. Inicio en 073 Ventas Menu
     setCursorPos({ x: 290, y: 60, visible: true }); // Cerca del botón de 3 puntos/Run
     await sleep(1000);
+    await triggerClick();
 
     // 1. Abrir submenú y seleccionar Cobranza
     setMostrarSubmenu(true);
     await sleep(800);
     setCursorPos({ x: 200, y: 155, visible: true }); // Botón Cobranza en el submenú (ajustado por coordenadas)
     await sleep(1000);
+    await triggerClick();
     setPantalla('recibo_cliente');
     setMostrarSubmenu(false);
     await sleep(800);
@@ -227,18 +260,22 @@ function App() {
     // 2. Seleccionar cliente en recibocliente.jpg (088)
     setCursorPos({ x: 160, y: 180, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('recibo_menu');
+    setFacturaSeleccionada(false);
     await sleep(800);
 
     // 3. Seleccionar botón "RECIBO" en recibomenu1.jpg
     setCursorPos({ x: 160, y: 340, visible: true }); // Botón Recibo
     await sleep(1200);
+    await triggerClick();
     setPantalla('recibo_index');
     await sleep(800);
 
     // 4. Clic en botón "NUEVO" en recibo0.jpg
     setCursorPos({ x: 100, y: 560, visible: true }); // Botón Nuevo abajo
     await sleep(1200);
+    await triggerClick();
     setPantalla('recibo_sel_factura');
     setMostrarModalFormasPagoRecibo(true); // Se abre inmediatamente al entrar a 056
     await sleep(1000);
@@ -246,6 +283,7 @@ function App() {
     // 4.5. Seleccionar "DEPOSITO $" en el overlay (reciboformapagos.jpg) sobre 056
     setCursorPos({ x: 160, y: 345, visible: true }); // Opción DEPOSITO $
     await sleep(1200);
+    await triggerClick();
     setFormaPagoReciboSeleccionada('DEPOSITO $');
     setMostrarModalFormasPagoRecibo(false); // Se cierra el overlay y queda 056
     await sleep(800);
@@ -253,53 +291,66 @@ function App() {
     // 5. Seleccionar check de factura en reciboselfactura1.jpg (ahora sin overlay)
     setCursorPos({ x: 25, y: 190, visible: true }); // Check a la izquierda
     await sleep(1200);
+    await triggerClick();
+    setFacturaSeleccionada(true);
+    await sleep(800);
     setPantalla('recibo_incluidas');
     setMontoResta('43,59');
     await sleep(800);
 
     // 6. Clic en barra azul para abono en reciboincluidas3.jpg
-    setCursorPos({ x: 160, y: 150, visible: true }); // Barra azul de factura
+    setCursorPos({ x: 160, y: 145, visible: true }); // Barra azul de factura
     await sleep(1200);
+    await triggerClick();
     setPantalla('recibo_abono');
     await sleep(800);
 
     // 7. Cambiar monto 43,59 a 40 en reciboabono4.jpg
-    setCursorPos({ x: 220, y: 220, visible: true }); // Campo monto
+    setCursorPos({ x: 230, y: 320, visible: true }); // Campo monto
     await sleep(1000);
+    await triggerClick();
     setMontoAbono('40');
     await sleep(800);
     // Clic flecha arriba derecha para volver
-    setCursorPos({ x: 280, y: 70, visible: true });
+    setCursorPos({ x: 290, y: 99, visible: true });
     await sleep(1000);
+    await triggerClick();
     setPantalla('recibo_incluidas');
     setMontoResta('40');
     await sleep(800);
 
     // 8. Clic en símbolo + (plus) en la mitad
-    setCursorPos({ x: 160, y: 335, visible: true }); // Símbolo plus central
+    setCursorPos({ x: 280, y: 300, visible: true }); // Símbolo plus central
     await sleep(1200);
+    await triggerClick();
     setMostrarModalDeposito(true);
     await sleep(800);
 
     // 9. Colocar monto 40 y referencia en recibodeposito5.jpg
-    setCursorPos({ x: 160, y: 100, visible: true }); // Campo monto
+    setCursorPos({ x: 50, y: 300, visible: true }); // Campo monto
     await sleep(1000);
+    await triggerClick();
     setMontoDeposito('40');
     await sleep(500);
-    setCursorPos({ x: 160, y: 350, visible: true }); // Campo referencia
+    setCursorPos({ x: 50, y: 350, visible: true }); // Campo referencia
     await sleep(1000);
-    setReferenciaDeposito('REF-COBRO-001');
+    await triggerClick();
+    setReferenciaDeposito('001212');
     await sleep(800);
 
     // 10. Clic OK
-    setCursorPos({ x: 160, y: 470, visible: true }); // Botón OK
+    setCursorPos({ x: 160, y: 400, visible: true }); // Botón OK
     await sleep(1000);
+    await triggerClick();
     setMontoDeposito('0');
+    await sleep(800);
+    setReferenciaDeposito('');
     await sleep(800);
 
     // 11. Clic X arriba derecha para cerrar popup
-    setCursorPos({ x: 280, y: 215, visible: true });
+    setCursorPos({ x: 270, y: 215, visible: true });
     await sleep(1200);
+    await triggerClick();
     setMostrarModalDeposito(false);
     setPantalla('recibo_pagado');
     await sleep(800);
@@ -307,6 +358,7 @@ function App() {
     // 12. Clic en botón FIN arriba en recibopagado6.jpg
     setCursorPos({ x: 230, y: 55, visible: true });
     await sleep(1200);
+    await triggerClick();
     setPantalla('recibo_listo');
     await sleep(1000);
 
@@ -1763,9 +1815,9 @@ function App() {
                   <div className="flex-1 text-center py-1">Importe USD</div>
                 </div>
                 <div className="overflow-y-auto flex-1">
-                  <div onClick={() => setPantalla('recibo_incluidas')} className="flex bg-[#00b0f0] text-black text-[11px] font-bold font-sans items-center border-b border-gray-200 cursor-pointer">
+                  <div onClick={() => { setFacturaSeleccionada(!facturaSeleccionada); setPantalla('recibo_incluidas'); }} className="flex bg-[#00b0f0] text-black text-[11px] font-bold font-sans items-center border-b border-gray-200 cursor-pointer">
                     <div className="w-8 flex items-center justify-center border-r border-blue-400 py-2">
-                      <input type="checkbox" checked readOnly className="w-3 h-3 accent-blue-600" />
+                      <input type="checkbox" checked={facturaSeleccionada} onChange={(e) => { e.stopPropagation(); setFacturaSeleccionada(e.target.checked); }} className="w-3 h-3 accent-blue-600" />
                     </div>
                     <div className="w-6 text-center border-r border-blue-400">A</div>
                     <div className="flex-1 pl-2">06948862</div>
@@ -1946,7 +1998,7 @@ function App() {
               <div className="absolute inset-x-4 top-40 bg-white border-t-[3px] border-[#00b0f0] shadow-2xl z-50 p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-[13px] font-bold text-gray-800">PAGO</h3>
-                  <button onClick={() => setMostrarModalDeposito(false)} className="w-6 h-6 bg-gray-300 flex items-center justify-center rounded-full text-white font-bold border border-white">X</button>
+                  <button onClick={() => setMostrarModalDeposito(false)} className="w-6 h-6 bg-red-500 hover:bg-red-600 flex items-center justify-center rounded-full text-white font-bold border border-white shadow-sm active:scale-95 transition-transform">X</button>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -1955,7 +2007,7 @@ function App() {
                   </div>
                   <div>
                     <label className="text-[10px] text-gray-500 font-bold block mb-1">REFERENCIA</label>
-                    <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero Documento" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
+                    <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero referencia bancaria" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
                   </div>
                   <div className="flex justify-center pt-2">
                     <button onClick={() => { setMontoDeposito('0'); setReferenciaDeposito(''); setMostrarModalDeposito(false); }} className="bg-gray-200 text-black font-bold px-8 py-2 border border-gray-400 text-[12px] active:bg-gray-300 shadow-sm">OK</button>
@@ -2176,14 +2228,16 @@ function App() {
 
         {/* GHOST MOUSE POINTER */}
         <div
-          className="absolute z-[100] w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_rgba(239,68,68,0.8)]"
+          className="absolute z-[100] w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_rgba(239,68,68,0.8)] flex items-center justify-center overflow-visible"
           style={{
             left: `${cursorPos.x}px`,
             top: `${cursorPos.y}px`,
             transform: 'translate(-50%, -50%)',
             opacity: cursorPos.visible ? 0.7 : 0
           }}
-        />
+        >
+          {isClicking && <div className="ghost-ripple" />}
+        </div>
 
       </div>
     </div>
