@@ -26,6 +26,7 @@ function App() {
   const [mostrarModalFormasPagoRecibo, setMostrarModalFormasPagoRecibo] = useState(false);
   const [formaPagoReciboSeleccionada, setFormaPagoReciboSeleccionada] = useState('PAGO GENERICO');
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(false);
+  const [narracionTexto, setNarracionTexto] = useState('');
 
   // --- GHOST MOUSE STATE ---
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100, visible: false });
@@ -37,6 +38,12 @@ function App() {
     setIsClicking(true);
     await sleep(500); // Duración de la animación
     setIsClicking(false);
+  };
+
+  const decir = async (texto, duracion = 2500) => {
+    setNarracionTexto(texto);
+    await sleep(duracion);
+    // No limpiamos el texto inmediatamente para que se vea mientras el ratón se mueve
   };
 
   const runDemoCatalogo = async () => {
@@ -243,6 +250,7 @@ function App() {
 
   const runDemoCobranza = async () => {
     // 0. Inicio en 073 Ventas Menu
+    await decir("1.- Ingrese Módulo de cobranza.");
     setCursorPos({ x: 290, y: 60, visible: true }); // Cerca del botón de 3 puntos/Run
     await sleep(1000);
     await triggerClick();
@@ -250,7 +258,7 @@ function App() {
     // 1. Abrir submenú y seleccionar Cobranza
     setMostrarSubmenu(true);
     await sleep(800);
-    setCursorPos({ x: 200, y: 155, visible: true }); // Botón Cobranza en el submenú (ajustado por coordenadas)
+    setCursorPos({ x: 200, y: 155, visible: true }); // Botón Cobranza en el submenú
     await sleep(1000);
     await triggerClick();
     setPantalla('recibo_cliente');
@@ -258,6 +266,7 @@ function App() {
     await sleep(800);
 
     // 2. Seleccionar cliente en recibocliente.jpg (088)
+    await decir("2.- Seleccione el cliente.");
     setCursorPos({ x: 160, y: 180, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -266,6 +275,7 @@ function App() {
     await sleep(800);
 
     // 3. Seleccionar botón "RECIBO" en recibomenu1.jpg
+    await decir("3.- Seleccione Recibo de cobro.");
     setCursorPos({ x: 160, y: 340, visible: true }); // Botón Recibo
     await sleep(1200);
     await triggerClick();
@@ -273,6 +283,7 @@ function App() {
     await sleep(800);
 
     // 4. Clic en botón "NUEVO" en recibo0.jpg
+    await decir("4.- Nuevo Recibo de cobro.");
     setCursorPos({ x: 100, y: 560, visible: true }); // Botón Nuevo abajo
     await sleep(1200);
     await triggerClick();
@@ -280,15 +291,17 @@ function App() {
     setMostrarModalFormasPagoRecibo(true); // Se abre inmediatamente al entrar a 056
     await sleep(1000);
 
-    // 4.5. Seleccionar "DEPOSITO $" en el overlay (reciboformapagos.jpg) sobre 056
-    setCursorPos({ x: 160, y: 345, visible: true }); // Opción DEPOSITO $
+    // 4.5. Seleccionar "DEPOSITO $" en el overlay
+    await decir("5.- Seleccione la forma de pago (Depósito en tránsito).");
+    setCursorPos({ x: 160, y: 300, visible: true }); // Opción DEPOSITO $
     await sleep(1200);
     await triggerClick();
     setFormaPagoReciboSeleccionada('DEPOSITO $');
     setMostrarModalFormasPagoRecibo(false); // Se cierra el overlay y queda 056
     await sleep(800);
 
-    // 5. Seleccionar check de factura en reciboselfactura1.jpg (ahora sin overlay)
+    // 5. Seleccionar check de factura
+    await decir("6.- Seleccione la factura en el check.");
     setCursorPos({ x: 25, y: 190, visible: true }); // Check a la izquierda
     await sleep(1200);
     await triggerClick();
@@ -296,6 +309,7 @@ function App() {
     await sleep(800);
 
     // 5.5. Clic en botón "INCLUIR" arriba
+    await decir("7.- Pulse al botón incluir.");
     setCursorPos({ x: 220, y: 115, visible: true }); // Botón INCLUIR
     await sleep(1200);
     await triggerClick();
@@ -303,20 +317,22 @@ function App() {
     setMontoResta('43,59');
     await sleep(800);
 
-    // 6. Clic en barra azul para abono en reciboincluidas3.jpg
+    // 6. Clic en barra azul para abono
+    await decir("8.- Mantenga Pulsada la barra azul. Cambiar el monto (abono).");
     setCursorPos({ x: 160, y: 145, visible: true }); // Barra azul de factura
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_abono');
     await sleep(800);
 
-    // 7. Cambiar monto 43,59 a 40 en reciboabono4.jpg
+    // 7. Cambiar monto 43,59 a 40
     setCursorPos({ x: 230, y: 320, visible: true }); // Campo monto
     await sleep(1000);
     await triggerClick();
     setMontoAbono('40');
     await sleep(800);
     // Clic flecha arriba derecha para volver
+    await decir("9.- Regresar en la flecha.");
     setCursorPos({ x: 290, y: 99, visible: true });
     await sleep(1000);
     await triggerClick();
@@ -324,19 +340,22 @@ function App() {
     setMontoResta('40');
     await sleep(800);
 
-    // 8. Clic en símbolo + (plus) en la mitad
+    // 8. Clic en símbolo + (plus)
+    await decir("10.- Seleccione Simbolo (+).");
     setCursorPos({ x: 280, y: 300, visible: true }); // Símbolo plus central
     await sleep(1200);
     await triggerClick();
     setMostrarModalDeposito(true);
     await sleep(800);
 
-    // 9. Colocar monto 40 y referencia en recibodeposito5.jpg
+    // 9. Colocar monto 40 y referencia
+    await decir("11.- Validar monto.");
     setCursorPos({ x: 50, y: 300, visible: true }); // Campo monto
     await sleep(1000);
     await triggerClick();
     setMontoDeposito('40');
     await sleep(500);
+    await decir("12. Validar Referencia.");
     setCursorPos({ x: 50, y: 350, visible: true }); // Campo referencia
     await sleep(1000);
     await triggerClick();
@@ -344,6 +363,7 @@ function App() {
     await sleep(800);
 
     // 10. Clic OK
+    await decir("13.- Pulse ok.");
     setCursorPos({ x: 160, y: 400, visible: true }); // Botón OK
     await sleep(1000);
     await triggerClick();
@@ -352,7 +372,8 @@ function App() {
     setReferenciaDeposito('');
     await sleep(800);
 
-    // 11. Clic X arriba derecha para cerrar popup
+    // 11. Clic X arriba derecha
+    await decir("14.- Cerrar en la x.");
     setCursorPos({ x: 270, y: 215, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -360,14 +381,16 @@ function App() {
     setPantalla('recibo_pagado');
     await sleep(800);
 
-    // 12. Clic en botón FIN arriba en recibopagado6.jpg
+    // 12. Clic en botón FIN
+    await decir("15.- Finalizar recibo.");
     setCursorPos({ x: 230, y: 55, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_listo');
-    await sleep(1000);
+    await sleep(1500);
 
-    // Ocultar puntero
+    // Limpiar narración al finalizar
+    setNarracionTexto('');
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
@@ -2235,6 +2258,21 @@ function App() {
           <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
           <div className="w-3.5 h-3.5 border-2 border-gray-300 rotate-45 border-t-0 border-l-0"></div>
         </div>
+
+        {/* NARRATOR BUBBLE */}
+        {cursorPos.visible && narracionTexto && (
+          <div
+            className="absolute z-[110] bg-black/80 text-white p-3 rounded-lg text-[11px] font-bold text-center border border-blue-400 shadow-xl animate-bounce"
+            style={{
+              left: '50%',
+              bottom: '100px',
+              transform: 'translateX(-50%)',
+              maxWidth: '80%'
+            }}
+          >
+            {narracionTexto}
+          </div>
+        )}
 
         {/* GHOST MOUSE POINTER */}
         <div
