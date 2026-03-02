@@ -48,6 +48,7 @@ function App() {
 
   const runDemoCatalogo = async () => {
     // Inicia abajo oculto y lo muestra
+    await decir("1.- Click en Pedidos Catalogo");
     setCursorPos({ x: 160, y: 600, visible: true });
     await sleep(100);
 
@@ -58,57 +59,78 @@ function App() {
     setPantalla('pedidos_catalogo');
     await sleep(800);
 
-    // 2. Move to "Ver Detalles" on 118
+    // 2. Visualiza todos los pedidos que vienen del catalogo de clientes
+    await decir("2.- Visualiza todos los pedidos que vienen del Catalogo de Clientes.");
+    await sleep(2500);
+
+    // 3. Seleccione el pedido y Ver detalles
+    await decir("3.- Seleccione el pedido a visualizar y haga click en Ver detalles.");
     setCursorPos({ x: 230, y: 550, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('detalles_pedido');
     await sleep(800);
 
-    // 3. Move to "Crear Cotización" on 119
+    // 4. Visualice productos
+    await decir("4.- Visualice los productos seleccionados por el cliente.");
+    await sleep(2500);
+
+    // 5. Pulse Crear Cotizacion
+    await decir("5.- Pulse el boton Crear Cotizacion.");
     setCursorPos({ x: 160, y: 550, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('promociones_asociativas');
     await sleep(800);
 
-    // 4. In Promociones Asociativas, "Si" button on modal 107
+    // 6. Visualice descuentos
+    await decir("6.- Visualice los descuentos asociados a los productos escogidos. Esta pantalla muestra los descuentos, se los haya cumplido o no.");
+    await sleep(3500);
     setCursorPos({ x: 230, y: 355, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('finalizar_pedido');
     await sleep(800);
 
-    // 5. Mover al combo "Forma Pago" in 016
-    setCursorPos({ x: 180, y: 170, visible: true });
+    // 7. Seleccione el Nivel
+    await decir("7.- Seleccione el Nivel del Pedido,");
+    setCursorPos({ x: 200, y: 170, visible: true }); // Fila Nivel
     await sleep(1200);
     await triggerClick();
-    setMostrarFormaPagoCombo(true);
+    setMostrarComboNivel(true);
     await sleep(1500);
-    setMostrarFormaPagoCombo(false);
-    await sleep(500);
+    // Seleccionar MAYOREOD
+    setCursorPos({ x: 200, y: 220, visible: true }); // Posición en el combo nivel
+    await sleep(800);
+    await triggerClick();
+    setNivelSeleccionado('MAYOREOD');
+    setMostrarComboNivel(false);
+    await sleep(800);
 
-    // 6. Mover al símbolo "+" Observaciones
-    setCursorPos({ x: 290, y: 495, visible: true });
+    // 8. Visualice etiquetas de negociacion
+    await decir("8.- Visualice las Etiquetas de Negociacion Especial.");
+    setCursorPos({ x: 290, y: 495, visible: true }); // Botón "+"
     await sleep(1200);
     await triggerClick();
     setMostrarModalNegociacion(true);
-    await sleep(800);
-    // Mover a "X" close modal
+    await sleep(1500);
+    // Cerrar modal
     setCursorPos({ x: 270, y: 225, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalNegociacion(false);
-    await sleep(500);
+    await sleep(800);
 
-    // 7. Mover al botón "Fin"
+    // 9. Botón Fin
+    await decir("9.- Cierre en el boton Fin.");
     setCursorPos({ x: 280, y: 350, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalCierra1(true);
     await sleep(800);
 
-    // 8. Mover a "No" (modal 1)
+    // 10. Responda NO
+    await decir("10, Responda NO.");
     setCursorPos({ x: 80, y: 390, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -116,15 +138,19 @@ function App() {
     setMostrarModalCierra2(true);
     await sleep(800);
 
-    // 9. Mover a "Si" (modal 2)
+    // 11. Responda SI
+    await decir("11. Responda SI.");
     setCursorPos({ x: 240, y: 365, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalCierra2(false);
-    setPantalla('consulta_pedidos');
 
-    // Ocultar puntero
-    await sleep(1000);
+    // 12. Fin
+    await decir("12 Fin");
+    setPantalla('consulta_pedidos');
+    await sleep(1500);
+
+    setNarracionTexto("");
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
@@ -355,12 +381,12 @@ function App() {
     await triggerClick();
     setMontoDeposito('40');
     await sleep(500);
-    await decir("12. Validar Referencia.");
-    setCursorPos({ x: 50, y: 350, visible: true }); // Campo referencia
-    await sleep(1000);
-    await triggerClick();
-    setReferenciaDeposito('001212');
-    await sleep(800);
+    //await decir("12. Validar Referencia.");
+    //setCursorPos({ x: 50, y: 350, visible: true }); // Campo referencia
+    //await sleep(1000);
+    //await triggerClick();
+    //setReferenciaDeposito('001212');
+    //await sleep(800);
 
     // 10. Clic OK
     await decir("13.- Pulse ok.");
@@ -369,8 +395,8 @@ function App() {
     await triggerClick();
     setMontoDeposito('0');
     await sleep(800);
-    setReferenciaDeposito('');
-    await sleep(800);
+    //setReferenciaDeposito('');
+    //await sleep(800);
 
     // 11. Clic X arriba derecha
     await decir("14.- Cerrar en la x.");
@@ -843,6 +869,37 @@ function App() {
                 </div>
               </div>
               */}
+              <div className="flex items-center mb-2 border-b border-gray-400 pb-1 relative">
+                <span className="w-[85px] text-[11px] text-gray-700 font-sans shrink-0">Nivel:</span>
+                <div
+                  className="flex-1 flex justify-between items-center bg-transparent border-0 font-sans text-[12px] text-black cursor-pointer mr-9"
+                  onClick={() => setMostrarComboNivel(!mostrarComboNivel)}
+                  title="Pulse para elegir el nivel del pedido"
+                >
+                  <span className="truncate">{nivelSeleccionado}</span>
+                  <div className="w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-gray-600 border-r-[6px] border-r-transparent mr-1"></div>
+                </div>
+
+                {/* Combo Nivel Catalogo */}
+                {mostrarComboNivel && (
+                  <div className="absolute top-8 left-0 right-0 bg-white border border-gray-300 shadow-xl z-50">
+                    {['MAYOREOB', 'MAYOREOD'].map(nivel => (
+                      <div
+                        key={nivel}
+                        className="p-3 border-b border-gray-100 active:bg-blue-100 text-[12px] font-sans text-black"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNivelSeleccionado(nivel);
+                          setMostrarComboNivel(false);
+                        }}
+                      >
+                        {nivel}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center mb-2 border-b border-gray-400 pb-1 relative">
                 <span className="w-[85px] text-[11px] text-gray-700 font-sans shrink-0">Condición:</span>
                 <div className="flex-1 flex justify-between items-center text-gray-500 font-sans text-[12px] mr-9">
