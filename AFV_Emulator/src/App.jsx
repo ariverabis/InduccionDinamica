@@ -84,7 +84,7 @@ function App() {
     await sleep(800);
 
     // 6. Visualice descuentos
-    await decir("6.- Visualice los descuentos asociados a los productos escogidos. Esta pantalla muestra los descuentos, se los haya cumplido o no.");
+    await decir("6.- Visualice los descuentos asociados a los productos escogidos. Esta pantalla muestra los descuentos, los haya cumplido o no.");
     await sleep(3500);
     setCursorPos({ x: 230, y: 355, visible: true });
     await sleep(1200);
@@ -159,28 +159,35 @@ function App() {
     setCursorPos({ x: 160, y: 600, visible: true });
     await sleep(100);
 
-    // 1. Move to "GESTIÓN DE VENTAS" button in 073
+    // 1. Move to "GESTIÓN DE VENTAS" button and Client Selection
     setCursorPos({ x: 160, y: 300, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('clientes');
     await sleep(800);
 
-    // 2. 088 (Clientes) - Mover y hacer clic en el cliente seleccionado
+    // Step 1: selecciona al cliente
+    await decir("1.- Gestión de ventas");
     setCursorPos({ x: 160, y: 200, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('gestion_ventas');
     await sleep(800);
 
-    // 3. 028 (Gestión) - Mover a "NUEVO PEDIDO"
+    // Step 2: gestión de ventas
+    await decir("2 Selecciona al cliente");
+    await sleep(1500);
+
+    // Step 3: nuevo pedido
+    await decir("3.- Nuevo pedido");
     setCursorPos({ x: 160, y: 180, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('detalle_pedido_nuevo');
     await sleep(800);
 
-    // 4. 021 (Detalle Pedido) - Mover a "BUSCAR" abajo al centro
+    // Step 4: selecciona el botón buscar
+    await decir("4.- Selecciona el botón buscar");
     setCursorPos({ x: 160, y: 565, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -188,60 +195,61 @@ function App() {
     setGrupoSeleccionado('--Seleccione--');
     await sleep(800);
 
-    // 5. 034 (Productos) - Mover al combo "Grupo"
+    // Step 5: selecciona el criterio Buscar Grupo Todas.
+    await decir("5.- Selecciona el criterio Buscar Grupo Todas.");
     setCursorPos({ x: 200, y: 380, visible: true });
     await sleep(1200);
     await triggerClick();
-    // Abrir visualmente el combo
     setMostrarComboGrupo(true);
     await sleep(1000);
-    // Mover al item "Grupo Todas" dentro del combo desplegado
     setCursorPos({ x: 200, y: 450, visible: true });
     await sleep(800);
     await triggerClick();
-    // Simular selección de "Grupo Todas"
-    setGrupoSeleccionado('Grupo Todas');
+    setGrupoSeleccionado('Todas');
     setMostrarComboGrupo(false);
     await sleep(800);
 
-    // 6. 034 (Productos) - Mover al botón "Buscar" (abajo a la derecha)
-    setCursorPos({ x: 230, y: 540, visible: true });
+    // Step 6: selecciona los artículos
+    await decir("6.- Selecciona los artículos");
+    setCursorPos({ x: 230, y: 540, visible: true }); // Botón Buscar
     await sleep(1200);
     await triggerClick();
     setPantalla('resultados_busqueda');
     setCantidadProducto('1');
     await sleep(800);
 
-    // 7. 080 (Productos) - Mover al campo "Cant" y cambiar a 12
+    // Step 7: coloca la cantidad solicitada
+    await decir("7.- Coloca la cantidad solicitada");
     setCursorPos({ x: 220, y: 530, visible: true });
     await sleep(1200);
     await triggerClick();
     setCantidadProducto('12');
     await sleep(800);
 
-    // 8. 080 (Productos) - Mover al botón OK
+    // Step 8: pulsa ok
+    await decir("8.- pulsa ok");
     setCursorPos({ x: 280, y: 530, visible: true });
     await sleep(1000);
     await triggerClick();
-    // Navegar a detalle pedido con producto cargado
     setPantalla('detalle_pedido_con_producto');
     await sleep(800);
 
-    // 9. 021 (Detalle con producto) - Mover al botón FIN
-    setCursorPos({ x: 230, y: 115, visible: true });
+    // Step 9: devuélvete
+    await decir("9.- Devuélvete");
+    setCursorPos({ x: 230, y: 115, visible: true }); // Botón FIN
     await sleep(1200);
     await triggerClick();
     setPantalla('finalizar_pedido_gv');
     setNivelSeleccionado('MAYOREOD');
     await sleep(800);
 
-    // 10. 016 (Finalizar Pedido) - Mover al combo Nivel
+    // Step 10: selecciona nivel (lista de precios).
+    await decir("10.- Selecciona nivel (lista de precios).");
     setCursorPos({ x: 200, y: 200, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarComboNivel(true);
     await sleep(1000);
-    // Mover a MAYOREOB
     setCursorPos({ x: 200, y: 240, visible: true });
     await sleep(800);
     await triggerClick();
@@ -249,15 +257,26 @@ function App() {
     setMostrarComboNivel(false);
     await sleep(800);
 
-    // 11. Mover al botón FIN del finalizar pedido
-    setCursorPos({ x: 270, y: 430, visible: true });
+    // Step 11: valida escala de flete.
+    await decir("11.- Valida escala de flete.");
+    setCursorPos({ x: 160, y: 440, visible: true }); // Apuntar a escala de flete
+    await sleep(2000);
+
+    // Step 12: Visualice las etiquetas de negociacion especial.
+    await decir("12.- Visualice las etiquetas de negociacion especial.");
+    setCursorPos({ x: 270, y: 430, visible: true }); // No es FIN aún, es el área de abajo
+    await sleep(2000);
+
+    // Step 13: Cierre en el boton Fin.
+    await decir("13.- Cierre en el boton Fin.");
+    setCursorPos({ x: 270, y: 430, visible: true }); // Botón FIN (ajustado x:270, y:430)
     await sleep(1200);
     await triggerClick();
-    // Mostrar modal confirmación 1
     setModalCierraGV1(true);
     await sleep(800);
 
-    // 12. Mover a "No" en modal 1
+    // Step 14: Responda NO.
+    await decir("14.- Responda NO.");
     setCursorPos({ x: 110, y: 400, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -265,12 +284,20 @@ function App() {
     setModalCierraGV2(true);
     await sleep(800);
 
-    // 13. Mover a "Si" en modal 2
+    // Step 15: Responda SI.
+    await decir("15.- Responda SI.");
     setCursorPos({ x: 210, y: 380, visible: true });
     await sleep(1200);
     await triggerClick();
-    // Ocultar puntero
-    await sleep(1000);
+    setModalCierraGV2(false);
+
+    // Step 16: Fin
+    await decir("16.- Fin");
+    setPantalla('consulta_pedidos');
+    await sleep(2000);
+
+    // Limpiar narración y ocultar puntero
+    setNarracionTexto("");
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
@@ -1375,9 +1402,9 @@ function App() {
 
               <div className="flex items-center mb-6 relative">
                 <span className="w-[85px] text-[11px] text-gray-700 font-sans">Grupo:</span>
-                <select value={grupoSeleccionado} onChange={(e) => setGrupoSeleccionado(e.target.value)} className={`flex-1 bg-transparent border-b border-gray-400 font-sans text-[11px] px-1 outline-none appearance-none cursor-pointer ${grupoSeleccionado === 'Grupo Todas' ? 'text-black font-bold' : 'text-gray-700'}`}>
+                <select value={grupoSeleccionado} onChange={(e) => setGrupoSeleccionado(e.target.value)} className={`flex-1 bg-transparent border-b border-gray-400 font-sans text-[11px] px-1 outline-none appearance-none cursor-pointer ${grupoSeleccionado === 'Todas' ? 'text-black font-bold' : 'text-gray-700'}`}>
                   <option>--Seleccione--</option>
-                  <option>Grupo Todas</option>
+                  <option>Todas</option>
                 </select>
                 <div className="w-0 h-0 border-l-[4px] border-l-transparent border-t-[4px] border-t-gray-600 border-r-[4px] border-r-transparent ml-[-12px] pointer-events-none"></div>
 
@@ -1385,7 +1412,7 @@ function App() {
                 {mostrarComboGrupo && (
                   <div className="absolute left-[85px] top-5 bg-white border border-gray-400 shadow-lg z-50 w-[calc(100%-97px)] rounded-sm overflow-hidden">
                     <div className="px-2 py-2 text-[11px] text-gray-500 font-sans border-b border-gray-200 bg-gray-50">--Seleccione--</div>
-                    <div className="px-2 py-2 text-[11px] text-black font-bold font-sans bg-[#00b0f0] cursor-pointer">Grupo Todas</div>
+                    <div className="px-2 py-2 text-[11px] text-black font-bold font-sans bg-[#00b0f0] cursor-pointer">Todas</div>
                   </div>
                 )}
               </div>
