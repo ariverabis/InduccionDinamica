@@ -28,6 +28,15 @@ function App() {
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(false);
   const [narracionTexto, setNarracionTexto] = useState('');
 
+  // --- CATALOGO DIGITAL STATES ---
+  const [mostrarMenuCatalog, setMostrarMenuCatalog] = useState(false);
+  const [lastSyncDate, setLastSyncDate] = useState('02-03-2026 08:30 AM');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [busquedaCatalog, setBusquedaCatalog] = useState('');
+  const [cantidadMachete, setCantidadMachete] = useState('0');
+  const [errorMachete, setErrorMachete] = useState('');
+
   // --- GHOST MOUSE STATE ---
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100, visible: false });
   const [isClicking, setIsClicking] = useState(false);
@@ -417,7 +426,7 @@ function App() {
 
     // 10. Clic OK
     await decir("13.- Pulse ok.");
-    setCursorPos({ x: 160, y: 400, visible: true }); // Botón OK
+    setCursorPos({ x: 160, y: 330, visible: true }); // Botón OK
     await sleep(1000);
     await triggerClick();
     setMontoDeposito('0');
@@ -444,6 +453,77 @@ function App() {
 
     // Limpiar narración al finalizar
     setNarracionTexto('');
+    setCursorPos({ x: -100, y: -100, visible: false });
+  };
+
+  const runDemoDigitalCatalog = async () => {
+    // 1. Click en Catálogo Febeca (Escritorio)
+    await decir("a).- Menú.");
+    setPantalla('escritorio');
+    setCursorPos({ x: 160, y: 600, visible: true });
+    await sleep(200);
+    setCursorPos({ x: 280, y: 155, visible: true }); // Icono Febeca en el grid
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('catalog_main');
+    await sleep(800);
+
+    await decir("b).- Escriba Criterio.");
+    setCursorPos({ x: 160, y: 85, visible: true }); // Barra búsqueda
+    await sleep(1200);
+    await triggerClick();
+    setBusquedaCatalog('machete');
+    await sleep(1000);
+    setCursorPos({ x: 295, y: 85, visible: true }); // Lupa
+    await sleep(800);
+    await triggerClick();
+    setPantalla('catalog_search');
+    await sleep(800);
+
+    // 2. Click en el resultado (imagen lista machete)
+    await decir("c).- Seleccione el producto de la lista.");
+    setCursorPos({ x: 160, y: 300, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('catalog_lista_machete');
+    await sleep(1000);
+
+    // 3. Click en la lista para ver detalle
+    await decir("d).- Ver detalle del producto.");
+    setCursorPos({ x: 160, y: 300, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('catalog_detalle_producto');
+    await sleep(1000);
+
+    // 4. Click en Carrito / Solicitar Cotización
+    await decir("e).- Seleccione Solicitud de Cotización (Carrito).");
+    setCursorPos({ x: 260, y: 520, visible: true }); // Aproximado para el área del carrito
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('catalog_detalle_machete_cantidad');
+    setCantidadMachete('0');
+    setErrorMachete('');
+    await sleep(1000);
+
+    // 5. Ingresar cantidad (múltiplo de 3)
+    await decir("f).- Ingrese la cantidad (Debe ser múltiplo de 3).");
+    setCursorPos({ x: 160, y: 320, visible: true }); // Input de cantidad
+    await sleep(1200);
+    await triggerClick();
+    setCantidadMachete('6');
+    await sleep(1500);
+
+    // 6. Click en Aceptar
+    await decir("g).- Pulse Aceptar para añadir al carrito.");
+    setCursorPos({ x: 220, y: 400, visible: true }); // Botón Aceptar
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('catalog_main');
+    await sleep(1500);
+
+    setNarracionTexto("");
+    setBusquedaCatalog("");
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
@@ -505,9 +585,20 @@ function App() {
               </div>
 
               {/* ICONO CATALOGO FEBECA */}
-              <div title="Abrir Catálogo Digital" className="flex flex-col items-center opacity-70 cursor-pointer">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
+              <div
+                onClick={() => setPantalla('catalog_main')}
+                title="Abrir Catálogo Digital Febeca"
+                className="flex flex-col items-center cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1 relative">
                   <img src="logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-lg" />
+                  {/* Botón Run para el demo del catálogo */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); runDemoDigitalCatalog(); }}
+                    className="absolute -top-1 -right-1 bg-red-600 text-[8px] text-white font-bold p-1 rounded-full shadow-lg z-20"
+                  >
+                    Run
+                  </button>
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">Catálogo<br />Febeca</span>
               </div>
@@ -2122,10 +2213,12 @@ function App() {
                     <label className="text-[10px] text-gray-500 font-bold block mb-1">MONTO</label>
                     <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] font-bold py-1 outline-none" />
                   </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-bold block mb-1">REFERENCIA</label>
-                    <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero referencia bancaria" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
-                  </div>
+                  {!formaPagoReciboSeleccionada.includes('DEPOSITO') && (
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-bold block mb-1">REFERENCIA</label>
+                      <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero referencia bancaria" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
+                    </div>
+                  )}
                   <div className="flex justify-center pt-2">
                     <button onClick={() => { setMontoDeposito('0'); setReferenciaDeposito(''); setMostrarModalDeposito(false); }} className="bg-gray-200 text-black font-bold px-8 py-2 border border-gray-400 text-[12px] active:bg-gray-300 shadow-sm">OK</button>
                   </div>
@@ -2188,7 +2281,9 @@ function App() {
 
                 {/* Fecha Dep/Trans */}
                 <div className="flex items-center gap-1">
-                  <label className="text-[8px] font-bold text-gray-500 w-16 text-right leading-tight">Fecha Dep / Trans:</label>
+                  <label className="text-[8px] font-bold text-gray-500 w-16 text-right leading-tight">
+                    {formaPagoReciboSeleccionada.includes('DEPOSITO') ? 'Fecha Dep:' : 'Fecha Dep / Trans:'}
+                  </label>
                   <div className="w-6 bg-white border border-gray-400 px-1 text-[10px] text-center">X</div>
                   <div className="flex-1 bg-[#b0b0b0] border border-gray-400 h-6"></div>
                 </div>
@@ -2276,7 +2371,7 @@ function App() {
                   <div className="flex-1 text-center py-1">Valor USD</div>
                 </div>
                 <div className="flex bg-[#00b0f0] text-black font-bold text-[11px] font-sans items-center border-b border-gray-300">
-                  <div className="flex-[2] pl-2 py-2 border-r border-blue-400">TRANSFERENCIA USD</div>
+                  <div className="flex-[2] pl-2 py-2 border-r border-blue-400 uppercase">{formaPagoReciboSeleccionada.includes('DEPOSITO') ? formaPagoReciboSeleccionada : 'TRANSFERENCIA USD'}</div>
                   <div className="flex-1 text-center border-r border-blue-400">22558</div>
                   <div className="flex-1 pr-2 text-right">40,00</div>
                 </div>
@@ -2370,6 +2465,349 @@ function App() {
         >
           {isClicking && <div className="ghost-ripple" />}
         </div>
+        {/* PANTALLA: CATÁLOGO DIGITAL MAIN */}
+        {pantalla === 'catalog_main' && (
+          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
+            {/* Header azul Febeca */}
+            <div className="bg-[#00b0f0] p-3 flex items-center shadow-md z-20">
+              <button
+                onClick={() => setMostrarMenuCatalog(true)}
+                className="text-white text-2xl mr-4"
+              >
+                ≡
+              </button>
+              <div className="flex-1 flex items-center justify-center pr-6">
+                <span className="text-white font-bold text-lg italic tracking-widest">Febeca</span>
+              </div>
+              <button className="text-white text-xl">🔍</button>
+            </div>
+
+            {/* Content area */}
+            <div className="flex-1 overflow-y-auto bg-gray-100 p-2 space-y-3">
+              {/* Search bar faux */}
+              <div
+                className="bg-white p-2 rounded shadow-sm flex items-center cursor-pointer"
+                onClick={() => setPantalla('catalog_search')}
+              >
+                <input
+                  type="text"
+                  placeholder="Buscar"
+                  className="w-full text-sm outline-none bg-transparent pointer-events-none"
+                  value={busquedaCatalog}
+                  readOnly
+                />
+                <span className="text-gray-400">🔍</span>
+              </div>
+
+              {/* Banner / Welcome */}
+              <div className="bg-white p-3 rounded shadow-sm border-l-4 border-green-500">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-xl font-bold">T</div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold text-gray-800">¡Bienvenido!</p>
+                    <p className="text-[8px] text-gray-500 line-clamp-2">Para realizar su pago de manera rápida y segura...</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Marcas destacadas */}
+              <div className="bg-white p-2 rounded shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] font-bold text-gray-800 uppercase">Marcas Destacadas</span>
+                  <span className="text-[9px] text-[#00b0f0] font-bold">VER TODOS</span>
+                </div>
+                <div className="h-20 bg-gray-50 border border-gray-100 rounded flex items-center justify-center overflow-hidden">
+                  <img src="promocion_asociativa.jpg" alt="Marca" className="h-full w-full object-cover opacity-50" />
+                  <span className="absolute text-[12px] font-bold text-gray-400">EMTOP</span>
+                </div>
+              </div>
+
+              {/* Productos recientemente vistos */}
+              <div className="bg-white p-2 rounded shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-bold text-gray-800 uppercase">Recientemente Vistos</span>
+                  <span className="text-[9px] text-[#00b0f0] font-bold">VER TODOS</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="border border-gray-100 p-2 flex flex-col items-center">
+                    <div className="h-16 bg-gray-50 w-full flex items-center justify-center text-2xl">📦</div>
+                    <p className="text-[7px] text-center mt-1 font-bold text-gray-600 uppercase">CAVA ARCTIC 46L</p>
+                    <p className="text-[9px] font-bold mt-1 text-black">USD 118,61</p>
+                  </div>
+                  <div className="border border-gray-100 p-2 flex flex-col items-center">
+                    <div className="h-16 bg-gray-50 w-full flex items-center justify-center text-2xl">🛠️</div>
+                    <p className="text-[7px] text-center mt-1 font-bold text-gray-600 uppercase">LLAVE IMPACTO</p>
+                    <p className="text-[9px] font-bold mt-1 text-black">USD 381,83</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Menu Overlay */}
+            {mostrarMenuCatalog && (
+              <div className="absolute inset-0 z-[100] flex">
+                <div className="w-[80%] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
+                  <div className="bg-[#00b0f0] p-6 text-white flex items-center gap-3 shadow-lg">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                      <span className="text-[#00b0f0] font-bold italic">f</span>
+                    </div>
+                    <span className="font-bold text-xl italic tracking-widest">Febeca</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto py-2">
+                    <div className="px-4 py-2 text-[10px] font-bold text-[#00b0f0] uppercase tracking-wider">Solicitudes de Cotización</div>
+                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100">
+                      <span className="text-lg">🛒</span>
+                      <span className="text-sm font-semibold text-gray-700">Solicitud Abierta</span>
+                    </div>
+                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100 border-b border-gray-100">
+                      <span className="text-lg">📋</span>
+                      <span className="text-sm font-semibold text-gray-700">Solicitudes Cerradas</span>
+                    </div>
+
+                    <div className="px-4 py-2 mt-2 text-[10px] font-bold text-[#f7d117] uppercase tracking-wider">Mis Cotizaciones</div>
+                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100">
+                      <span className="text-lg">📄</span>
+                      <span className="text-sm font-semibold text-gray-700">Cotizaciones Abiertas</span>
+                    </div>
+                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100 border-b border-gray-100">
+                      <span className="text-lg">📦</span>
+                      <span className="text-sm font-semibold text-gray-700">Cotizaciones Cerradas</span>
+                    </div>
+
+                    <div className="px-4 py-2 mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Configuración</div>
+                    <div
+                      onClick={() => { setPantalla('catalog_cuenta'); setMostrarMenuCatalog(false); }}
+                      className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100 cursor-pointer"
+                    >
+                      <span className="text-lg">👤</span>
+                      <span className="text-sm font-semibold text-gray-700">Mi Cuenta</span>
+                    </div>
+                  </div>
+                  <div className="p-4 border-t border-gray-100 flex justify-end">
+                    <button onClick={() => setMostrarMenuCatalog(false)} className="text-[#00b0f0] font-bold text-sm">Cerrar</button>
+                  </div>
+                </div>
+                <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setMostrarMenuCatalog(false)}></div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PANTALLA: CATÁLOGO CUENTA */}
+        {pantalla === 'catalog_cuenta' && (
+          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
+            <div className="bg-[#00b0f0] p-3 flex items-center shadow-md">
+              <button onClick={() => setPantalla('catalog_main')} className="text-white text-2xl mr-4">←</button>
+              <div className="flex-1 flex items-center justify-center pr-10">
+                <span className="text-white font-bold text-lg italic tracking-widest">Febeca</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <div className="flex flex-col items-center py-6 bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-[#00b0f0] text-4xl mb-3 border-2 border-white shadow-inner">👤</div>
+                <p className="font-bold text-gray-800 text-lg">Alberto Gonzalez</p>
+                <p className="text-xs text-gray-400">agonzalez@febeca.com.ve</p>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="flex flex-col p-4 border-b border-gray-50">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Correo Registrado</span>
+                  <span className="text-sm text-gray-700">agonzalez@febeca.com.ve</span>
+                </div>
+                <div className="flex flex-col p-4 border-b border-gray-50 bg-blue-50/30">
+                  <span className="text-[10px] text-[#00b0f0] uppercase font-bold tracking-widest mb-1">Última Sincronización</span>
+                  <span className="text-sm text-gray-700 font-semibold">{lastSyncDate}</span>
+                </div>
+                <button
+                  onClick={() => setIsSyncing(true)}
+                  className="w-full text-left p-4 border-b border-gray-50 hover:bg-gray-50 flex justify-between items-center transition-colors active:bg-blue-50"
+                >
+                  <span className="text-sm font-bold text-gray-700">Iniciar sincronización manual</span>
+                  <span className="text-[#00b0f0] text-xl">↻</span>
+                </button>
+                <button className="w-full text-left p-4 hover:bg-red-50 text-red-500 font-bold text-sm transition-colors uppercase tracking-wider">
+                  Cerrar Sesión
+                </button>
+              </div>
+            </div>
+
+            {/* Sync Overlay */}
+            {isSyncing && (
+              <div className="absolute inset-0 bg-white z-[200] flex flex-col items-center justify-center p-10 text-center">
+                <div className="relative w-48 h-48 flex items-center justify-center">
+                  <svg className="absolute inset-0 w-full h-full -rotate-90">
+                    <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
+                    <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="502.6" strokeDashoffset={502.6 - (502.6 * syncProgress) / 100} className="text-[#00b0f0] transition-all duration-500" />
+                  </svg>
+                  <span className="text-5xl font-light text-gray-800">{syncProgress}%</span>
+                </div>
+                <p className="text-gray-400 text-sm font-sans mt-8 tracking-[0.3em] uppercase animate-pulse">Cargando Datos</p>
+                <button
+                  onClick={() => setIsSyncing(false)}
+                  className="mt-12 border-2 border-gray-200 px-8 py-2 rounded-full uppercase text-[10px] font-bold text-gray-400 hover:border-red-200 hover:text-red-400 transition-all active:scale-95"
+                >
+                  Detener Sincronización
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PANTALLA: CATÁLOGO BÚSQUEDA */}
+        {pantalla === 'catalog_search' && (
+          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
+            <div className="bg-[#00b0f0] p-1 flex flex-col shadow-lg z-20">
+              <div className="flex items-center p-2">
+                <button onClick={() => setPantalla('catalog_main')} className="text-white text-2xl mr-4">←</button>
+                <span className="text-white font-bold text-sm uppercase tracking-wider">Busqueda de Producto</span>
+                <span className="ml-auto text-xl text-white">⋮</span>
+              </div>
+              <div className="flex text-white text-[9px] font-bold uppercase tracking-tighter mt-1">
+                <div className="flex-1 text-center py-2 border-b-4 border-white">Productos</div>
+                <div className="flex-1 text-center py-2 opacity-60">Categorias</div>
+                <div className="flex-1 text-center py-2 opacity-60">Subcategorias</div>
+                <div className="flex-1 text-center py-2 opacity-60">Marcas</div>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-gray-50 flex flex-col p-3">
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg p-3 shadow-sm mb-4 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <input
+                  autoFocus
+                  type="text"
+                  value={busquedaCatalog}
+                  onChange={(e) => setBusquedaCatalog(e.target.value)}
+                  className="flex-1 outline-none text-sm font-sans font-medium"
+                  placeholder="Escriba Criterio"
+                />
+                {busquedaCatalog && <button onClick={() => setBusquedaCatalog('')} className="text-gray-300 ml-2 text-lg">✕</button>}
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-1 bg-white rounded-xl border border-gray-100 shadow-inner">
+                {busquedaCatalog.toLowerCase().includes('machete') ? (
+                  <div
+                    className="h-full w-full cursor-pointer"
+                    onClick={() => setPantalla('catalog_lista_machete')}
+                  >
+                    <img src="catalogolistamachete.jpg" alt="Lista Machete" className="w-full h-auto" />
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center p-10 opacity-30">
+                    <span className="text-6xl mb-4">🔍</span>
+                    <p className="text-sm font-bold">Sin resultados</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: CATALOGO LISTA MACHETE */}
+        {pantalla === 'catalog_lista_machete' && (
+          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
+            <div className="flex-1 overflow-y-auto">
+              <img
+                src="catalogolistamachete.jpg"
+                alt="Lista Machete Full"
+                className="w-full h-auto cursor-pointer"
+                onClick={() => setPantalla('catalog_detalle_producto')}
+              />
+            </div>
+            <div className="absolute top-2 left-2">
+              <button onClick={() => setPantalla('catalog_search')} className="bg-black/20 text-white p-2 rounded-full">←</button>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: CATALOGO DETALLE PRODUCTO */}
+        {pantalla === 'catalog_detalle_producto' && (
+          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
+            <div className="flex-1 overflow-y-auto relative">
+              <img
+                src="catalogodetalleproducto.jpg"
+                alt="Detalle Producto"
+                className="w-full h-auto"
+              />
+              {/* Botón Carrito / Solicitar Cotización */}
+              <div
+                className="absolute top-[80%] right-[10%] w-16 h-16 cursor-pointer"
+                onClick={() => {
+                  setPantalla('catalog_detalle_machete_cantidad');
+                  setCantidadMachete('0');
+                  setErrorMachete('');
+                }}
+              ></div>
+            </div>
+            <div className="absolute top-2 left-2">
+              <button onClick={() => setPantalla('catalog_lista_machete')} className="bg-black/20 text-white p-2 rounded-full">←</button>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: CATALOGO DETALLE MACHETE CANTIDAD */}
+        {pantalla === 'catalog_detalle_machete_cantidad' && (
+          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
+            <div className="flex-1 relative">
+              <img
+                src="catalogodetallemachetecantidad.jpg"
+                alt="Detalle Cantidad"
+                className="w-full h-auto"
+              />
+
+              {/* Overlay para entrada de cantidad */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 p-6">
+                <div className="bg-white rounded-xl p-6 shadow-2xl w-full max-w-[260px] flex flex-col gap-4">
+                  <h3 className="font-bold text-gray-800 text-center">Cantidad a Solicitar</h3>
+                  <p className="text-[10px] text-blue-500 text-center font-semibold uppercase tracking-wider">Múltiplos de 3 (Empaquedado)</p>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={cantidadMachete}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCantidadMachete(val);
+                        if (parseInt(val) % 3 !== 0) {
+                          setErrorMachete('La cantidad debe ser múltiplo de 3');
+                        } else {
+                          setErrorMachete('');
+                        }
+                      }}
+                      className={`w-full border-2 p-3 text-center text-xl font-bold rounded-lg outline-none transition-all ${errorMachete ? 'border-red-500 bg-red-50' : 'border-blue-400 focus:border-blue-600'}`}
+                    />
+                    {errorMachete && (
+                      <p className="text-[10px] text-red-500 mt-1 font-bold text-center">{errorMachete}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPantalla('catalog_detalle_producto')}
+                      className="flex-1 py-3 text-sm font-bold text-gray-500 bg-gray-100 rounded-lg active:bg-gray-200"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (parseInt(cantidadMachete) > 0 && parseInt(cantidadMachete) % 3 === 0) {
+                          alert('Producto añadido con éxito!');
+                          setPantalla('catalog_main');
+                        } else if (parseInt(cantidadMachete) % 3 !== 0) {
+                          setErrorMachete('Error: Debe ser múltiplo de 3');
+                        }
+                      }}
+                      className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 rounded-lg active:bg-blue-700 shadow-md"
+                    >
+                      Aceptar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
 
       </div>
     </div>
