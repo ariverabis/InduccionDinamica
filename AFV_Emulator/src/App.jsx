@@ -46,6 +46,11 @@ function App() {
   const [imgCalculadora, setImgCalculadora] = useState('calc1.png');
   const [mostrarSoporte, setMostrarSoporte] = useState(false);
 
+  // --- LOGIN AFV FEBECA ---
+  const [loginUsername, setloginUsername] = useState('');
+  const [loginPassword, setloginPassword] = useState('');
+  const [loginError, setloginError] = useState('');
+
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const triggerClick = async () => {
@@ -505,7 +510,7 @@ function App() {
 
     // 5. Seleccionar "TRANSFERENCIA BS" (Nueva opción)
     await decir("5.- Seleccione la forma de pago (Transferencia en Bs).");
-    setCursorPos({ x: 160, y: 350, visible: true }); // Ajustado para ser la nueva opción abajo
+    setCursorPos({ x: 160, y: 370, visible: true }); // Ajustado para ser la nueva opción abajo
     await sleep(1200);
     await triggerClick();
     setFormaPagoReciboSeleccionada('TRANSFERENCIA BS');
@@ -513,37 +518,14 @@ function App() {
     await sleep(800);
 
     // 6. Visualizar pantalla de recibo (con los montos reales: 84.46 USD / 45.718,20 VES)
-    await decir("6.- Visualice los montos en la pantalla (84.46 USD / 45.718,20 VES).");
-    setPantalla('recibo_incluidas');
-    await sleep(2500);
+    //await decir("6.- Visualice los montos en la pantalla (84.46 USD / 45.718,20 VES).");
+    //setPantalla('recibo_incluidas');
+    //await sleep(2500);
 
-    // 7. Representar calculadora (calc1.png) - Cálculo de tasa
-    await decir("7.- Calculamos la tasa de la factura (Monto Bs / Monto USD).");
-    setImgCalculadora('calc1.png');
-    setMostrarCalculadora(true);
-    await sleep(3500);
-    setMostrarCalculadora(false);
-    await sleep(500);
-
-    // 8. Ver Soporte de Pago (soportepago.jpeg)
-    await decir("8.- Ver soporte de pago enviado por el cliente.");
-    setMostrarSoporte(true);
-    await sleep(4000);
-    setMostrarSoporte(false);
-    await sleep(500);
-
-    // 9. Representar calculadora (calc3.png) - Saber monto en USD
-    await decir("9.- Convertimos el monto transferido en Bs a USD usando la tasa.");
-    setImgCalculadora('calc3.png');
-    setMostrarCalculadora(true);
-    await sleep(3500);
-    setMostrarCalculadora(false);
-    await sleep(500);
-
-    // 10. Seleccionar check de factura y pasar a abono
+    // 7. Seleccionar check de factura y pasar a abono
     setPantalla('recibo_sel_factura');
     await sleep(800);
-    await decir("10.- Seleccione la factura y pulse Incluir.");
+    await decir("6.- Seleccione la factura y pulse Incluir.");
     setCursorPos({ x: 25, y: 190, visible: true });
     await sleep(1000);
     await triggerClick();
@@ -555,8 +537,31 @@ function App() {
     setPantalla('recibo_incluidas');
     await sleep(800);
 
+    // 8. Representar calculadora (calc1.png) - Cálculo de tasa
+    await decir("7.- Calculamos la tasa de la factura (Monto Bs / Monto USD).");
+    setImgCalculadora('calc1.png');
+    setMostrarCalculadora(true);
+    await sleep(3500);
+    setMostrarCalculadora(false);
+    await sleep(500);
+
+    // 9. Ver Soporte de Pago (soportepago.jpeg)
+    await decir("8.- Ver soporte de pago enviado por el cliente.");
+    setMostrarSoporte(true);
+    await sleep(4000);
+    setMostrarSoporte(false);
+    await sleep(500);
+
+    // 10. Representar calculadora (calc3.png) - Saber monto en USD
+    await decir("9.- Convertimos el monto transferido en Bs a USD usando la tasa.");
+    setImgCalculadora('calc3.png');
+    setMostrarCalculadora(true);
+    await sleep(3500);
+    setMostrarCalculadora(false);
+    await sleep(500);
+
     // 11. Colocar el monto en USD calculado en el abono
-    await decir("11.- Coloque el monto equivalente en USD en el abono.");
+    await decir("10.- Coloque el monto equivalente en USD en el abono.");
     setCursorPos({ x: 160, y: 145, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -571,7 +576,7 @@ function App() {
     await sleep(800);
 
     // 12. Clic en símbolo + para pagos
-    await decir("12.- Seleccione Simbolo (+).");
+    await decir("11.- Seleccione Simbolo (+).");
     setCursorPos({ x: 280, y: 300, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -579,7 +584,7 @@ function App() {
     await sleep(800);
 
     // 13. Colocar monto, banco y referencia
-    await decir("13.- Coloque el Monto en Bs, Banco y Referencia del soporte.");
+    await decir("12.- Coloque el Monto en Bs, Banco y Referencia del soporte.");
     setCursorPos({ x: 50, y: 300, visible: true });
     await sleep(1000);
     await triggerClick();
@@ -587,7 +592,7 @@ function App() {
     await sleep(1000);
 
     // Cerrar y finalizar
-    await decir("14.- Finalizar recibo.");
+    await decir("13.- Finalizar recibo.");
     setCursorPos({ x: 160, y: 330, visible: true });
     await sleep(1000);
     await triggerClick();
@@ -709,7 +714,12 @@ function App() {
 
             <div className="relative z-10 grid grid-cols-4 gap-4 mt-6 px-2">
               {/* ICONO FEBECA */}
-              <div onClick={() => setPantalla('config')} title="Ingresar al módulo de AFV Febeca" className="flex flex-col items-center cursor-pointer">
+              <div onClick={() => {
+                setloginUsername('');
+                setloginPassword('');
+                setloginError('');
+                setPantalla('login_afv');
+              }} title="Ingresar al módulo de AFV Febeca" className="flex flex-col items-center cursor-pointer">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
                   <img src="logoafv.jpeg" alt="Febeca" className="w-full h-full object-contain rounded-lg" />
                 </div>
@@ -748,6 +758,63 @@ function App() {
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">Catálogo<br />Febeca</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA 1.5: LOGIN AFV FEBECA */}
+        {pantalla === 'login_afv' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col p-6 items-center justify-center relative">
+            <button
+              onClick={() => setPantalla('escritorio')}
+              className="absolute top-4 left-4 text-gray-500 font-bold"
+            >
+              ←
+            </button>
+            <div className="w-24 h-24 mb-6">
+              <img src="logoafv.jpeg" alt="AFV Logo" className="w-full h-full object-contain" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-6 font-sans">Login AFV Febeca</h2>
+
+            <div className="w-full space-y-4 font-sans">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Usuario</label>
+                <input
+                  type="text"
+                  value={loginUsername}
+                  onChange={(e) => setloginUsername(e.target.value)}
+                  className="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 px-2 text-sm bg-gray-50 rounded-t"
+                  placeholder="Ingrese el usuario"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">Contraseña</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setloginPassword(e.target.value)}
+                  className="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 px-2 text-sm bg-gray-50 rounded-t"
+                  placeholder="Ingrese la contraseña"
+                />
+              </div>
+
+              {loginError && (
+                <p className="text-red-500 text-[10px] font-bold text-center mt-2">{loginError}</p>
+              )}
+
+              <button
+                onClick={() => {
+                  if (loginUsername === 'admin' && loginPassword === '9999') {
+                    setloginError('');
+                    setPantalla('config');
+                  } else {
+                    setloginError('Usuario o contraseña incorrectos.');
+                  }
+                }}
+                className="w-full bg-[#00b0f0] text-white font-bold py-3 mt-4 rounded-lg shadow-md active:bg-[#0092c8] transition-colors"
+              >
+                INGRESAR
+              </button>
             </div>
           </div>
         )}
