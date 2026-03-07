@@ -41,6 +41,11 @@ function App() {
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100, visible: false });
   const [isClicking, setIsClicking] = useState(false);
 
+  // --- OVERLAYS BS ---
+  const [mostrarCalculadora, setMostrarCalculadora] = useState(false);
+  const [imgCalculadora, setImgCalculadora] = useState('calc1.png');
+  const [mostrarSoporte, setMostrarSoporte] = useState(false);
+
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const triggerClick = async () => {
@@ -456,6 +461,149 @@ function App() {
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
+  const runDemoCobranzaBs = async () => {
+    // 0. Inicio en 073 Ventas Menu
+    await decir("1.- Ingrese Módulo de cobranza.");
+    setCursorPos({ x: 290, y: 60, visible: true });
+    await sleep(1000);
+    await triggerClick();
+
+    // 1. Abrir submenú y seleccionar Cobranza
+    setMostrarSubmenu(true);
+    await sleep(800);
+    setCursorPos({ x: 200, y: 155, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setPantalla('recibo_cliente');
+    setMostrarSubmenu(false);
+    await sleep(800);
+
+    // 2. Seleccionar cliente
+    await decir("2.- Seleccione el cliente.");
+    setCursorPos({ x: 160, y: 180, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_menu');
+    await sleep(800);
+
+    // 3. Seleccionar botón "RECIBO"
+    await decir("3.- Seleccione Recibo de cobro.");
+    setCursorPos({ x: 160, y: 340, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_index');
+    await sleep(800);
+
+    // 4. Clic en botón "NUEVO"
+    await decir("4.- Nuevo Recibo de cobro.");
+    setCursorPos({ x: 100, y: 560, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_sel_factura');
+    setMostrarModalFormasPagoRecibo(true);
+    await sleep(1000);
+
+    // 5. Seleccionar "TRANSFERENCIA BS" (Nueva opción)
+    await decir("5.- Seleccione la forma de pago (Transferencia en Bs).");
+    setCursorPos({ x: 160, y: 350, visible: true }); // Ajustado para ser la nueva opción abajo
+    await sleep(1200);
+    await triggerClick();
+    setFormaPagoReciboSeleccionada('TRANSFERENCIA BS');
+    setMostrarModalFormasPagoRecibo(false);
+    await sleep(800);
+
+    // 6. Visualizar pantalla de recibo (con los montos reales: 84.46 USD / 45.718,20 VES)
+    await decir("6.- Visualice los montos en la pantalla (84.46 USD / 45.718,20 VES).");
+    setPantalla('recibo_incluidas');
+    await sleep(2500);
+
+    // 7. Representar calculadora (calc1.png) - Cálculo de tasa
+    await decir("7.- Calculamos la tasa de la factura (Monto Bs / Monto USD).");
+    setImgCalculadora('calc1.png');
+    setMostrarCalculadora(true);
+    await sleep(3500);
+    setMostrarCalculadora(false);
+    await sleep(500);
+
+    // 8. Ver Soporte de Pago (soportepago.jpeg)
+    await decir("8.- Ver soporte de pago enviado por el cliente.");
+    setMostrarSoporte(true);
+    await sleep(4000);
+    setMostrarSoporte(false);
+    await sleep(500);
+
+    // 9. Representar calculadora (calc3.png) - Saber monto en USD
+    await decir("9.- Convertimos el monto transferido en Bs a USD usando la tasa.");
+    setImgCalculadora('calc3.png');
+    setMostrarCalculadora(true);
+    await sleep(3500);
+    setMostrarCalculadora(false);
+    await sleep(500);
+
+    // 10. Seleccionar check de factura y pasar a abono
+    setPantalla('recibo_sel_factura');
+    await sleep(800);
+    await decir("10.- Seleccione la factura y pulse Incluir.");
+    setCursorPos({ x: 25, y: 190, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setFacturaSeleccionada(true);
+    await sleep(800);
+    setCursorPos({ x: 220, y: 115, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setPantalla('recibo_incluidas');
+    await sleep(800);
+
+    // 11. Colocar el monto en USD calculado en el abono
+    await decir("11.- Coloque el monto equivalente en USD en el abono.");
+    setCursorPos({ x: 160, y: 145, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_abono');
+    await sleep(800);
+    setMontoAbono('20,30'); // Monto de ejemplo de la calculadora calc3
+    await sleep(1000);
+    setCursorPos({ x: 290, y: 99, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setPantalla('recibo_incluidas');
+    await sleep(800);
+
+    // 12. Clic en símbolo + para pagos
+    await decir("12.- Seleccione Simbolo (+).");
+    setCursorPos({ x: 280, y: 300, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarModalDeposito(true);
+    await sleep(800);
+
+    // 13. Colocar monto, banco y referencia
+    await decir("13.- Coloque el Monto en Bs, Banco y Referencia del soporte.");
+    setCursorPos({ x: 50, y: 300, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setMontoDeposito('10.988,39'); // Monto calculado (20.30 USD * 541.30 VES/USD)
+    await sleep(1000);
+
+    // Cerrar y finalizar
+    await decir("14.- Finalizar recibo.");
+    setCursorPos({ x: 160, y: 330, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setMostrarModalDeposito(false);
+    setPantalla('recibo_pagado');
+    await sleep(1000);
+    setCursorPos({ x: 230, y: 55, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_listo');
+    await sleep(1500);
+
+    setNarracionTexto('');
+    setCursorPos({ x: -100, y: -100, visible: false });
+  };
+
   const runDemoDigitalCatalog = async () => {
     // 1. Click en Catálogo Febeca (Escritorio)
     await decir("a).- Menú.");
@@ -563,23 +711,21 @@ function App() {
               {/* ICONO FEBECA */}
               <div onClick={() => setPantalla('config')} title="Ingresar al módulo de AFV Febeca" className="flex flex-col items-center cursor-pointer">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="logo sds febeca.jpg" alt="Febeca" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logoafv.jpeg" alt="Febeca" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Febeca</span>
               </div>
 
-              {/* ICONO SILLACA */}
               <div title="Módulo AFV Sillaca (No disponible)" className="flex flex-col items-center opacity-70 cursor-help">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="logo sds sillaca.jpg" alt="Sillaca" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logoafv.jpeg" alt="Sillaca" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Sillaca</span>
               </div>
 
-              {/* ICONO BEVAL */}
               <div title="Módulo AFV Beval (No disponible)" className="flex flex-col items-center opacity-70 cursor-help">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="logo sds beval.jpg" alt="Beval" className="w-full h-full object-contain rounded-lg" />
+                  <img src="logoafv.jpeg" alt="Beval" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Beval</span>
               </div>
@@ -655,16 +801,7 @@ function App() {
                 <button onClick={() => setPantalla('config')} className="text-lg leading-none">←</button>
                 <span className="font-bold text-[11px] uppercase tracking-wider">073 - Ventas menu</span>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={runDemoCobranza}
-                  title="Ejecutar simulación de Cobranza (Ghost Mouse)"
-                  className="bg-red-600 text-white font-bold text-[10px] px-2 py-1 rounded shadow-sm hover:bg-red-500 active:bg-red-700 transition-colors"
-                >
-                  Run
-                </button>
-                <span onClick={() => setMostrarSubmenu(!mostrarSubmenu)} className="text-xl leading-none cursor-pointer">⋮</span>
-              </div>
+              <span onClick={() => setMostrarSubmenu(!mostrarSubmenu)} className="text-xl leading-none cursor-pointer">⋮</span>
             </div>
 
             {/* PANTALLA 4: EL SUBMENÚ FLOTANTE */}
@@ -685,6 +822,8 @@ function App() {
                 { label: 'CLIENTES', action: () => { } },
                 { label: 'CONSULTAS', action: () => { } },
                 { label: 'GESTIÓN DE VENTAS', action: () => setPantalla('clientes'), demoFn: runDemoGestionVentas },
+                { label: 'COBRANZA (USD)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
+                { label: 'COBRANZA (BS)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
                 { label: 'TRANSMITIR TRANSACCIONES', action: () => { }, disabled: true }
               ].map(opcion => (
                 <div key={opcion.label} className="flex gap-2 w-full">
@@ -2809,6 +2948,79 @@ function App() {
         )}
 
 
+        {/* OVERLAY CALCULADORA */}
+        {mostrarCalculadora && (
+          <div className="absolute inset-0 bg-black/60 z-[200] flex items-center justify-center animate-in fade-in zoom-in duration-300">
+            <div className="relative w-[90%] max-w-[320px] bg-[#f3f3f3] shadow-2xl rounded-lg overflow-hidden border border-gray-300 flex flex-col font-sans">
+              <div className="flex justify-between items-center p-2 text-xs text-gray-700 bg-white border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">Calculadora</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="cursor-pointer px-1 hover:bg-gray-200">-</span>
+                  <span className="cursor-pointer px-1 hover:bg-gray-200">□</span>
+                  <button onClick={() => setMostrarCalculadora(false)} className="px-2 hover:bg-red-500 hover:text-white transition-colors">✕</button>
+                </div>
+              </div>
+              <div className="px-4 pt-4 pb-2">
+                <div className="text-right text-gray-500 text-[13px] h-5 mb-1">
+                  {imgCalculadora === 'calc1.png' ? '45718.20 ÷ 84.46 =' : '10988.39 ÷ 541.30 ='}
+                </div>
+                <div className="text-right text-4xl font-semibold text-gray-900 mb-2 truncate tracking-tight">
+                  {imgCalculadora === 'calc1.png' ? '541.3' : '20.30'}
+                </div>
+              </div>
+              <div className="px-1 pb-1">
+                <div className="grid grid-cols-4 gap-[2px]">
+                  {/* Fila 1 */}
+                  {['%', 'CE', 'C', '⌫'].map(btn => (
+                    <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
+                  ))}
+                  {/* Fila 2 */}
+                  {['1/x', 'x²', '√x', '÷'].map(btn => (
+                    <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
+                  ))}
+                  {/* Fila 3 */}
+                  {['7', '8', '9', '×'].map(btn => (
+                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['×'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                  ))}
+                  {/* Fila 4 */}
+                  {['4', '5', '6', '-'].map(btn => (
+                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['-'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                  ))}
+                  {/* Fila 5 */}
+                  {['1', '2', '3', '+'].map(btn => (
+                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['+'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                  ))}
+                  {/* Fila 6 */}
+                  {['+/-', '0', '.', '='].map(btn => (
+                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['='].includes(btn) ? 'bg-[#0067c0] hover:bg-[#005a9e] text-white' : '+/-' === btn || '.' === btn ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* OVERLAY SOPORTE PAGO */}
+        {mostrarSoporte && (
+          <div className="absolute inset-0 bg-black/70 z-[200] flex items-center justify-center animate-in fade-in slide-in-from-bottom duration-500">
+            <div className="relative w-[92%] max-h-[85%] shadow-2xl rounded-lg overflow-hidden border-4 border-white/10 flex flex-col bg-white">
+              <div className="bg-gray-100 p-2 border-b flex justify-between items-center">
+                <span className="text-[11px] font-bold text-gray-700 uppercase">Soporte de Pago</span>
+                <button
+                  onClick={() => setMostrarSoporte(false)}
+                  className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto bg-gray-200">
+                <img src="soportepago.jpeg" alt="Soporte de Pago" className="w-full h-auto" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
