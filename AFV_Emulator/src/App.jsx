@@ -17,6 +17,18 @@ function App() {
   const [modalCierraGV1, setModalCierraGV1] = useState(false);
   const [modalCierraGV2, setModalCierraGV2] = useState(false);
 
+  // --- OBSERVACIONES PEDIDO (pantalla 016 +) ---
+  const [mostrarObservaciones, setMostrarObservaciones] = useState(false);
+  const [observacionTipo, setObservacionTipo] = useState('');
+  const [observacionTexto, setObservacionTexto] = useState('');
+
+  // --- CALCULADORA AFV (P1 / P2) ---
+  const [mostrarAfvCalc, setMostrarAfvCalc] = useState(false);
+  const [afvCalcPrecio, setAfvCalcPrecio] = useState('0,00');
+  const [afvCalcNombre, setAfvCalcNombre] = useState('P1');
+  const [afvDctoComercial, setAfvDctoComercial] = useState('');
+  const [afvDctoFP, setAfvDctoFP] = useState('');
+
   // --- COBRANZA STATES ---
   const [montoAbono, setMontoAbono] = useState('84,46');
   const [montoDeposito, setMontoDeposito] = useState('40');
@@ -53,6 +65,49 @@ function App() {
   const [loginUsername, setloginUsername] = useState('');
   const [loginPassword, setloginPassword] = useState('');
   const [loginError, setloginError] = useState('');
+
+  // --- BUSQUEDA PRODUCTOS ---
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [busquedaNombre, setBusquedaNombre] = useState('');
+  const [mostrarBuscaNombre, setMostrarBuscaNombre] = useState(false);
+  const [productoActivoIndex, setProductoActivoIndex] = useState(0);
+
+  const MOCK_PRODUCTOS = [
+    { cod: '2213021', old: 'CFLX-01', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm', p1: '15.500,00', p2: '12.800,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '500' },
+    { cod: '2213005', old: 'CFLX-02', desc: 'Canilla flexible malla acero 1/2 x 1/2 x 120', p1: '16.200,00', p2: '13.500,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '420' },
+    { cod: '2213001', old: 'CFLX-03', desc: 'Canilla flexible de lujo malla acero 1/2 x 1/2', p1: '18.000,00', p2: '15.000,00', inv: 'UND', emp: '12', cmin: '1', dscto: '5,00', exist: '150' },
+    { cod: '2213025', old: 'CFLX-04', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm', p1: '15.500,00', p2: '12.800,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '300' },
+    { cod: '2213010', old: 'CFLX-05', desc: 'Canilla flexible extra larga 1/2 x 1/2 x 200 c', p1: '20.000,00', p2: '17.500,00', inv: 'UND', emp: '6', cmin: '1', dscto: '0,00', exist: '80' },
+    { cod: '2213007', old: 'CFLX-06', desc: 'Canilla flexible plastificada 1/2 x 40 cm v', p1: '12.500,00', p2: '10.000,00', inv: 'UND', emp: '24', cmin: '1', dscto: '2,00', exist: '600' },
+    { cod: '2213030', old: 'CFLX-07', desc: 'Canilla flexible plastificada 1/2 x 1/2 x 120', p1: '14.000,00', p2: '11.500,00', inv: 'UND', emp: '24', cmin: '1', dscto: '0,00', exist: '450' },
+    { cod: '2213027', old: 'CFLX-08', desc: 'Canilla flexible para recomeciantes platean', p1: '16.000,00', p2: '13.000,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '200' },
+    { cod: '2213043', old: 'CFLX-09', desc: 'Canilla universal var. tamaños 800-1100', p1: '25.000,00', p2: '21.000,00', inv: 'UND', emp: '6', cmin: '1', dscto: '10,00', exist: '90' },
+    { cod: '5544332', old: 'PINT-AV', desc: 'Pintura caucho blanco interior 1 galon', p1: '35.000,00', p2: '30.000,00', inv: 'GLN', emp: '4', cmin: '1', dscto: '0,00', exist: '120' },
+    { cod: '5544335', old: 'PINT-EX', desc: 'Pintura esmalte azul exterior 1 galon', p1: '45.000,00', p2: '38.000,00', inv: 'GLN', emp: '4', cmin: '1', dscto: '5,00', exist: '85' },
+    { cod: '1122334', old: 'CE-01', desc: 'Cemento gris Portland tipo 1 saco 42.5kg', p1: '8.500,00', p2: '7.800,00', inv: 'SCO', emp: '1', cmin: '10', dscto: '0,00', exist: '1000' },
+    { cod: '9988776', old: 'CAB-12', desc: 'Cable cobre THHN 12 AWG rojo 100m', p1: '85.000,00', p2: '75.000,00', inv: 'ROL', emp: '1', cmin: '1', dscto: '12,00', exist: '40' },
+    { cod: '9988777', old: 'CAB-10', desc: 'Cable cobre THHN 10 AWG negro 100m', p1: '115.000,00', p2: '100.000,00', inv: 'ROL', emp: '1', cmin: '1', dscto: '15,00', exist: '30' },
+    { cod: '4455667', old: 'TU-PVC1', desc: 'Tubo PVC aguas blancas 1/2 x 3m', p1: '4.500,00', p2: '3.800,00', inv: 'UND', emp: '20', cmin: '5', dscto: '0,00', exist: '800' }
+  ];
+
+  // Filter by code only (main input)
+  // Filter by name or old code (B. button modal)
+  const productosFiltrados = (() => {
+    if (busquedaNombre.trim()) {
+      // Name / old code search mode
+      return MOCK_PRODUCTOS.filter(p =>
+        p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
+        p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
+      );
+    }
+    if (busquedaProducto.trim()) {
+      // Code-only search mode
+      return MOCK_PRODUCTOS.filter(p => p.cod.includes(busquedaProducto.trim()));
+    }
+    return MOCK_PRODUCTOS;
+  })();
+
+  const productoActivo = productosFiltrados[productoActivoIndex] || productosFiltrados[0] || null;
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -320,6 +375,219 @@ function App() {
 
     // Limpiar narración y ocultar puntero
     setNarracionTexto("");
+    setCursorPos({ x: -100, y: -100, visible: false });
+  };
+
+  const runDemo080 = async () => {
+    // Go to the 080 screen
+    setCursorPos({ x: 160, y: 600, visible: true });
+    await sleep(300);
+    setPantalla('resultados_busqueda');
+    setBusquedaProducto('');
+    setBusquedaNombre('');
+    setProductoActivoIndex(0);
+    setMostrarBuscaNombre(false);
+    setMostrarAfvCalc(false);
+    await sleep(600);
+
+    // 1. Buscar por código numérico
+    await decir("1.- Buscar por código numérico: escribe el código en el campo Buscar.");
+    setCursorPos({ x: 160, y: 195, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    // Type code character by character style
+    setBusquedaProducto('2');
+    await sleep(300);
+    setBusquedaProducto('22');
+    await sleep(300);
+    setBusquedaProducto('221');
+    await sleep(300);
+    setBusquedaProducto('2213');
+    await sleep(800);
+    setProductoActivoIndex(0);
+    await sleep(1000);
+
+    // 2. Select a product by clicking it
+    await decir("2.- Haz clic en un artículo de la lista para seleccionarlo.");
+    setCursorPos({ x: 160, y: 290, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setProductoActivoIndex(1);
+    await sleep(1000);
+
+    // 3. Clear code search
+    setBusquedaProducto('');
+    setProductoActivoIndex(0);
+    await sleep(500);
+
+    // 4. Click B. button to open name search
+    await decir("3.- Presiona B. para buscar por nombre o código antiguo.");
+    setCursorPos({ x: 242, y: 195, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarBuscaNombre(true);
+    await sleep(800);
+
+    // 5. Type in name search
+    await decir("4.- Escribir el nombre del artículo o su código antiguo.");
+    setCursorPos({ x: 160, y: 270, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setBusquedaNombre('c');
+    await sleep(200);
+    setBusquedaNombre('ca');
+    await sleep(200);
+    setBusquedaNombre('can');
+    await sleep(200);
+    setBusquedaNombre('cani');
+    await sleep(200);
+    setBusquedaNombre('canil');
+    await sleep(200);
+    setBusquedaNombre('canill');
+    await sleep(200);
+    setBusquedaNombre('canilla');
+    await sleep(1200);
+
+    // 6. Click Buscar to apply filter and close modal
+    await decir("5.- Pulsa Buscar para aplicar el filtro por nombre.");
+    setCursorPos({ x: 220, y: 400, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setBusquedaProducto('');
+    setProductoActivoIndex(0);
+    setMostrarBuscaNombre(false);
+    await sleep(900);
+
+    // 7. Select first filtered result
+    await decir("6.- Selecciona un artículo del resultado de la búsqueda por nombre.");
+    setCursorPos({ x: 160, y: 295, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setProductoActivoIndex(0);
+    await sleep(1000);
+
+    // 8. Click on P1 to open AFV calculator
+    await decir("7.- Haz clic en P1 para abrir la Calculadora AFV (084 - Consulta de Precios).");
+    setCursorPos({ x: 145, y: 470, visible: true });
+    await sleep(1400);
+    await triggerClick();
+    const pAct = MOCK_PRODUCTOS.filter(p =>
+      p.desc.toLowerCase().includes('canilla')
+    )[0];
+    if (pAct) {
+      setAfvCalcPrecio(pAct.p1);
+      setAfvCalcNombre('P1');
+      setAfvDctoComercial('0');
+      setAfvDctoFP('');
+      setMostrarAfvCalc(true);
+    }
+    await sleep(1000);
+
+    // 9. Select a promotion discount
+    await decir("8.- Selecciona un Descuento de Promoción en la calculadora.");
+    setCursorPos({ x: 200, y: 370, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setAfvDctoComercial('5');
+    await sleep(1200);
+
+    // 10. Select payment method
+    await decir("9.- Selecciona la Forma de Pago: TRANSFERENCIA INTERNACIONAL USD 15%.");
+    setCursorPos({ x: 200, y: 420, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setAfvDctoFP('TRANSFERENCIA INTERNACIONAL USD 15%');
+    await sleep(1500);
+
+    // 11. Close calculator P1
+    await decir("10.- Cierra la calculadora.");
+    setCursorPos({ x: 285, y: 42, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarAfvCalc(false);
+    await sleep(800);
+
+    // 12. Click on P2 to open calculator with P2 price
+    await decir("11.- Haz clic en P2 para consultar el precio alternativo (P2).");
+    setCursorPos({ x: 235, y: 470, visible: true });
+    await sleep(1400);
+    await triggerClick();
+    if (pAct) {
+      setAfvCalcPrecio(pAct.p2);
+      setAfvCalcNombre('P2');
+      setAfvDctoComercial('0');
+      setAfvDctoFP('');
+      setMostrarAfvCalc(true);
+    }
+    await sleep(1800);
+
+    // 13. Close P2 calculator
+    await decir("12.- Cierra la calculadora P2.");
+    setCursorPos({ x: 285, y: 42, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarAfvCalc(false);
+    await sleep(800);
+
+    // 14. Set quantity and press OK
+    await decir("13.- Establece la cantidad del artículo y pulsa OK para agregar al pedido.");
+    setCursorPos({ x: 240, y: 497, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setCantidadProducto('6');
+    await sleep(1000);
+    setCursorPos({ x: 275, y: 497, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setPantalla('detalle_pedido_con_producto');
+    await sleep(1500);
+
+    await decir("14.- Artículo agregado al pedido. Ahora finalizamos el pedido.");
+    await sleep(1500);
+
+    // Step 15: Navigate to finalizar pedido
+    await decir("15.- Ir a la pantalla 016 - Finalizar Pedido.");
+    setCursorPos({ x: 160, y: 430, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('finalizar_pedido_gv');
+    await sleep(1000);
+
+    // Step 16: Scroll down and click FIN button
+    await decir("16.- Pulsa el botón FIN para generar el cierre del pedido.");
+    setCursorPos({ x: 235, y: 370, visible: true });
+    await sleep(1400);
+    await triggerClick();
+    setModalCierraGV1(true);
+    await sleep(1000);
+
+    // Step 17: Answer NO to "¿Desea añadir más artículos?"
+    await decir("17.- El sistema pregunta: ¿Desea añadir más artículos? Responda NO.");
+    setCursorPos({ x: 105, y: 420, visible: true });
+    await sleep(1500);
+    await triggerClick();
+    setModalCierraGV1(false);
+    setModalCierraGV2(true);
+    await sleep(1000);
+
+    // Step 18: Answer SI to "¿Desea guardar y cerrar?"
+    await decir("18.- El sistema pregunta: ¿Desea guardar los Datos y Cerrar el Pedido? Responda SI.");
+    setCursorPos({ x: 215, y: 420, visible: true });
+    await sleep(1500);
+    await triggerClick();
+    setModalCierraGV2(false);
+    await sleep(600);
+
+    // Step 19: Show consulta_pedidos
+    await decir("19.- Pedido cerrado correctamente. Se muestra la pantalla 023 - Consulta de Pedidos.");
+    setPantalla('consulta_pedidos');
+    await sleep(2500);
+
+    // Reset
+    setNarracionTexto('');
+    setBusquedaProducto('');
+    setBusquedaNombre('');
+    setProductoActivoIndex(0);
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
@@ -939,6 +1207,7 @@ function App() {
                 { label: 'CLIENTES', action: () => { } },
                 { label: 'CONSULTAS', action: () => { } },
                 { label: 'GESTIÓN DE VENTAS', action: () => setPantalla('clientes'), demoFn: runDemoGestionVentas },
+                { label: 'BÚSQL 080 - PRODUCTOS', action: () => setPantalla('resultados_busqueda'), demoFn: runDemo080 },
                 { label: 'COBRANZA (USD)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
                 { label: 'COBRANZA (BS)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
                 { label: 'TRANSMITIR TRANSACCIONES', action: () => { }, disabled: true }
@@ -1791,77 +2060,206 @@ function App() {
 
             <div className="flex-1 flex flex-col bg-gray-100 overflow-hidden">
               {/* Descripción del producto activo */}
-              <div className="bg-white px-2 py-1.5 border-b border-gray-300">
-                <p className="text-[10px] text-gray-700 font-sans leading-tight">Canilla flexible malla acero 1/2 x</p>
-                <p className="text-[9px] text-gray-500 font-sans leading-tight">automáticos Bticino - 7110502</p>
+              <div className="bg-white px-2 py-1.5 border-b border-gray-300 min-h-[40px]">
+                {productoActivo && (
+                  <>
+                    <p className="text-[10px] text-gray-700 font-sans leading-tight font-bold">{productoActivo.desc}</p>
+                    <p className="text-[9px] text-gray-500 font-sans leading-tight">Cod. Ant: {productoActivo.old}</p>
+                  </>
+                )}
               </div>
 
-              {/* Barra de búsqueda */}
+              {/* Barra de búsqueda por código */}
               <div className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 border-b border-gray-300">
                 <span className="text-[11px] font-bold text-gray-700 font-sans shrink-0">Buscar</span>
-                <input type="text" value="2213020" readOnly className="flex-1 bg-[#b3b3b3] text-black font-sans text-[12px] px-2 py-0.5 text-center outline-none border border-gray-400" />
-                <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0">B.</button>
+                <input
+                  type="text"
+                  value={busquedaProducto}
+                  inputMode="numeric"
+                  onChange={(e) => {
+                    setBusquedaProducto(e.target.value);
+                    setBusquedaNombre('');
+                    setProductoActivoIndex(0);
+                  }}
+                  className="flex-1 bg-white text-black font-sans text-[12px] px-2 py-0.5 outline-none border border-gray-400 focus:border-blue-500"
+                  placeholder="Código numérico"
+                />
+                <button
+                  onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(true); }}
+                  className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0 active:bg-gray-400"
+                >B.</button>
                 <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0">SUB</button>
                 <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0">PROM.</button>
               </div>
 
+              {/* Indicador de búsqueda activa por nombre */}
+              {busquedaNombre.trim() && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 border-b border-blue-200">
+                  <span className="text-[9px] text-blue-700 font-sans font-bold truncate flex-1">Filtrando por: "{busquedaNombre}"</span>
+                  <button onClick={() => { setBusquedaNombre(''); setProductoActivoIndex(0); }} className="text-[9px] text-red-600 font-bold">✕</button>
+                </div>
+              )}
+
               {/* Lista de productos con checkboxes */}
               <div className="flex-1 overflow-y-auto">
-                {[
-                  { cod: '2213021', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm' },
-                  { cod: '2213005', desc: 'Canilla flexible malla acero 1/2 x 1/2 x 120' },
-                  { cod: '2213001', desc: 'Canilla flexible de lujo malla acero 1/2 x 1/2' },
-                  { cod: '2213025', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm' },
-                  { cod: '2213010', desc: 'Canilla flexible extra larga 1/2 x 1/2 x 200 c' },
-                  { cod: '2213007', desc: 'Canilla flexible plastificada 1/2 x 40 cm v' },
-                  { cod: '2213030', desc: 'Canilla flexible plastificada 1/2 x 1/2 x 120' },
-                  { cod: '2213027', desc: 'Canilla flexible para recomeciantes platean' },
-                  { cod: '2213043', desc: 'Canilla universal var. tamaños  800-1100' }
-                ].map((prod, i) => (
-                  <div key={i} className={`flex items-center px-2 py-1.5 border-b border-gray-200 ${i === 0 ? 'bg-[#00b0f0]' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <input type="checkbox" className="mr-2 w-3.5 h-3.5 accent-blue-500 shrink-0" defaultChecked={i === 0} />
-                    <span className="text-[10px] font-bold text-black font-sans mr-2 shrink-0">{prod.cod}</span>
-                    <span className="text-[9px] text-gray-700 font-sans leading-tight truncate">{prod.desc}</span>
+                {productosFiltrados.map((prod, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setProductoActivoIndex(i)}
+                    className={`flex items-center px-2 py-1 border-b border-gray-200 cursor-pointer ${i === productoActivoIndex ? 'bg-[#00b0f0] text-black' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                  >
+                    <input type="checkbox" className="mr-2 w-3.5 h-3.5 accent-blue-500 shrink-0 pointer-events-none" checked={i === productoActivoIndex} readOnly />
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-bold font-sans shrink-0">{prod.cod}</span>
+                        <span className="text-[8px] font-sans text-gray-500 shrink-0 bg-gray-200 px-0.5 rounded">{prod.old}</span>
+                      </div>
+                      <span className="text-[9px] font-sans leading-tight truncate text-gray-700">{prod.desc}</span>
+                    </div>
                   </div>
                 ))}
+                {productosFiltrados.length === 0 && (
+                  <div className="p-4 text-center text-xs text-gray-500 font-bold">No se encontraron productos</div>
+                )}
               </div>
 
               {/* Detalle del artículo seleccionado */}
               <div className="bg-gray-200 border-t border-gray-400 px-2 py-1.5 flex flex-col gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">P1:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right">15.500,00</div>
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">P2:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right">12.800,00</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">U.Inv:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">UND</div>
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Emp.C:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">12</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">C.Min:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">1</div>
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Dscto.:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">0,00</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">Exist.:</span>
-                  <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">450</div>
-                  <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Cant:</span>
-                  <input type="text" value={cantidadProducto} onChange={(e) => setCantidadProducto(e.target.value)} className={`bg-white border border-gray-400 text-black font-sans text-[10px] px-1 py-0.5 w-12 text-center outline-none ${cantidadProducto === '12' ? 'font-bold bg-yellow-100' : ''}`} />
-                  <button onClick={() => setPantalla('detalle_pedido_con_producto')} className="bg-[#4CAF50] text-white font-bold font-sans text-[10px] px-3 py-0.5 border border-[#388E3C] shadow-sm active:bg-[#388E3C] ml-1">OK</button>
-                </div>
-              </div>
-
-              {/* Botón volver */}
-              <div className="p-1.5 flex justify-end border-t border-gray-300 bg-gray-100">
-                <button onClick={() => setPantalla('productos_busqueda')} title="Volver a búsqueda de productos" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
-                  ←
-                </button>
+                {productoActivo ? (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">P1:</span>
+                      <div
+                        className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right font-bold cursor-pointer hover:bg-[#0092c8] hover:text-white"
+                        onClick={() => { setAfvCalcPrecio(productoActivo.p1); setAfvCalcNombre('P1'); setAfvDctoComercial(productoActivo.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
+                        title="Abrir calculadora AFV con P1"
+                      >{productoActivo.p1}</div>
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">P2:</span>
+                      <div
+                        className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right font-bold cursor-pointer hover:bg-[#0092c8] hover:text-white"
+                        onClick={() => { setAfvCalcPrecio(productoActivo.p2); setAfvCalcNombre('P2'); setAfvDctoComercial(productoActivo.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
+                        title="Abrir calculadora AFV con P2"
+                      >{productoActivo.p2}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">U.Inv:</span>
+                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.inv}</div>
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Emp.C:</span>
+                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.emp}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">C.Min:</span>
+                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.cmin}</div>
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Dscto.:</span>
+                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.dscto}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">Exist.:</span>
+                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right text-blue-800 font-bold">{productoActivo.exist}</div>
+                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Cant:</span>
+                      <input type="text" value={cantidadProducto} onChange={(e) => setCantidadProducto(e.target.value)} className={`bg-white border border-gray-400 text-black font-sans text-[10px] px-1 py-0.5 w-12 text-center outline-none ${cantidadProducto === '12' ? 'font-bold bg-yellow-100' : ''}`} />
+                      <button onClick={() => setPantalla('detalle_pedido_con_producto')} className="bg-[#4CAF50] text-white font-bold font-sans text-[10px] px-3 py-0.5 border border-[#388E3C] shadow-sm active:bg-[#388E3C] ml-1">OK</button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center text-[10px] text-gray-500 py-3">Seleccione un producto</div>
+                )}
               </div>
             </div>
+
+            {/* Botón volver */}
+            <div className="p-1.5 flex justify-end border-t border-gray-300 bg-gray-100">
+              <button onClick={() => setPantalla('productos_busqueda')} title="Volver a búsqueda de productos" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
+                ←
+              </button>
+            </div>
+
+            {/* Modal: Buscar por Nombre o Código Antiguo (botón B.) */}
+            {mostrarBuscaNombre && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="w-[280px] bg-white shadow-2xl flex flex-col overflow-hidden border border-gray-400">
+                  {/* Header */}
+                  <div className="bg-[#00b0f0] px-2 py-1.5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                        <span className="text-[7px] font-black text-gray-800 italic">f</span>
+                      </div>
+                      <span className="text-[12px] font-bold text-black font-sans">080 - Buscar por Nombre</span>
+                    </div>
+                    <button onClick={() => setMostrarBuscaNombre(false)} className="text-black font-bold text-lg leading-none">×</button>
+                  </div>
+
+                  <div className="p-3 flex flex-col gap-3">
+                    <div>
+                      <label className="text-[9px] text-gray-500 font-bold block mb-1 uppercase">Nombre del artículo o Código antiguo</label>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={busquedaNombre}
+                        onChange={(e) => setBusquedaNombre(e.target.value)}
+                        className="w-full border-b-2 border-[#00b0f0] text-[13px] font-sans px-1 py-1 outline-none bg-transparent text-black"
+                        placeholder="Ej: canilla flexible o CFLX-01"
+                      />
+                    </div>
+
+                    {/* Preview de resultados */}
+                    <div className="border border-gray-300 max-h-[120px] overflow-y-auto">
+                      {(busquedaNombre.trim()
+                        ? MOCK_PRODUCTOS.filter(p =>
+                          p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
+                          p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
+                        )
+                        : []
+                      ).map((prod, i) => (
+                        <div
+                          key={i}
+                          onClick={() => {
+                            setBusquedaNombre(busquedaNombre);
+                            setBusquedaProducto('');
+                            setProductoActivoIndex(
+                              MOCK_PRODUCTOS.filter(p =>
+                                p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
+                                p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
+                              ).indexOf(prod)
+                            );
+                            setMostrarBuscaNombre(false);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+                        >
+                          <span className="text-[9px] font-bold text-gray-800 shrink-0">{prod.cod}</span>
+                          <span className="text-[8px] bg-gray-200 px-0.5 rounded shrink-0">{prod.old}</span>
+                          <span className="text-[8px] text-gray-600 truncate">{prod.desc}</span>
+                        </div>
+                      ))}
+                      {busquedaNombre.trim() && MOCK_PRODUCTOS.filter(p =>
+                        p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
+                        p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
+                      ).length === 0 && (
+                          <div className="p-3 text-center text-[10px] text-gray-500">Sin resultados</div>
+                        )}
+                      {!busquedaNombre.trim() && (
+                        <div className="p-3 text-center text-[9px] text-gray-400">Escriba para buscar...</div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(false); }}
+                        className="bg-gray-200 text-gray-700 font-bold px-4 py-1.5 border border-gray-400 text-[11px] active:bg-gray-300"
+                      >Limpiar</button>
+                      <button
+                        onClick={() => {
+                          setBusquedaProducto('');
+                          setProductoActivoIndex(0);
+                          setMostrarBuscaNombre(false);
+                        }}
+                        className="bg-[#00b0f0] text-black font-bold px-4 py-1.5 border border-[#0092c8] text-[11px] active:bg-[#0092c8]"
+                      >Buscar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2029,9 +2427,68 @@ function App() {
 
               <div className="flex items-center">
                 <span className="text-[11px] font-bold text-gray-700 font-sans">Observaciones:</span>
-                <div className="flex-1"></div>
-                <button className="w-6 h-6 bg-[#e6e6e6] border border-gray-400 text-black font-bold text-[14px] leading-none flex items-center justify-center">+</button>
+                {observacionTipo ? (
+                  <span className="flex-1 text-[10px] font-bold text-blue-700 font-sans ml-2 truncate">{observacionTipo}</span>
+                ) : (
+                  <div className="flex-1"></div>
+                )}
+                <button onClick={() => setMostrarObservaciones(true)} className="w-6 h-6 bg-[#e6e6e6] border border-gray-400 text-black font-bold text-[14px] leading-none flex items-center justify-center">+</button>
               </div>
+
+              {/* Modal Observaciones */}
+              {mostrarObservaciones && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg shadow-2xl w-[280px] overflow-hidden border border-gray-300">
+                    {/* Header */}
+                    <div className="bg-[#00b0f0] px-3 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                          <span className="text-[7px] font-bold text-gray-800">f</span>
+                        </div>
+                        <span className="text-[12px] font-bold text-black font-sans">016 - Toma de Observación</span>
+                      </div>
+                      <button onClick={() => setMostrarObservaciones(false)} className="text-black font-bold text-lg leading-none">×</button>
+                    </div>
+                    <div className="p-4 flex flex-col gap-3">
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1">TIPO DE OBSERVACIÓN</label>
+                        <select
+                          value={observacionTipo}
+                          onChange={(e) => setObservacionTipo(e.target.value)}
+                          className="w-full border border-gray-400 text-[12px] font-bold px-2 py-1.5 outline-none bg-white text-black"
+                        >
+                          <option value="">-- Seleccione --</option>
+                          <option value="Negociación Especial">Negociación Especial</option>
+                          <option value="Pedido Urgente">Pedido Urgente</option>
+                          <option value="Entrega Programada">Entrega Programada</option>
+                          <option value="Descuento Aprobado">Descuento Aprobado</option>
+                          <option value="Crédito Ampliado">Crédito Ampliado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1">OBSERVACIÓN</label>
+                        <textarea
+                          value={observacionTexto}
+                          onChange={(e) => setObservacionTexto(e.target.value)}
+                          rows={3}
+                          placeholder="Escriba la observación aquí..."
+                          className="w-full border border-gray-400 text-[11px] px-2 py-1 outline-none resize-none font-sans"
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end pt-1">
+                        <button
+                          onClick={() => { setObservacionTipo(''); setObservacionTexto(''); setMostrarObservaciones(false); }}
+                          className="bg-gray-200 text-gray-700 font-bold px-4 py-1.5 border border-gray-400 text-[11px] active:bg-gray-300"
+                        >Limpiar</button>
+                        <button
+                          onClick={() => setMostrarObservaciones(false)}
+                          className="bg-[#00b0f0] text-black font-bold px-4 py-1.5 border border-[#0092c8] text-[11px] active:bg-[#0092c8]"
+                        >Aceptar</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Confirmación 1 - ¿Desea añadir más artículos? */}
@@ -3100,6 +3557,173 @@ function App() {
         )}
 
 
+
+        {/* OVERLAY CALCULADORA AFV (084 - Consulta de Precios) */}
+        {mostrarAfvCalc && (() => {
+          // Parse price: "15.500,00" -> 15500.00
+          const precioBase = parseFloat(afvCalcPrecio.replace(/\./g, '').replace(',', '.')) || 0;
+          const dctoPromoNum = parseFloat(afvDctoComercial) || 0;
+          // Payment method discount percentages
+          const fpDescuentos = {
+            '': 0,
+            'DEPOSITO USD 13%': 13,
+            'DEPOSITO EN TRANSITO USD 13%': 13,
+            'TRANSFERENCIA VES 0%': 0,
+            'TRANSFERENCIA INTERNACIONAL USD 15%': 15,
+          };
+          const dctoFPNum = fpDescuentos[afvDctoFP] || 0;
+          const precioSinIVA = precioBase * (1 - dctoPromoNum / 100) * (1 - dctoFPNum / 100);
+          const precioConIVA = precioSinIVA * 1.16;
+          const fmt = (n) => n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return (
+            <div className="absolute inset-0 bg-black/50 z-[300] flex items-center justify-center">
+              <div className="w-[300px] bg-[#f0f0f0] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-400">
+
+                {/* Header — blue bar */}
+                <div className="bg-[#00b0f0] px-2 py-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center border border-gray-300">
+                      <span className="text-[9px] font-black text-gray-800 italic">f</span>
+                    </div>
+                    <span className="text-[13px] font-bold text-black font-sans">084 - Consulta de Precios</span>
+                  </div>
+                  <button
+                    onClick={() => setMostrarAfvCalc(false)}
+                    className="w-7 h-7 bg-gray-300 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm border border-gray-400 shadow-sm active:bg-gray-400"
+                  >◁</button>
+                </div>
+
+                {/* Top section: table + tipo precio */}
+                <div className="flex bg-white border-b border-gray-300">
+                  {/* Días / Descuento table */}
+                  <div className="flex-1 border-r border-gray-300">
+                    <div className="flex bg-[#595959] text-white text-[10px] font-bold">
+                      <div className="flex-1 text-center py-1 border-r border-gray-500">Días</div>
+                      <div className="flex-1 text-center py-1">Descuento</div>
+                    </div>
+                    {/* Row 1 — normal (not highlighted) */}
+                    <div className="flex text-[11px] font-sans border-b border-gray-200">
+                      <div className="flex-1 text-center py-1 border-r border-gray-200 text-gray-700">0,00</div>
+                      <div className="flex-1 text-center py-1 text-gray-700">{fmt(dctoPromoNum)}</div>
+                    </div>
+                    {/* Row 2 — highlighted blue (active) */}
+                    <div className="flex text-[11px] font-bold bg-[#00b0f0]">
+                      <div className="flex-1 text-center py-1 border-r border-[#0092c8]">30,00</div>
+                      <div className="flex-1 text-center py-1">{fmt(dctoFPNum)}</div>
+                    </div>
+                    {/* Empty rows to fill space */}
+                    <div className="h-16 bg-white"></div>
+                  </div>
+
+                  {/* Tipo Precio + back arrow */}
+                  <div className="w-[110px] flex flex-col items-start justify-start p-2 gap-2">
+                    <span className="text-[10px] text-gray-600 font-sans">Tipo Precio:</span>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input type="radio" name="tipoPrecio" defaultChecked className="accent-[#00b0f0]" />
+                      <span className="text-[11px] font-sans text-black">{afvCalcNombre === 'P1' ? 'Normal' : 'Unitario'}</span>
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input type="radio" name="tipoPrecio" className="accent-[#00b0f0]" />
+                      <span className="text-[11px] font-sans text-black">{afvCalcNombre === 'P1' ? 'Unitario' : 'Normal'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Price fields section */}
+                <div className="flex flex-col bg-[#f0f0f0] px-2 py-1 gap-0.5">
+
+                  {/* Precio del Artículo */}
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Precio del Artículo:</span>
+                    <div className="flex-1 bg-[#b3b3b3] text-black text-[12px] font-bold px-2 py-0.5 text-right">{afvCalcPrecio}</div>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">USD</span>
+                  </div>
+
+                  {/* Dscto. Empaque */}
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Empaque:</span>
+                    <div className="flex-1 bg-[#b3b3b3] text-black text-[12px] font-bold px-2 py-0.5 text-right">0,00</div>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+                  </div>
+
+                  {/* Dscto. Autorizado */}
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Autorizado:</span>
+                    <div className="flex-1 bg-[#b3b3b3] text-gray-500 text-[12px] px-2 py-0.5 text-right">0</div>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+                  </div>
+
+                  {/* Dscto. Promoción (dropdown) */}
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Promoción:</span>
+                    <select
+                      value={afvDctoComercial}
+                      onChange={(e) => setAfvDctoComercial(e.target.value)}
+                      className="flex-1 bg-white border border-gray-400 text-[11px] font-bold px-1 py-0.5 outline-none text-black appearance-none"
+                    >
+                      <option value="0">0,00</option>
+                      <option value="1">1,00</option>
+                      <option value="2">2,00</option>
+                      <option value="3">3,00</option>
+                      <option value="4">4,00</option>
+                      <option value="5">5,00</option>
+                      <option value="7">7,00</option>
+                      <option value="10">10,00</option>
+                      <option value="12">12,00</option>
+                      <option value="15">15,00</option>
+                    </select>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+                  </div>
+
+                  {/* Otro Dscto. */}
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Otro Dscto.</span>
+                    <div className="flex-1 border-b border-gray-400 h-4"></div>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+                  </div>
+
+                  {/* Forma Pago */}
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Forma Pago:</span>
+                    <select
+                      value={afvDctoFP}
+                      onChange={(e) => setAfvDctoFP(e.target.value)}
+                      className="flex-1 bg-white border border-gray-400 text-[9px] font-bold px-1 py-0.5 outline-none text-black"
+                    >
+                      <option value="">SELECCIONE FORMA DE PAGO</option>
+                      <option value="DEPOSITO USD 13%">DEPOSITO USD 13%</option>
+                      <option value="DEPOSITO EN TRANSITO USD 13%">DEPOSITO EN TRANSITO USD 13%</option>
+                      <option value="TRANSFERENCIA VES 0%">TRANSFERENCIA VES 0%</option>
+                      <option value="TRANSFERENCIA INTERNACIONAL USD 15%">TRANSFERENCIA INTERNACIONAL USD 15%</option>
+                    </select>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+                  </div>
+
+                  {/* Precio sin IVA */}
+                  <div className="flex items-center gap-1 py-1.5 border-b border-gray-300 mt-1">
+                    <span className="text-[11px] text-gray-800 font-bold font-sans w-[110px] shrink-0">Precio sin IVA:</span>
+                    <div className="flex-1 bg-[#b3b3b3] text-black text-[13px] font-bold px-2 py-0.5 text-right">{fmt(precioSinIVA)}</div>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right font-bold">USD</span>
+                  </div>
+
+                  {/* Precio con IVA */}
+                  <div className="flex items-center gap-1 py-1.5">
+                    <span className="text-[11px] text-gray-800 font-bold font-sans w-[110px] shrink-0">Precio con IVA:</span>
+                    <div className="flex-1 bg-[#b3b3b3] text-black text-[13px] font-bold px-2 py-0.5 text-right">{fmt(precioConIVA)}</div>
+                    <span className="text-[10px] text-gray-600 ml-1 w-8 text-right font-bold">USD</span>
+                  </div>
+                </div>
+
+                {/* Footer note */}
+                <div className="bg-gray-200 px-2 py-1 text-center">
+                  <span className="text-[8px] text-gray-500 font-sans">Esta calculadora no modifica el pedido en curso</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* OVERLAY CALCULADORA (cobranza) */}
         {/* OVERLAY CALCULADORA */}
         {mostrarCalculadora && (
           <div className="absolute inset-0 bg-black/60 z-[200] flex items-center justify-center animate-in fade-in zoom-in duration-300">
