@@ -21,6 +21,9 @@ function App() {
   const [montoAbono, setMontoAbono] = useState('43,59');
   const [montoDeposito, setMontoDeposito] = useState('40');
   const [referenciaDeposito, setReferenciaDeposito] = useState('');
+  const [bancoDeposito, setBancoDeposito] = useState('');
+  const [fechaDeposito, setFechaDeposito] = useState('');
+  const [mostrarComboBanco, setMostrarComboBanco] = useState(false);
   const [mostrarModalDeposito, setMostrarModalDeposito] = useState(false);
   const [montoResta, setMontoResta] = useState('43,59');
   const [mostrarModalFormasPagoRecibo, setMostrarModalFormasPagoRecibo] = useState(false);
@@ -552,9 +555,9 @@ function App() {
     setMostrarSoporte(false);
     await sleep(500);
 
-    // 10. Representar calculadora (calc3.png) - Saber monto en USD
+    // 10. Representar calculadora (calcnew.png) - Saber monto en USD
     await decir("9.- Convertimos el monto transferido en Bs a USD usando la tasa.");
-    setImgCalculadora('calc3.png');
+    setImgCalculadora('calcnew.png');
     setMostrarCalculadora(true);
     await sleep(3500);
     setMostrarCalculadora(false);
@@ -567,7 +570,9 @@ function App() {
     await triggerClick();
     setPantalla('recibo_abono');
     await sleep(800);
-    setMontoAbono('20,30'); // Monto de ejemplo de la calculadora calc3
+    setCursorPos({ x: 160, y: 320, visible: true });
+    await sleep(1200);
+    setMontoAbono('43,39'); // Monto de ejemplo de la calculadora calc3
     await sleep(1000);
     setCursorPos({ x: 290, y: 99, visible: true });
     await sleep(1000);
@@ -584,19 +589,60 @@ function App() {
     await sleep(800);
 
     // 13. Colocar monto, banco y referencia
-    await decir("12.- Coloque el Monto en Bs, Banco y Referencia del soporte.");
-    setCursorPos({ x: 50, y: 300, visible: true });
+    await decir("12.- Llenamos los datos del depósito o transferencia.");
+
+    // Monto
+    setCursorPos({ x: 50, y: 290, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setMontoDeposito('23.490,11'); // Monto calculado (20.30 USD * 541.30 VES/USD)
+    await sleep(800);
+
+    // Referencia
+    setCursorPos({ x: 50, y: 360, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setReferenciaDeposito('14495478');
+    await sleep(800);
+
+    // Banco
+    setCursorPos({ x: 160, y: 400, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setMostrarComboBanco(true);
+    await sleep(600);
+    setCursorPos({ x: 160, y: 510, visible: true }); // Click en Banco de Venezuela
+    await sleep(800);
+    await triggerClick();
+    setBancoDeposito('Banco de Venezuela');
+    setMostrarComboBanco(false);
+    await sleep(800);
+
+    // Fecha
+    setCursorPos({ x: 50, y: 510, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setFechaDeposito('2025-10-24'); // Ejemplo fecha del soporte
+    await sleep(800);
+
+    // Pulsar OK para limpiar
+    await decir("13.- Pulse OK para añadir pago (se limpian los campos).");
+    setCursorPos({ x: 160, y: 520, visible: true });
     await sleep(1000);
     await triggerClick();
-    setMontoDeposito('10.988,39'); // Monto calculado (20.30 USD * 541.30 VES/USD)
+    setMontoDeposito('');
+    setReferenciaDeposito('');
+    setBancoDeposito('');
+    setFechaDeposito('');
     await sleep(1000);
 
-    // Cerrar y finalizar
-    await decir("13.- Finalizar recibo.");
-    setCursorPos({ x: 160, y: 330, visible: true });
+    // Cerrar y finalizar con la X
+    await decir("14.- Cierre la ventana de pago con la X.");
+    setCursorPos({ x: 280, y: 190, visible: true }); // Posición de la X
     await sleep(1000);
     await triggerClick();
     setMostrarModalDeposito(false);
+
     setPantalla('recibo_pagado');
     await sleep(1000);
     setCursorPos({ x: 230, y: 55, visible: true });
@@ -2414,7 +2460,7 @@ function App() {
                   <h3 className="text-[13px] font-bold text-gray-800">PAGO</h3>
                   <button onClick={() => setMostrarModalDeposito(false)} className="w-6 h-6 bg-red-500 hover:bg-red-600 flex items-center justify-center rounded-full text-white font-bold border border-white shadow-sm active:scale-95 transition-transform">X</button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 relative">
                   <div>
                     <label className="text-[10px] text-gray-500 font-bold block mb-1">MONTO</label>
                     <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] font-bold py-1 outline-none" />
@@ -2425,8 +2471,43 @@ function App() {
                       <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero referencia bancaria" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
                     </div>
                   )}
+                  {/* Nuevos campos: Banco y Fecha */}
+                  <div className="relative">
+                    <label className="text-[10px] text-gray-500 font-bold block mb-1">BANCO</label>
+                    <div
+                      className="w-full border-b border-gray-400 text-[14px] py-1 cursor-pointer flex justify-between"
+                      onClick={() => setMostrarComboBanco(!mostrarComboBanco)}
+                    >
+                      <span className={bancoDeposito ? "text-black font-bold" : "text-gray-400"}>{bancoDeposito || "Seleccione el banco"}</span>
+                      <span className="text-gray-500 text-xs">▼</span>
+                    </div>
+                    {mostrarComboBanco && (
+                      <div className="absolute top-12 left-0 w-full bg-white border border-gray-300 shadow-lg z-[60] flex flex-col max-h-32 overflow-y-auto">
+                        {['Banco Banesco', 'Banco Mercantil', 'Banco Provincial', 'Banco de Venezuela', 'Banco Exterior'].map(b => (
+                          <div
+                            key={b}
+                            className="p-2 text-[12px] hover:bg-blue-100 cursor-pointer border-b border-gray-100 last:border-0 font-bold"
+                            onClick={() => { setBancoDeposito(b); setMostrarComboBanco(false); }}
+                          >
+                            {b}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-bold block mb-1">FECHA</label>
+                    <input type="date" value={fechaDeposito} onChange={(e) => setFechaDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] py-1 outline-none font-bold" />
+                  </div>
+
                   <div className="flex justify-center pt-2">
-                    <button onClick={() => { setMontoDeposito('0'); setReferenciaDeposito(''); setMostrarModalDeposito(false); }} className="bg-gray-200 text-black font-bold px-8 py-2 border border-gray-400 text-[12px] active:bg-gray-300 shadow-sm">OK</button>
+                    <button onClick={() => {
+                      setMontoDeposito('');
+                      setReferenciaDeposito('');
+                      setBancoDeposito('');
+                      setFechaDeposito('');
+                      // El OK solo blanquea, el modal se cierra con la X
+                    }} className="bg-gray-200 text-black font-bold px-8 py-2 border border-gray-400 text-[12px] active:bg-gray-300 shadow-sm">OK</button>
                   </div>
                 </div>
               </div>
@@ -3018,54 +3099,66 @@ function App() {
         {/* OVERLAY CALCULADORA */}
         {mostrarCalculadora && (
           <div className="absolute inset-0 bg-black/60 z-[200] flex items-center justify-center animate-in fade-in zoom-in duration-300">
-            <div className="relative w-[90%] max-w-[320px] bg-[#f3f3f3] shadow-2xl rounded-lg overflow-hidden border border-gray-300 flex flex-col font-sans">
-              <div className="flex justify-between items-center p-2 text-xs text-gray-700 bg-white border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold">Calculadora</span>
+            {imgCalculadora === 'calcnew.png' || imgCalculadora === 'calc3.png' ? (
+              <div className="relative w-[90%] max-w-[300px] shadow-2xl rounded-xl overflow-hidden border-2 border-white/20">
+                <img src={imgCalculadora} alt="Calculadora" className="w-full h-auto" />
+                <button
+                  onClick={() => setMostrarCalculadora(false)}
+                  className="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full flex items-center justify-center font-bold text-sm border border-white/30 backdrop-blur-sm"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="relative w-[90%] max-w-[320px] bg-[#f3f3f3] shadow-2xl rounded-lg overflow-hidden border border-gray-300 flex flex-col font-sans">
+                <div className="flex justify-between items-center p-2 text-xs text-gray-700 bg-white border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">Calculadora</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="cursor-pointer px-1 hover:bg-gray-200">-</span>
+                    <span className="cursor-pointer px-1 hover:bg-gray-200">□</span>
+                    <button onClick={() => setMostrarCalculadora(false)} className="px-2 hover:bg-red-500 hover:text-white transition-colors">✕</button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <span className="cursor-pointer px-1 hover:bg-gray-200">-</span>
-                  <span className="cursor-pointer px-1 hover:bg-gray-200">□</span>
-                  <button onClick={() => setMostrarCalculadora(false)} className="px-2 hover:bg-red-500 hover:text-white transition-colors">✕</button>
+                <div className="px-4 pt-4 pb-2">
+                  <div className="text-right text-gray-500 text-[13px] h-5 mb-1">
+                    {imgCalculadora === 'calc1.png' ? '45718.20 ÷ 84.46 =' : '10988.39 ÷ 541.30 ='}
+                  </div>
+                  <div className="text-right text-4xl font-semibold text-gray-900 mb-2 truncate tracking-tight">
+                    {imgCalculadora === 'calc1.png' ? '541.3' : '20.30'}
+                  </div>
+                </div>
+                <div className="px-1 pb-1">
+                  <div className="grid grid-cols-4 gap-[2px]">
+                    {/* Fila 1 */}
+                    {['%', 'CE', 'C', '⌫'].map(btn => (
+                      <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
+                    ))}
+                    {/* Fila 2 */}
+                    {['1/x', 'x²', '√x', '÷'].map(btn => (
+                      <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
+                    ))}
+                    {/* Fila 3 */}
+                    {['7', '8', '9', '×'].map(btn => (
+                      <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['×'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                    ))}
+                    {/* Fila 4 */}
+                    {['4', '5', '6', '-'].map(btn => (
+                      <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['-'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                    ))}
+                    {/* Fila 5 */}
+                    {['1', '2', '3', '+'].map(btn => (
+                      <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['+'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                    ))}
+                    {/* Fila 6 */}
+                    {['+/-', '0', '.', '='].map(btn => (
+                      <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['='].includes(btn) ? 'bg-[#0067c0] hover:bg-[#005a9e] text-white' : '+/-' === btn || '.' === btn ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="px-4 pt-4 pb-2">
-                <div className="text-right text-gray-500 text-[13px] h-5 mb-1">
-                  {imgCalculadora === 'calc1.png' ? '45718.20 ÷ 84.46 =' : '10988.39 ÷ 541.30 ='}
-                </div>
-                <div className="text-right text-4xl font-semibold text-gray-900 mb-2 truncate tracking-tight">
-                  {imgCalculadora === 'calc1.png' ? '541.3' : '20.30'}
-                </div>
-              </div>
-              <div className="px-1 pb-1">
-                <div className="grid grid-cols-4 gap-[2px]">
-                  {/* Fila 1 */}
-                  {['%', 'CE', 'C', '⌫'].map(btn => (
-                    <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
-                  ))}
-                  {/* Fila 2 */}
-                  {['1/x', 'x²', '√x', '÷'].map(btn => (
-                    <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
-                  ))}
-                  {/* Fila 3 */}
-                  {['7', '8', '9', '×'].map(btn => (
-                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['×'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
-                  ))}
-                  {/* Fila 4 */}
-                  {['4', '5', '6', '-'].map(btn => (
-                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['-'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
-                  ))}
-                  {/* Fila 5 */}
-                  {['1', '2', '3', '+'].map(btn => (
-                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['+'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
-                  ))}
-                  {/* Fila 6 */}
-                  {['+/-', '0', '.', '='].map(btn => (
-                    <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['='].includes(btn) ? 'bg-[#0067c0] hover:bg-[#005a9e] text-white' : '+/-' === btn || '.' === btn ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
