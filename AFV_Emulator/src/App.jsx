@@ -18,14 +18,14 @@ function App() {
   const [modalCierraGV2, setModalCierraGV2] = useState(false);
 
   // --- COBRANZA STATES ---
-  const [montoAbono, setMontoAbono] = useState('43,59');
+  const [montoAbono, setMontoAbono] = useState('84,46');
   const [montoDeposito, setMontoDeposito] = useState('40');
   const [referenciaDeposito, setReferenciaDeposito] = useState('');
   const [bancoDeposito, setBancoDeposito] = useState('');
   const [fechaDeposito, setFechaDeposito] = useState('');
   const [mostrarComboBanco, setMostrarComboBanco] = useState(false);
   const [mostrarModalDeposito, setMostrarModalDeposito] = useState(false);
-  const [montoResta, setMontoResta] = useState('43,59');
+  const [montoResta, setMontoResta] = useState('84,46');
   const [mostrarModalFormasPagoRecibo, setMostrarModalFormasPagoRecibo] = useState(false);
   const [formaPagoReciboSeleccionada, setFormaPagoReciboSeleccionada] = useState('PAGO GENERICO');
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(false);
@@ -572,6 +572,10 @@ function App() {
     await sleep(800);
     setCursorPos({ x: 160, y: 320, visible: true });
     await sleep(1200);
+    setMontoAbono('84,46'); // Monto de ejemplo de la calculadora calc3
+    await sleep(1000);
+    setCursorPos({ x: 160, y: 320, visible: true });
+    await sleep(1200);
     setMontoAbono('43,39'); // Monto de ejemplo de la calculadora calc3
     await sleep(1000);
     setCursorPos({ x: 290, y: 99, visible: true });
@@ -611,7 +615,7 @@ function App() {
     await triggerClick();
     setMostrarComboBanco(true);
     await sleep(600);
-    setCursorPos({ x: 160, y: 510, visible: true }); // Click en Banco de Venezuela
+    setCursorPos({ x: 160, y: 530, visible: true }); // Click en Banco de Venezuela
     await sleep(800);
     await triggerClick();
     setBancoDeposito('Banco de Venezuela');
@@ -619,7 +623,7 @@ function App() {
     await sleep(800);
 
     // Fecha
-    setCursorPos({ x: 50, y: 510, visible: true });
+    setCursorPos({ x: 50, y: 500, visible: true });
     await sleep(800);
     await triggerClick();
     setFechaDeposito('2025-10-24'); // Ejemplo fecha del soporte
@@ -638,7 +642,7 @@ function App() {
 
     // Cerrar y finalizar con la X
     await decir("14.- Cierre la ventana de pago con la X.");
-    setCursorPos({ x: 280, y: 190, visible: true }); // Posición de la X
+    setCursorPos({ x: 280, y: 210, visible: true }); // Posición de la X
     await sleep(1000);
     await triggerClick();
     setMostrarModalDeposito(false);
