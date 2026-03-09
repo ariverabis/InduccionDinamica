@@ -1207,8 +1207,8 @@ function App() {
                 { label: 'CLIENTES', action: () => { } },
                 { label: 'CONSULTAS', action: () => { } },
                 { label: 'GESTIÓN DE VENTAS', action: () => setPantalla('clientes'), demoFn: runDemoGestionVentas },
-                { label: 'BÚSQL 080 - PRODUCTOS', action: () => setPantalla('resultados_busqueda'), demoFn: runDemo080 },
-                { label: 'COBRANZA (USD)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
+                { label: 'BUSQUEDA DE PRODUCTOS', action: () => setPantalla('resultados_busqueda'), demoFn: runDemo080 },
+                { label: 'COBRANZA S(USD)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
                 { label: 'COBRANZA (BS)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
                 { label: 'TRANSMITIR TRANSACCIONES', action: () => { }, disabled: true }
               ].map(opcion => (
@@ -2454,7 +2454,10 @@ function App() {
                         <label className="text-[10px] text-gray-500 font-bold block mb-1">TIPO DE OBSERVACIÓN</label>
                         <select
                           value={observacionTipo}
-                          onChange={(e) => setObservacionTipo(e.target.value)}
+                          onChange={(e) => {
+                            setObservacionTipo(e.target.value);
+                            if (e.target.value) setObservacionTexto(e.target.value);
+                          }}
                           className="w-full border border-gray-400 text-[12px] font-bold px-2 py-1.5 outline-none bg-white text-black"
                         >
                           <option value="">-- Seleccione --</option>
@@ -2481,7 +2484,10 @@ function App() {
                           className="bg-gray-200 text-gray-700 font-bold px-4 py-1.5 border border-gray-400 text-[11px] active:bg-gray-300"
                         >Limpiar</button>
                         <button
-                          onClick={() => setMostrarObservaciones(false)}
+                          onClick={() => {
+                            if (observacionTipo && !observacionTexto) setObservacionTexto(observacionTipo);
+                            setMostrarObservaciones(false);
+                          }}
                           className="bg-[#00b0f0] text-black font-bold px-4 py-1.5 border border-[#0092c8] text-[11px] active:bg-[#0092c8]"
                         >Aceptar</button>
                       </div>
