@@ -1122,7 +1122,7 @@ function App() {
 
               <button
                 onClick={() => {
-                  if (loginUsername === 'admin' && loginPassword === '9999') {
+                  if (loginUsername === 'admin' && loginPassword === '1111') {
                     setloginError('');
                     setPantalla('config');
                   } else {
