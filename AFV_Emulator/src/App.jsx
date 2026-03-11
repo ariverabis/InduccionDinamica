@@ -861,7 +861,7 @@ function App() {
     await sleep(800);
 
     // 13. Colocar monto, banco y referencia
-    await decir("12.- Llenamos los datos del depósito o transferencia.");
+    await decir("12.- Llenamos los datos del pago (Monto, Referencia y Banco).");
 
     // Monto
     setCursorPos({ x: 50, y: 290, visible: true });
@@ -878,12 +878,12 @@ function App() {
     await sleep(800);
 
     // Banco
-    setCursorPos({ x: 160, y: 400, visible: true });
+    setCursorPos({ x: 160, y: 440, visible: true }); // Ajustado y:400 a y:440 para apuntar mejor al campo banco
     await sleep(800);
     await triggerClick();
     setMostrarComboBanco(true);
     await sleep(600);
-    setCursorPos({ x: 160, y: 530, visible: true }); // Click en Banco de Venezuela
+    setCursorPos({ x: 160, y: 550, visible: true }); // Ajustado y:530 a y:550 para click en Banco de Venezuela
     await sleep(800);
     await triggerClick();
     setBancoDeposito('Banco de Venezuela');
