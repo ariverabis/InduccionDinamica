@@ -66,6 +66,19 @@ function App() {
   const [loginPassword, setloginPassword] = useState('');
   const [loginError, setloginError] = useState('');
 
+  // --- RETENCION STATES ---
+  const [mostrarRetencionImg, setMostrarRetencionImg] = useState(false);
+  const [retencionImgSrc, setRetencionImgSrc] = useState('');
+  const [retencionFecha, setRetencionFecha] = useState('22-02-2026');
+  const [retencionComprobante, setRetencionComprobante] = useState('202602');
+  const [retencionMonto, setRetencionMonto] = useState('870,30');
+  const [mostrarRetencionCombo, setMostrarRetencionCombo] = useState(false);
+  const [retencionesLista, setRetencionesLista] = useState([]);
+  const [retencionTipo, setRetencionTipo] = useState('');
+  const [retencionMetodo, setRetencionMetodo] = useState('--Seleccione--');
+  const [invoiceChecked, setInvoiceChecked] = useState(false);
+  const [mostrarConfirmacionRetencion, setMostrarConfirmacionRetencion] = useState(false);
+
   // --- BUSQUEDA PRODUCTOS ---
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [busquedaNombre, setBusquedaNombre] = useState('');
@@ -927,6 +940,121 @@ function App() {
     setCursorPos({ x: -100, y: -100, visible: false });
   };
 
+  const runDemoRetencion = async () => {
+    // 0. Inicio en 073 Ventas Menu
+    await decir("1.- Ingrese Módulo de cobranza.");
+    setCursorPos({ x: 290, y: 60, visible: true });
+    await sleep(1000);
+    await triggerClick();
+
+    // 1. Abrir submenú y seleccionar Cobranza
+    setMostrarSubmenu(true);
+    await sleep(800);
+    setCursorPos({ x: 200, y: 155, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setPantalla('recibo_cliente');
+    setMostrarSubmenu(false);
+    await sleep(800);
+
+    // 2. Seleccionar cliente
+    await decir("2.- Seleccione al cliente.");
+    setCursorPos({ x: 160, y: 180, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_menu');
+    await sleep(800);
+
+    // 3. Pulsamos en botón retenciones (Real Component)
+    await decir("3.- Pulsamos en botón retenciones.");
+    setCursorPos({ x: 160, y: 350, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('retencion_list');
+    await sleep(1500);
+
+    // 4. Pulsamos botón nuevo en la lista real
+    await decir("4.- Pulsamos botón nuevo.");
+    setCursorPos({ x: 80, y: 560, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('retencion_form');
+    setRetencionTipo(''); // Reiniciar tipo
+    setRetencionMetodo('--Seleccione--');
+    await sleep(1500);
+
+    // 5. Seleccionamos carga manual en el combo
+    await decir("5.- Seleccionamos 'Carga Manual' en el combo.");
+    setCursorPos({ x: 140, y: 515, visible: true }); // Combo position
+    await sleep(1200);
+    await triggerClick();
+    setRetencionMetodo('Cargar Manual');
+    await sleep(1000);
+
+    // 6. Pulsamos VALIDAR
+    await decir("6.- Pulsamos VALIDAR.");
+    setCursorPos({ x: 260, y: 515, visible: true }); // Botón Validar next to combo
+    await sleep(1200);
+    await triggerClick();
+    setRetencionTipo('Manual');
+    await sleep(1500);
+
+    // 7. Colocamos la fecha en el campo real
+    await decir("7.- Colocamos la fecha en el campo Fecha Comp.");
+    setCursorPos({ x: 160, y: 140, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setRetencionFecha('12-03-2026');
+    await sleep(1500);
+
+    // 8. Llenamos el campo comprobante real
+    await decir("8.- Llenamos el campo comprobante (año y mes).");
+    setCursorPos({ x: 230, y: 180, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setRetencionComprobante('202603');
+    await sleep(1500);
+
+    // 9. Marcamos el check de la factura (Simulando scroll o selección de la última)
+    await decir("9.- Marcamos el check de la factura aplicable.");
+    setCursorPos({ x: 25, y: 510, visible: true }); // Última fila aprox
+    await sleep(1200);
+    await triggerClick();
+    setInvoiceChecked(true);
+    await sleep(1500);
+
+    // 10. Siguiente paso (Continuar)
+    await decir("10.- Pulsamos CONTINUAR.");
+    setCursorPos({ x: 160, y: 585, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarConfirmacionRetencion(true);
+    await sleep(1500);
+
+    // 11. Corregir monto en el modal real
+    await decir("11.- Pulsando en el monto corregimos de 870,30 a 870.");
+    setCursorPos({ x: 230, y: 440, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setRetencionMonto('870');
+    await sleep(2000);
+
+    // 12. Pulsamos SÍ, CONFIRMAR
+    await decir("12.- Pulsamos SÍ, CONFIRMAR para finalizar.");
+    setCursorPos({ x: 160, y: 540, visible: true }); // Botón Sí central
+    await sleep(1200);
+    await triggerClick();
+    setRetencionesLista([{ comprobante: '202603', fecha: '12-03-2026', monto: '870' }]);
+    setMostrarConfirmacionRetencion(false);
+    setPantalla('retencion_list');
+    await sleep(2500);
+
+    // Regresar al menú
+    setNarracionTexto("");
+    setCursorPos({ x: -100, y: -100, visible: false });
+    setPantalla('menu');
+  };
+
   const runDemoDigitalCatalog = async () => {
     // 1. Click en Catálogo Febeca (Escritorio)
     await decir("a).- Menú.");
@@ -1210,6 +1338,7 @@ function App() {
                 { label: 'BUSQUEDA DE PRODUCTOS', action: () => setPantalla('resultados_busqueda'), demoFn: runDemo080 },
                 { label: 'COBRANZA S(USD)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
                 { label: 'COBRANZA (BS)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
+                { label: 'RETENCIÓN DEMO', action: () => { }, demoFn: runDemoRetencion },
                 { label: 'TRANSMITIR TRANSACCIONES', action: () => { }, disabled: true }
               ].map(opcion => (
                 <div key={opcion.label} className="flex gap-2 w-full">
@@ -2621,7 +2750,10 @@ function App() {
                 <button className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors">
                   ANÁLISIS DE DEUDORES
                 </button>
-                <button className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors">
+                <button
+                  onClick={() => setPantalla('retencion_list')}
+                  className="w-full bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-1.5 text-center shadow-[0_1px_2px_rgba(0,0,0,0.2)] border border-white active:bg-gray-300 transition-colors"
+                >
                   RETENCIONES DE IVA
                 </button>
                 <button
@@ -2638,6 +2770,362 @@ function App() {
               <div className="mt-auto pb-2 px-2">
                 <p className="text-center text-[8px] text-gray-500 font-sans tracking-tight">© Copyright Wholesale World Information Systems LTD, 2014</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: LISTA DE RETENCIONES (Functional - Standardized) */}
+        {pantalla === 'retencion_list' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans tracking-tight uppercase">060 - Retenciones de IVA</span>
+              </div>
+              <div className="text-[14px] font-bold">⋮</div>
+            </div>
+
+            <div className="flex flex-col flex-1 bg-[#f0f0f0]">
+              {/* Toolbar de Cliente Estándar */}
+              <div className="flex items-center justify-between bg-[#c0c0c0] px-3 py-1.5 shadow-inner mb-1">
+                <span className="text-[12px] font-bold text-gray-800 font-sans truncate">GRUPO ISO HOME, C.A - 2531318</span>
+                <button
+                  onClick={() => setPantalla('recibo_menu')}
+                  className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-[#808080] border-2 border-[#808080] shadow-sm transform hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                </button>
+              </div>
+
+              <div className="flex-1 p-1 flex flex-col gap-2">
+                <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden font-sans">
+                  <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
+                    <div className="w-8 text-center py-1.5 border-r border-gray-400">ST</div>
+                    <div className="flex-1 px-2 py-1.5 border-r border-gray-400">Nro. Comp</div>
+                    <div className="w-16 text-center py-1.5 border-r border-gray-400">Fecha</div>
+                    <div className="w-20 text-right px-2 py-1.5">Monto</div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto">
+                    {retencionesLista.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-400 italic text-[11px]">
+                        No hay retenciones registradas
+                      </div>
+                    ) : (
+                      retencionesLista.map((ret, idx) => (
+                        <div key={idx} className="flex border-b border-gray-200 text-[10px] font-bold text-black hover:bg-gray-100 transition-colors">
+                          <div className="w-8 flex items-center justify-center py-2 border-r border-gray-200">
+                            <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                          </div>
+                          <div className="flex-1 px-2 py-2 border-r border-gray-200">{ret.comprobante}</div>
+                          <div className="w-16 text-center py-2 border-r border-gray-200 text-gray-600">{ret.fecha}</div>
+                          <div className="w-20 text-right px-2 py-2 font-bold">{ret.monto}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="bg-[#d0d0d0] p-1.5 border-t border-gray-400 flex justify-between items-center px-2">
+                    <span className="text-[10px] font-bold text-black uppercase">Registros: {retencionesLista.length}</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[10px] font-bold text-black uppercase">Total:</span>
+                      <span className="text-[11px] font-bold text-black">
+                        {retencionesLista.length > 0 ? retencionesLista[retencionesLista.length - 1].monto : '0,00'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 p-3 justify-center">
+                  <button
+                    onClick={() => {
+                      setRetencionTipo('');
+                      setPantalla('retencion_form');
+                    }}
+                    className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase"
+                  >
+                    NUEVO
+                  </button>
+                  <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase">
+                    ENVIAR EMAIL
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA: FORMULARIO DE RETENCION (Functional) */}
+        {pantalla === 'retencion_form' && (
+          <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
+                </div>
+                <span className="text-[13px] font-bold text-black font-sans tracking-tight uppercase">
+                  {!retencionTipo ? "124 - Retenciones de IVA" : "097 - Retenciones"}
+                </span>
+              </div>
+              <button
+                onClick={() => setPantalla('retencion_list')}
+                className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Toolbar de Cliente Estándar */}
+            <div className="flex items-center justify-between bg-[#c0c0c0] px-3 py-1.5 shadow-inner mb-0.5 text-[11px]">
+              <span className="font-bold text-gray-800 font-sans truncate">GRUPO ISO HOME, C.A - 2531318</span>
+            </div>
+
+            <div className="flex-1 flex flex-col p-5 gap-5 overflow-y-auto">
+              {/* Paso 1: Selección de Tipo (Standardized) */}
+              {!retencionTipo && (
+                <div className="flex-1 flex flex-col bg-white overflow-hidden font-sans">
+                   <div className="bg-gray-100 p-2 text-gray-800 font-bold text-sm">
+                      Retenciones de IVA
+                   </div>
+                   <div className="flex-1 p-1 flex flex-col gap-2 overflow-hidden">
+                      <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
+                        <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
+                          <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
+                          <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
+                          <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
+                          <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto">
+                          {[
+                            { tipo: 'FAC', nro: '06980316', monto: '8,87' },
+                            { tipo: 'FAC', nro: '06980336', monto: '1,38' },
+                            { tipo: 'FAC', nro: '06982446', monto: '1,79' },
+                            { tipo: 'FAC', nro: '06982447', monto: '2,84' },
+                            { tipo: 'FAC', nro: '06982589', monto: '1,99', sel: true }
+                          ].map((row, i) => (
+                            <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
+                              <div className="w-8 flex items-center justify-center py-2 border-r border-gray-300">
+                                <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
+                                  {row.sel && <span className="text-[8px]">X</span>}
+                                </div>
+                              </div>
+                              <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">{row.tipo}</div>
+                              <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
+                              <div className="w-24 text-right px-2 py-2">{row.monto}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dropdown Section */}
+                      <div className="flex flex-col gap-2 bg-[#f0f0f0] p-3 border-t border-gray-300">
+                        <div className="flex gap-2 items-center relative">
+                          <div className="flex-1 relative">
+                            <select
+                              id="metodoCombo"
+                              value={retencionMetodo}
+                              onChange={(e) => setRetencionMetodo(e.target.value)}
+                              className="w-full bg-white border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-700 outline-none appearance-none"
+                            >
+                              <option>--Seleccione--</option>
+                              <option>Escanear Retención</option>
+                              <option>Cargar PDF</option>
+                              <option>Cargar Imagen</option>
+                              <option>Cargar Manual</option>
+                            </select>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <span className="text-gray-500 text-[10px]">▼</span>
+                            </div>
+                          </div>
+                          <button
+                            id="btnValidar"
+                            onClick={() => {
+                              if (retencionMetodo === 'Cargar Manual') {
+                                setRetencionTipo('Manual');
+                              }
+                            }}
+                            className="bg-[#e6e6e6] text-black font-bold text-[10px] py-1.5 px-4 border border-white shadow-sm active:bg-gray-300 uppercase"
+                          >
+                            VALIDAR
+                          </button>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase">Total retenido:</span>
+                            <div className="bg-[#b3b3b3] px-10 py-1 border border-gray-400 text-center font-bold text-sm">0</div>
+                          </div>
+                          <button className="bg-[#e6e6e6] text-black font-bold text-[10px] py-1.5 px-6 border border-white shadow-sm active:bg-gray-300 uppercase">
+                            FINALIZAR
+                          </button>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {/* Paso 2: Formulario */}
+               {/* Paso 2: Formulario */}
+               {retencionTipo && !mostrarConfirmacionRetencion && (
+                 <div className="flex-1 flex flex-col bg-[#f0f0f0] overflow-hidden font-sans">
+                    {/* Header Info like Image 6 */}
+                    <div className="p-2 flex flex-col gap-2">
+                       <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-gray-600">RIF:</span>
+                          <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-xs flex-1">J312193697</div>
+                       </div>
+                       <div className="flex items-start gap-2">
+                          <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Razón Social:</span>
+                          <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-[10px] flex-1">ALTAMIRA FERRE-INDUSTRIAL -</div>
+                       </div>
+                       
+                       <div className="flex flex-col gap-1 mt-1">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Fecha Comp:</span>
+                             <div className="flex-1 border-b border-gray-800">
+                                <input 
+                                  type="text" 
+                                  value={retencionFecha}
+                                  onChange={(e) => setRetencionFecha(e.target.value)}
+                                  className="w-full bg-transparent outline-none text-xs font-bold"
+                                />
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Comprobante:</span>
+                             <div className="flex items-center gap-2 flex-1">
+                                <div className="bg-[#b3b3b3] px-4 py-0.5 border border-gray-400 font-bold text-xs flex-1 text-center">
+                                   {retencionComprobante}
+                                </div>
+                                <div className="w-20 border-b border-gray-800">
+                                   <input 
+                                     type="text"
+                                     value={retencionComprobante}
+                                     onChange={(e) => setRetencionComprobante(e.target.value)}
+                                     placeholder="YYYYMM"
+                                     className="w-full bg-transparent outline-none text-xs font-bold text-center"
+                                   />
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="flex-1 p-1 flex flex-col gap-1 overflow-hidden">
+                       <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
+                          <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
+                             <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
+                             <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
+                             <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
+                             <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
+                          </div>
+                          <div className="flex-1 overflow-y-auto">
+                              {/* Invoices like Image 6 */}
+                              {[
+                                 { nro: '06965151', monto: '98,84' },
+                                 { nro: '06965887', monto: '12,33' },
+                                 { nro: '06966250', monto: '12,33' },
+                                 { nro: '06966278', monto: '17,43' },
+                                 { nro: '06966286', monto: '3,90' },
+                                 { nro: '06980316', monto: '8,87' },
+                                 { nro: '06980336', monto: '1,38' },
+                                 { nro: '06982446', monto: '1,79' },
+                                 { nro: '06982447', monto: '2,84' },
+                                 { nro: '06982589', monto: '1,99', sel: true }
+                              ].map((row, i) => (
+                                 <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
+                                    <div className="w-8 flex items-center justify-center py-2 border-r border-gray-200">
+                                       <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
+                                          {row.sel && <span className="text-[8px] text-black font-bold">X</span>}
+                                       </div>
+                                    </div>
+                                    <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">FAC</div>
+                                    <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
+                                    <div className="w-24 text-right px-2 py-2">{row.monto}</div>
+                                 </div>
+                              ))}
+                          </div>
+                       </div>
+                       
+                       <div className="bg-[#f0f0f0] p-2 flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                             <div className="w-4 h-4 border border-gray-600 bg-white"></div>
+                             <span className="text-[10px] font-bold text-black font-sans uppercase">Seleccionar todo</span>
+                          </div>
+                          <div className="flex items-center gap-2 justify-between mt-1 px-2">
+                             <span className="text-[11px] font-bold text-gray-600 uppercase">Monto VES:</span>
+                             <div className="bg-[#b3b3b3] px-3 py-1.5 border border-gray-400 font-bold text-xl flex-1 text-center max-w-[180px]">
+                                0,00
+                             </div>
+                          </div>
+                          <div className="flex justify-center mt-2 px-10">
+                             <button
+                               onClick={() => setMostrarConfirmacionRetencion(true)}
+                               className="w-full bg-[#e6e6e6] text-black font-bold text-[11px] py-1.5 border border-white shadow-sm active:bg-gray-300 uppercase"
+                             >
+                               CONTINUAR
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+              {/* Paso 3: Confirmación / Ajuste */}
+              {mostrarConfirmacionRetencion && (
+                <div className="flex flex-col gap-3">
+                  <div className="bg-white border border-gray-400 p-5 flex flex-col items-center gap-4 shadow-sm relative overflow-hidden">
+                    <div className="w-12 h-12 bg-gray-100 border border-gray-300 rounded-full flex items-center justify-center text-2xl shadow-inner">🤔</div>
+                    <div className="text-center flex flex-col gap-1">
+                      <h3 className="text-sm font-bold text-black uppercase font-sans">¿Corregir Monto?</h3>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase font-sans px-2">¿El monto de la retención coincide con el comprobante físico del cliente?</p>
+                    </div>
+
+                    <div className="w-full flex flex-col gap-3">
+                      <div className="bg-[#fffbe6] p-3 border border-gray-400 flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-black uppercase font-sans">Monto Calculado:</span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[11px] font-bold text-gray-400 line-through opacity-60">1.160,40</span>
+                          <input
+                            id="inputMontoFinal"
+                            type="text"
+                            value={retencionMonto}
+                            onChange={(e) => setRetencionMonto(e.target.value)}
+                            className="bg-transparent text-[16px] font-bold text-blue-600 text-right outline-none w-24 font-sans"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 justify-center pt-2">
+                        <button
+                          id="btnSi"
+                          onClick={() => {
+                            setRetencionesLista([{ comprobante: retencionComprobante, fecha: retencionFecha, monto: retencionMonto }]);
+                            setMostrarConfirmacionRetencion(false);
+                            setPantalla('retencion_list');
+                          }}
+                          className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase"
+                        >
+                          SÍ, CONFIRMAR
+                        </button>
+                        <button
+                          id="btnNo"
+                          onClick={() => setMostrarConfirmacionRetencion(false)}
+                          className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase"
+                        >
+                          NO
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
+              <span className="text-[8px] font-black text-gray-300 tracking-[0.3em] uppercase">Security Level: High Protected</span>
             </div>
           </div>
         )}
@@ -3561,9 +4049,6 @@ function App() {
             </div>
           </div>
         )}
-
-
-
         {/* OVERLAY CALCULADORA AFV (084 - Consulta de Precios) */}
         {mostrarAfvCalc && (() => {
           // Parse price: "15.500,00" -> 15500.00
@@ -3584,7 +4069,6 @@ function App() {
           return (
             <div className="absolute inset-0 bg-black/50 z-[300] flex items-center justify-center">
               <div className="w-[300px] bg-[#f0f0f0] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-400">
-
                 {/* Header — blue bar */}
                 <div className="bg-[#00b0f0] px-2 py-1.5 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -3730,6 +4214,48 @@ function App() {
         })()}
 
         {/* OVERLAY CALCULADORA (cobranza) */}
+        {/* PANTALLA: RETENCION DEMO OVERLAY */}
+        {mostrarRetencionImg && (
+          <div className="absolute inset-0 bg-black/80 z-[400] flex items-center justify-center animate-in fade-in duration-300">
+            <div className="relative w-[90%] max-h-[90%] shadow-2xl rounded-lg overflow-hidden border-2 border-white/20 bg-white">
+              <div className="absolute top-0 left-0 right-0 bg-blue-600/90 text-white p-2 text-[10px] font-bold z-10 flex justify-between items-center backdrop-blur-sm">
+                <span>SIMULACIÓN PRECARGA RETENCIÓN</span>
+                <button
+                  onClick={() => setMostrarRetencionImg(false)}
+                  className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-colors"
+                >✕</button>
+              </div>
+              <div className="relative">
+                <img src={retencionImgSrc} alt="Retencion" className="w-full h-auto" />
+
+                {/* Elementos dinámicos sobre la imagen para simular interacción */}
+                {retencionImgSrc === 'retencion4.jpeg' && (
+                  <div className="absolute top-[68%] left-[45%] bg-white px-2 py-0.5 border border-blue-500 text-[10px] font-bold shadow-md animate-pulse">
+                    {retencionFecha}
+                  </div>
+                )}
+                {retencionImgSrc === 'retencion5.jpeg' && (
+                  <div className="absolute top-[75%] left-[45%] bg-white px-2 py-0.5 border border-blue-500 text-[10px] font-bold shadow-md animate-pulse">
+                    {retencionComprobante}
+                  </div>
+                )}
+                {(retencionImgSrc === 'retencion6.jpeg' || retencionImgSrc === 'retencion7.jpeg' || retencionImgSrc === 'retencion8.jpeg' || retencionImgSrc === 'retencion9.jpeg') && (
+                  <div className="absolute top-[88%] left-[65%] bg-yellow-100 px-2 py-0.5 border border-red-500 text-[10px] font-bold shadow-md">
+                    {retencionMonto}
+                  </div>
+                )}
+
+                {mostrarRetencionCombo && (
+                  <div className="absolute top-[50%] left-[45%] bg-white border border-gray-400 shadow-xl z-20 w-32 rounded-sm overflow-hidden animate-in slide-in-from-top-2">
+                    <div className="px-2 py-1.5 text-[9px] text-gray-500 font-sans border-b border-gray-100">--Seleccione--</div>
+                    <div className="px-2 py-1.5 text-[9px] text-white font-bold font-sans bg-blue-500">Carga Manual</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* OVERLAY CALCULADORA */}
         {mostrarCalculadora && (
           <div className="absolute inset-0 bg-black/60 z-[200] flex items-center justify-center animate-in fade-in zoom-in duration-300">
