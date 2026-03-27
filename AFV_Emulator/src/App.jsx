@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 
 function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
@@ -57,9 +57,14 @@ function App() {
   const [isClicking, setIsClicking] = useState(false);
 
   // --- OVERLAYS BS ---
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
+  const [stopRequested, setStopRequested] = useState(false);
+  const stopRequestedRef = useRef(false);
   const [mostrarCalculadora, setMostrarCalculadora] = useState(false);
   const [imgCalculadora, setImgCalculadora] = useState('calc1.png');
   const [mostrarSoporte, setMostrarSoporte] = useState(false);
+  const [mostrarLupa, setMostrarLupa] = useState(false);
 
   // --- LOGIN AFV FEBECA ---
   const [loginUsername, setloginUsername] = useState('');
@@ -78,6 +83,8 @@ function App() {
   const [retencionMetodo, setRetencionMetodo] = useState('--Seleccione--');
   const [invoiceChecked, setInvoiceChecked] = useState(false);
   const [mostrarConfirmacionRetencion, setMostrarConfirmacionRetencion] = useState(false);
+  const [mostrarModalOtorgar, setMostrarModalOtorgar] = useState(false);
+  const [condicionPedido, setCondicionPedido] = useState('0% de descuento a 30');
 
   // --- BUSQUEDA PRODUCTOS ---
   const [busquedaProducto, setBusquedaProducto] = useState('');
@@ -122,7 +129,59 @@ function App() {
 
   const productoActivo = productosFiltrados[productoActivoIndex] || productosFiltrados[0] || null;
 
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const sleep = (ms) => new Promise((resolve, reject) => {
+    let remaining = ms * 0.5; // Velocidad ajustada (multiplicador 0.5 - 2x más rápido que lo normal)
+
+    const check = () => {
+      if (stopRequestedRef.current) {
+        reject(new Error('STOP_DEMO'));
+        return;
+      }
+      if (!isPausedRef.current) {
+        remaining -= 100;
+        if (remaining <= 0) {
+          resolve();
+        } else {
+          setTimeout(check, 100);
+        }
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+
+  const stopAllDemos = () => {
+    stopRequestedRef.current = true;
+    setStopRequested(true);
+    setTimeout(() => {
+      stopRequestedRef.current = false;
+      setStopRequested(false);
+      setCursorPos({ x: -100, y: -100, visible: false });
+      setNarracionTexto('');
+      setIsPaused(false);
+      isPausedRef.current = false;
+    }, 200);
+  };
+
+  const wrapDemo = (demoFn) => async () => {
+    try {
+      await demoFn();
+    } catch (err) {
+      if (err.message === 'STOP_DEMO') {
+        console.log('Demo stopped by user');
+      } else {
+        console.error('Demo Error:', err);
+      }
+    } finally {
+      // Reset total para seguridad
+      setCursorPos({ x: -100, y: -100, visible: false });
+      setNarracionTexto('');
+      setIsPaused(false);
+      setStopRequested(false);
+      stopRequestedRef.current = false;
+    }
+  };
 
   const triggerClick = async () => {
     setIsClicking(true);
@@ -144,19 +203,23 @@ function App() {
 
     // 1. Move to "PEDIDOS DEL CATÁLOGO" button
     setCursorPos({ x: 160, y: 130, visible: true });
-    await sleep(1200);
+    //await sleep(1200);
+    await sleep(400);
     await triggerClick();
     setPantalla('pedidos_catalogo');
-    await sleep(800);
+    //await sleep(800);
+    await sleep(200);
 
     // 2. Visualiza todos los pedidos que vienen del catalogo de clientes
     await decir("2.- Visualiza todos los pedidos que vienen del Catalogo de Clientes.");
-    await sleep(2500);
+    //await sleep(2500);
+    await sleep(400);
 
     // 3. Seleccione el pedido y Ver detalles
     await decir("3.- Seleccione el pedido a visualizar y haga click en Ver detalles.");
     setCursorPos({ x: 230, y: 550, visible: true });
-    await sleep(1200);
+    //await sleep(1200);
+    await sleep(400);
     await triggerClick();
     setPantalla('detalles_pedido');
     await sleep(800);
@@ -175,30 +238,60 @@ function App() {
 
     // 6. Visualice descuentos
     await decir("6.- Visualice los descuentos asociados a los productos escogidos. Esta pantalla muestra los descuentos, los haya cumplido o no.");
-    await sleep(3500);
-    setCursorPos({ x: 230, y: 355, visible: true });
+    await sleep(2500);
+
+    // 6b. Pulse Otorgar
+    await decir("7.- Pulse el boton Otorgar para aplicar el descuento.");
+    setCursorPos({ x: 260, y: 565, visible: true }); // Botón Otorgar
     await sleep(1200);
     await triggerClick();
+    setMostrarModalOtorgar(true);
+    await sleep(800);
+
+    // 6c. Confirmar (SI)
+    await decir("8.- Confirme el descuento pulsando SI.");
+    setCursorPos({ x: 230, y: 375, visible: true }); // Botón SI en el modal
+    await sleep(1200);
+    await triggerClick();
+    setMostrarModalOtorgar(false);
     setPantalla('finalizar_pedido');
     await sleep(800);
 
-    // 7. Seleccione el Nivel
-    await decir("7.- Seleccione el Nivel del Pedido,");
+    // 9. Seleccione el Nivel
+    await decir("9.- Seleccione el Nivel del Pedido.");
     setCursorPos({ x: 200, y: 170, visible: true }); // Fila Nivel
     await sleep(1200);
     await triggerClick();
     setMostrarComboNivel(true);
     await sleep(1500);
-    // Seleccionar MAYOREOD
-    setCursorPos({ x: 200, y: 220, visible: true }); // Posición en el combo nivel
+
+    // Seleccionar MAYOREOB primero
+    await decir("10.- Al seleccionar MAYOREOB, la condicion cambia a 10% hasta 7 días.");
+    setCursorPos({ x: 200, y: 200, visible: true }); // Posición MAYOREOB
+    await sleep(800);
+    await triggerClick();
+    setNivelSeleccionado('MAYOREOB');
+    setCondicionPedido('10% hasta 7 días');
+    setMostrarComboNivel(false);
+    await sleep(2500);
+
+    // Seleccionar MAYOREOD después
+    await decir("11.- Al seleccionar MAYOREOD, la condicion queda en blanco.");
+    setCursorPos({ x: 200, y: 170, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setMostrarComboNivel(true);
+    await sleep(1500);
+    setCursorPos({ x: 200, y: 300, visible: true }); // Posición MAYOREOD (en el combo)
     await sleep(800);
     await triggerClick();
     setNivelSeleccionado('MAYOREOD');
+    setCondicionPedido('');
     setMostrarComboNivel(false);
-    await sleep(800);
+    await sleep(2000);
 
     // 8. Visualice etiquetas de negociacion
-    await decir("8.- Visualice las Etiquetas de Negociacion Especial.");
+    await decir("12.- Visualice las Etiquetas de Negociacion Especial.");
     setCursorPos({ x: 290, y: 495, visible: true }); // Botón "+"
     await sleep(1200);
     await triggerClick();
@@ -212,7 +305,7 @@ function App() {
     await sleep(800);
 
     // 9. Botón Fin
-    await decir("9.- Cierre en el boton Fin.");
+    await decir("13.- Cierre en el boton Fin.");
     setCursorPos({ x: 280, y: 350, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -832,7 +925,10 @@ function App() {
     // 9. Ver Soporte de Pago (soportepago.jpeg)
     await decir("8.- Ver soporte de pago enviado por el cliente.");
     setMostrarSoporte(true);
-    await sleep(4000);
+    await sleep(1000);
+    setMostrarLupa(true); // Activar efecto lupa
+    await sleep(3500);
+    setMostrarLupa(false);
     setMostrarSoporte(false);
     await sleep(500);
 
@@ -1196,7 +1292,7 @@ function App() {
                   <img src="logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-lg" />
                   {/* Botón Run para el demo del catálogo */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); runDemoDigitalCatalog(); }}
+                    onClick={(e) => { e.stopPropagation(); wrapDemo(runDemoDigitalCatalog)(); }}
                     className="absolute -top-1 -right-1 bg-red-600 text-[8px] text-white font-bold p-1 rounded-full shadow-lg z-20"
                   >
                     Run
@@ -1332,14 +1428,10 @@ function App() {
             <div className="p-5 flex flex-col gap-3 flex-1 overflow-y-auto bg-gray-50">
               {[
                 { label: 'PEDIDOS DEL CATÁLOGO', action: () => setPantalla('pedidos_catalogo'), demoFn: runDemoCatalogo },
-                { label: 'CLIENTES', action: () => { } },
-                { label: 'CONSULTAS', action: () => { } },
                 { label: 'GESTIÓN DE VENTAS', action: () => setPantalla('clientes'), demoFn: runDemoGestionVentas },
-                { label: 'BUSQUEDA DE PRODUCTOS', action: () => setPantalla('resultados_busqueda'), demoFn: runDemo080 },
-                { label: 'COBRANZA S(USD)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
-                { label: 'COBRANZA (BS)', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
-                { label: 'RETENCIÓN DEMO', action: () => { }, demoFn: runDemoRetencion },
-                { label: 'TRANSMITIR TRANSACCIONES', action: () => { }, disabled: true }
+                { label: 'COBRANZA EN BS', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
+                { label: 'COBRANZA EN DÓLARES', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
+                { label: 'RETENCIONES DE IVA', action: () => setPantalla('retencion_list'), demoFn: runDemoRetencion }
               ].map(opcion => (
                 <div key={opcion.label} className="flex gap-2 w-full">
                   <button
@@ -1351,7 +1443,7 @@ function App() {
                   </button>
                   {opcion.demoFn && (
                     <button
-                      onClick={opcion.demoFn}
+                      onClick={wrapDemo(opcion.demoFn)}
                       title="Ejecutar simulación automática (Ghost Mouse)"
                       className="bg-red-600 text-white font-bold text-[10px] px-2 rounded shadow-sm hover:bg-red-500 active:bg-red-700 transition-colors flex items-center justify-center shrink-0 w-10"
                     >
@@ -1565,37 +1657,39 @@ function App() {
                     <span className="text-[14px] text-gray-800 flex-1">7</span>
                     <div className="w-0 h-0 border-l-[5px] border-l-transparent border-t-[5px] border-t-gray-800 border-r-[5px] border-r-transparent ml-1 mb-1"></div>
                   </div>
-                  <button onClick={() => setPantalla('escritorio')} title="Otorgar el descuento promocional indicado" className="bg-[#808080] text-black px-4 py-1.5 text-[13px] font-sans border border-gray-600 shadow-sm active:bg-gray-400">
+                  <button onClick={() => setMostrarModalOtorgar(true)} title="Otorgar el descuento promocional indicado" className="bg-[#808080] text-black px-4 py-1.5 text-[13px] font-sans border border-gray-600 shadow-sm active:bg-gray-400">
                     Otorgar
                   </button>
                 </div>
               </div>
 
               {/* Modal Oscurecedor */}
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 pb-20 z-10">
-                {/* Tarjeta Modal Confirmación */}
-                <div className="bg-[#f0f0f0] w-full rounded shadow-2xl overflow-hidden shadow-black">
-                  <div className="border-b-2 border-[#00b0f0] p-3 flex items-center gap-2 bg-[#f0f0f0]">
-                    <div className="opacity-60 text-[#00b0f0] text-2xl leading-none">
-                      ☁
+              {mostrarModalOtorgar && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 pb-20 z-10">
+                  {/* Tarjeta Modal Confirmación */}
+                  <div className="bg-[#f0f0f0] w-full rounded shadow-2xl overflow-hidden shadow-black">
+                    <div className="border-b-2 border-[#00b0f0] p-3 flex items-center gap-2 bg-[#f0f0f0]">
+                      <div className="opacity-60 text-[#00b0f0] text-2xl leading-none">
+                        ☁
+                      </div>
+                      <span className="text-[16px] text-[#00b0f0] font-sans">Confirmación</span>
                     </div>
-                    <span className="text-[16px] text-[#00b0f0] font-sans">Confirmación</span>
-                  </div>
-                  <div className="bg-[#f9f9f9] p-4 border-b border-gray-300">
-                    <p className="text-[14px] text-gray-800 font-sans">
-                      ¿Desea otorgar 7 porciento de descuento?
-                    </p>
-                  </div>
-                  <div className="flex bg-[#f9f9f9]">
-                    <button onClick={() => setMostrarModalCierra1(true)} title="Cancelar el descuento y cerrar esta promoción" className="flex-1 py-3 text-[14px] text-gray-800 font-sans border-r border-gray-300 active:bg-gray-200">
-                      No
-                    </button>
-                    <button onClick={() => setPantalla('finalizar_pedido')} title="Aceptar el descuento y avanzar al cierre del pedido" className="flex-1 py-3 text-[14px] text-gray-800 font-sans active:bg-gray-200">
-                      Si
-                    </button>
+                    <div className="bg-[#f9f9f9] p-4 border-b border-gray-300">
+                      <p className="text-[14px] text-gray-800 font-sans">
+                        ¿Desea otorgar 7 porciento de descuento?
+                      </p>
+                    </div>
+                    <div className="flex bg-[#f9f9f9]">
+                      <button onClick={() => setMostrarModalOtorgar(false)} title="Cancelar el descuento y cerrar esta promoción" className="flex-1 py-3 text-[14px] text-gray-800 font-sans border-r border-gray-300 active:bg-gray-200">
+                        No
+                      </button>
+                      <button onClick={() => { setMostrarModalOtorgar(false); setPantalla('finalizar_pedido'); }} title="Aceptar el descuento y avanzar al cierre del pedido" className="flex-1 py-3 text-[14px] text-gray-800 font-sans active:bg-gray-200">
+                        Si
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
           </div>
@@ -1662,6 +1756,11 @@ function App() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setNivelSeleccionado(nivel);
+                          if (nivel === 'MAYOREOB') {
+                            setCondicionPedido('10% hasta 7 días');
+                          } else if (nivel === 'MAYOREOD') {
+                            setCondicionPedido('');
+                          }
                           setMostrarComboNivel(false);
                         }}
                       >
@@ -1674,20 +1773,17 @@ function App() {
 
               <div className="flex items-center mb-2 border-b border-gray-400 pb-1 relative">
                 <span className="w-[85px] text-[11px] text-gray-700 font-sans shrink-0">Condición:</span>
-                <div className="flex-1 flex justify-between items-center text-gray-500 font-sans text-[12px] mr-9">
-                  <span className="truncate">0% DE DESCUENTO A 30..</span>
+                <div className="flex-1 flex justify-between items-center text-gray-500 font-sans text-[12px] mr-9 h-[18px]">
+                  <span className="truncate">{condicionPedido}</span>
                   <div className="w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-gray-400 border-r-[6px] border-r-transparent mr-1"></div>
                 </div>
               </div>
 
               <div className="flex items-center mb-2">
-                <span className="w-[85px] text-[11px] text-gray-700 font-sans">Flete ($):</span>
-                <div className="bg-[#999999] text-black text-right pr-2 py-0.5 font-sans text-[13px] w-[100px]">0,00</div>
-                <div className="bg-[#b3b3b3] ml-1 text-black text-right pr-1 py-0.5 font-sans text-[13px] flex-1 border-b border-gray-400 flex items-end justify-end relative">
-                  0
-                  <div className="w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-gray-600 border-r-[6px] border-r-transparent ml-1 mb-0.5"></div>
-                  <span className="text-[11px] ml-1">(%)</span>
-                </div>
+                <span className="w-[85px] text-[11px] text-gray-700 font-sans">Flete (USD):</span>
+                <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[12px] px-2 py-1 text-right">1,22</div>
+                <div className="bg-white border border-gray-400 text-black font-sans text-[11px] px-2 py-1 w-10 text-center ml-1">50</div>
+                <span className="text-[10px] text-gray-500 ml-1">(%)</span>
               </div>
 
               <div className="flex items-center mb-2">
@@ -1712,19 +1808,27 @@ function App() {
                 <button onClick={() => setMostrarModalCierra1(true)} title="Iniciar proceso de guardado y cierre para este documento" className="bg-[#cccccc] text-black px-3 py-0.5 ml-1 font-sans text-[13px] font-bold shadow-sm border border-[#a6a6a6] active:bg-[#bbbbbb]">Fin</button>
               </div>
 
-              <div className="border border-gray-50 bg-white mb-4">
-                <div className="flex bg-[#999999] text-white font-bold text-[13px] font-sans">
-                  <div className="flex-[2] text-center py-1">Monto Pedido en $</div>
-                  <div className="flex-1 border-l border-gray-400"></div>
+              {/* Tabla Monto Pedido */}
+              <div className="border border-gray-400 mb-3">
+                <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] font-sans">
+                  <div className="flex-1 text-center py-1 border-r border-gray-300">Monto Pedido (USD)</div>
+                  <div className="flex-1 text-center py-1">% Desc</div>
                 </div>
-                <div className="h-12 bg-white"></div>
+                <div className="flex bg-[#00b0f0] text-black font-bold text-[10px] font-sans border-b border-gray-300">
+                  <div className="flex-1 text-center py-1 border-r border-gray-300">0-200</div>
+                  <div className="flex-1 text-center py-1">50</div>
+                </div>
+                <div className="flex bg-white text-black text-[10px] font-sans">
+                  <div className="flex-1 text-center py-1 border-r border-gray-300">Mayor a201</div>
+                  <div className="flex-1 text-center py-1">100</div>
+                </div>
               </div>
 
               <div className="flex items-center justify-between mb-2 mt-4 pt-4 border-t border-gray-400">
                 <span className="text-[12px] font-bold text-black font-sans">Observaciones:</span>
                 <button onClick={() => setMostrarModalNegociacion(true)} title="Haga clic para agregar una observación o negociación especial al documento" className="w-8 h-8 bg-[#cccccc] flex items-center justify-center text-black text-lg border border-[#a6a6a6] shadow-sm pb-1 active:bg-[#bbbbbb]">+</button>
               </div>
-              <p className="text-[12px] text-black font-sans">Descuento autorizado la gerencia 2%</p>
+              <p className="text-[12px] text-black font-sans">Descuento por compras 2%/ clave 00112</p>
             </div>
 
             {/* Modal Combo Forma Pago */}
@@ -2174,133 +2278,165 @@ function App() {
           </div>
         )}
 
-        {/* PANTALLA 14: 080 - Productos (basada en buscar3.jpg) */}
+        {/* PANTALLA 14: 080 - Productos (Rediseñada según pedidoizq/pedidoder.jpeg) */}
         {pantalla === 'resultados_busqueda' && (
-          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden font-sans">
+            {/* Cabecera Azul con logo 'f' */}
+            <div className="bg-[#00a2e8] p-2 flex items-center justify-between text-white border-b border-[#008cc9]">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                  <span className="text-[8px] font-bold text-gray-800">f</span>
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30">
+                    <span className="text-xl font-black italic text-white drop-shadow-md">f</span>
+                  </div>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">080 - Productos</span>
+                <span className="text-[15px] font-normal tracking-wide">080 - Productos</span>
               </div>
-              <span className="text-xl leading-none text-gray-700">⋮</span>
+              <span className="text-xl leading-none cursor-pointer px-2">⋮</span>
             </div>
 
-            <div className="flex-1 flex flex-col bg-gray-100 overflow-hidden">
-              {/* Descripción del producto activo */}
-              <div className="bg-white px-2 py-1.5 border-b border-gray-300 min-h-[40px]">
-                {productoActivo && (
-                  <>
-                    <p className="text-[10px] text-gray-700 font-sans leading-tight font-bold">{productoActivo.desc}</p>
-                    <p className="text-[9px] text-gray-500 font-sans leading-tight">Cod. Ant: {productoActivo.old}</p>
-                  </>
-                )}
+            <div className="flex-1 flex flex-col bg-[#eeeeee] overflow-hidden">
+              {/* Barra de descripción del producto activo (Gris Claro) */}
+              <div className="bg-[#f0f0f0] px-3 py-1.5 border-b border-gray-300 min-h-[32px] flex items-center">
+                <span className="text-[12px] text-gray-600 font-bold truncate">
+                  {productoActivo ? productoActivo.desc : "Seleccione un producto"}
+                </span>
               </div>
 
-              {/* Barra de búsqueda por código */}
-              <div className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 border-b border-gray-300">
-                <span className="text-[11px] font-bold text-gray-700 font-sans shrink-0">Buscar</span>
-                <input
-                  type="text"
-                  value={busquedaProducto}
-                  inputMode="numeric"
-                  onChange={(e) => {
-                    setBusquedaProducto(e.target.value);
-                    setBusquedaNombre('');
-                    setProductoActivoIndex(0);
-                  }}
-                  className="flex-1 bg-white text-black font-sans text-[12px] px-2 py-0.5 outline-none border border-gray-400 focus:border-blue-500"
-                  placeholder="Código numérico"
-                />
-                <button
-                  onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(true); }}
-                  className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0 active:bg-gray-400"
-                >B.</button>
-                <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0">SUB</button>
-                <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-1.5 py-0.5 text-[10px] font-sans font-bold shadow-sm shrink-0">PROM.</button>
-              </div>
-
-              {/* Indicador de búsqueda activa por nombre */}
-              {busquedaNombre.trim() && (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 border-b border-blue-200">
-                  <span className="text-[9px] text-blue-700 font-sans font-bold truncate flex-1">Filtrando por: "{busquedaNombre}"</span>
-                  <button onClick={() => { setBusquedaNombre(''); setProductoActivoIndex(0); }} className="text-[9px] text-red-600 font-bold">✕</button>
+              {/* Barra de búsqueda con estilo subrayado */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-white/50 border-b border-gray-300">
+                <span className="text-[14px] font-bold text-gray-800">Buscar</span>
+                <div className="flex-1 flex flex-col pt-1">
+                  <input
+                    type="text"
+                    value={busquedaProducto}
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      setBusquedaProducto(e.target.value);
+                      setBusquedaNombre('');
+                      setProductoActivoIndex(0);
+                    }}
+                    className="w-full bg-transparent text-black font-sans text-[14px] px-1 outline-none border-b border-gray-500 focus:border-blue-600"
+                  />
                 </div>
-              )}
+                <div className="flex items-center gap-1.5 ml-2">
+                  <button
+                    onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(true); }}
+                    className="bg-[#dadada] text-black border border-gray-400 px-3 py-0.5 text-[11px] font-bold shadow-sm active:bg-gray-400"
+                  >B.</button>
+                  <button className="bg-[#dadada] text-black border border-gray-400 px-3 py-0.5 text-[11px] font-bold shadow-sm">SUB</button>
+                  <button className="bg-[#dadada] text-black border border-gray-400 px-3 py-0.5 text-[11px] font-bold shadow-sm">ASOC.</button>
+                </div>
+              </div>
 
-              {/* Lista de productos con checkboxes */}
-              <div className="flex-1 overflow-y-auto">
-                {productosFiltrados.map((prod, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setProductoActivoIndex(i)}
-                    className={`flex items-center px-2 py-1 border-b border-gray-200 cursor-pointer ${i === productoActivoIndex ? 'bg-[#00b0f0] text-black' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                  >
-                    <input type="checkbox" className="mr-2 w-3.5 h-3.5 accent-blue-500 shrink-0 pointer-events-none" checked={i === productoActivoIndex} readOnly />
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-bold font-sans shrink-0">{prod.cod}</span>
-                        <span className="text-[8px] font-sans text-gray-500 shrink-0 bg-gray-200 px-0.5 rounded">{prod.old}</span>
+              {/* Lista de artículos (Tabla blanca con bordes) */}
+              <div className="m-2 border border-black bg-white flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto">
+                  {productosFiltrados.map((prod, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setProductoActivoIndex(i)}
+                      className={`flex items-center py-1.5 px-1.5 border-b border-gray-200 cursor-pointer ${i === productoActivoIndex ? 'bg-[#00a2e8] text-white' : 'bg-white text-black'}`}
+                    >
+                      <div className={`w-4 h-4 border border-black mr-2 flex items-center justify-center shrink-0 ${i === productoActivoIndex ? 'bg-[#00a2e8]' : 'bg-white'}`}>
+                        {i === productoActivoIndex && <div className="w-2 h-2 bg-white"></div>}
                       </div>
-                      <span className="text-[9px] font-sans leading-tight truncate text-gray-700">{prod.desc}</span>
+                      <span className={`text-[12px] font-bold w-16 shrink-0 ${i === productoActivoIndex ? 'text-white' : 'text-gray-800'}`}>
+                        {prod.cod}
+                      </span>
+                      <span className={`text-[12px] font-bold truncate flex-1 ${i === productoActivoIndex ? 'text-white' : 'text-black'}`}>
+                        {prod.desc}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Panel de Datos Inferior (Grids de cajas grises) */}
+              <div className="bg-[#f0f0f0] p-3 border-t border-gray-400 flex flex-col gap-2">
+                {/* Precios P1 y P2 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] italic text-gray-500 font-medium">P1</span>
+                    <div 
+                      onClick={() => { setAfvCalcPrecio(productoActivo?.p1); setAfvCalcNombre('P1'); setAfvDctoComercial(productoActivo?.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
+                      className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[13px] font-bold text-gray-800 border border-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] cursor-pointer active:bg-blue-200"
+                    >
+                      {productoActivo?.p1}
                     </div>
                   </div>
-                ))}
-                {productosFiltrados.length === 0 && (
-                  <div className="p-4 text-center text-xs text-gray-500 font-bold">No se encontraron productos</div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] italic text-gray-500 font-medium">P2</span>
+                    <div 
+                      onClick={() => { setAfvCalcPrecio(productoActivo?.p2); setAfvCalcNombre('P2'); setAfvDctoComercial(productoActivo?.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
+                      className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[13px] font-bold text-gray-800 border border-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] cursor-pointer active:bg-blue-200"
+                    >
+                      {productoActivo?.p2}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detalles U.Inv, Emp.C, C.Min, Dscto */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] w-12">U. Inv.:</span>
+                    <div className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-center text-[12px] font-bold border border-gray-400">
+                      {productoActivo?.inv}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] w-12">Emp. C.:</span>
+                    <div className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-center text-[12px] font-bold border border-gray-400">
+                      {productoActivo?.emp}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] w-12">C. Min.:</span>
+                    <div className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-center text-[12px] font-bold border border-gray-400">
+                      {productoActivo?.cmin}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] w-12">Dscto.:</span>
+                    <div className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-center text-[12px] font-bold border border-gray-400">
+                      {productoActivo?.dscto}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stock (Exist.) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] w-12">Exist.</span>
+                  <div className="w-1/2 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[12px] font-bold border border-gray-400">
+                    {productoActivo?.exist}
+                  </div>
+                </div>
+
+                {/* Cantidad y Botón OK */}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] w-12">Cant.:</span>
+                  <div className="flex-1 flex gap-2">
+                    <input 
+                      type="text" 
+                      value={cantidadProducto} 
+                      onChange={(e) => setCantidadProducto(e.target.value)} 
+                      className="flex-1 bg-white border-b border-gray-600 h-7 text-center text-[14px] outline-none focus:border-blue-600"
+                    />
+                    <button 
+                      onClick={() => setPantalla('detalle_pedido_con_producto')}
+                      className="bg-[#dadada] text-black font-bold h-7 px-10 text-[12px] border border-gray-400 shadow-sm active:bg-gray-400 flex items-center justify-center"
+                    >
+                      OK
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* Detalle del artículo seleccionado */}
-              <div className="bg-gray-200 border-t border-gray-400 px-2 py-1.5 flex flex-col gap-1">
-                {productoActivo ? (
-                  <>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">P1:</span>
-                      <div
-                        className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right font-bold cursor-pointer hover:bg-[#0092c8] hover:text-white"
-                        onClick={() => { setAfvCalcPrecio(productoActivo.p1); setAfvCalcNombre('P1'); setAfvDctoComercial(productoActivo.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
-                        title="Abrir calculadora AFV con P1"
-                      >{productoActivo.p1}</div>
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">P2:</span>
-                      <div
-                        className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right font-bold cursor-pointer hover:bg-[#0092c8] hover:text-white"
-                        onClick={() => { setAfvCalcPrecio(productoActivo.p2); setAfvCalcNombre('P2'); setAfvDctoComercial(productoActivo.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
-                        title="Abrir calculadora AFV con P2"
-                      >{productoActivo.p2}</div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">U.Inv:</span>
-                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.inv}</div>
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Emp.C:</span>
-                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.emp}</div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">C.Min:</span>
-                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.cmin}</div>
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Dscto.:</span>
-                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-center">{productoActivo.dscto}</div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0">Exist.:</span>
-                      <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[10px] px-1 py-0.5 text-right text-blue-800 font-bold">{productoActivo.exist}</div>
-                      <span className="text-[10px] font-bold text-gray-700 font-sans shrink-0 ml-1">Cant:</span>
-                      <input type="text" value={cantidadProducto} onChange={(e) => setCantidadProducto(e.target.value)} className={`bg-white border border-gray-400 text-black font-sans text-[10px] px-1 py-0.5 w-12 text-center outline-none ${cantidadProducto === '12' ? 'font-bold bg-yellow-100' : ''}`} />
-                      <button onClick={() => setPantalla('detalle_pedido_con_producto')} className="bg-[#4CAF50] text-white font-bold font-sans text-[10px] px-3 py-0.5 border border-[#388E3C] shadow-sm active:bg-[#388E3C] ml-1">OK</button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center text-[10px] text-gray-500 py-3">Seleccione un producto</div>
-                )}
+              {/* Botón volver flotante (Igual que en las otras pantallas) */}
+              <div className="absolute top-[85%] right-4">
+                <button onClick={() => setPantalla('productos_busqueda')} className="w-8 h-8 bg-gray-400/80 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-500 border-2 border-white/50">
+                  ←
+                </button>
               </div>
-            </div>
-
-            {/* Botón volver */}
-            <div className="p-1.5 flex justify-end border-t border-gray-300 bg-gray-100">
-              <button onClick={() => setPantalla('productos_busqueda')} title="Volver a búsqueda de productos" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
-                ←
-              </button>
             </div>
 
             {/* Modal: Buscar por Nombre o Código Antiguo (botón B.) */}
@@ -2308,30 +2444,29 @@ function App() {
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="w-[280px] bg-white shadow-2xl flex flex-col overflow-hidden border border-gray-400">
                   {/* Header */}
-                  <div className="bg-[#00b0f0] px-2 py-1.5 flex items-center justify-between">
+                  <div className="bg-[#00a2e8] px-2 py-1.5 flex items-center justify-between text-white">
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
                         <span className="text-[7px] font-black text-gray-800 italic">f</span>
                       </div>
-                      <span className="text-[12px] font-bold text-black font-sans">080 - Buscar por Nombre</span>
+                      <span className="text-[12px] font-bold font-sans">080 - Buscar por Nombre</span>
                     </div>
-                    <button onClick={() => setMostrarBuscaNombre(false)} className="text-black font-bold text-lg leading-none">×</button>
+                    <button onClick={() => setMostrarBuscaNombre(false)} className="text-white font-bold text-lg leading-none">×</button>
                   </div>
 
                   <div className="p-3 flex flex-col gap-3">
                     <div>
-                      <label className="text-[9px] text-gray-500 font-bold block mb-1 uppercase">Nombre del artículo o Código antiguo</label>
+                      <label className="text-[9px] text-gray-500 font-bold block mb-1 uppercase">Nombre o Código antiguo</label>
                       <input
                         autoFocus
                         type="text"
                         value={busquedaNombre}
                         onChange={(e) => setBusquedaNombre(e.target.value)}
-                        className="w-full border-b-2 border-[#00b0f0] text-[13px] font-sans px-1 py-1 outline-none bg-transparent text-black"
-                        placeholder="Ej: canilla flexible o CFLX-01"
+                        className="w-full border-b-2 border-[#00a2e8] text-[13px] font-sans px-1 py-1 outline-none bg-transparent text-black"
+                        placeholder="Ej: canilla flexible"
                       />
                     </div>
 
-                    {/* Preview de resultados */}
                     <div className="border border-gray-300 max-h-[120px] overflow-y-auto">
                       {(busquedaNombre.trim()
                         ? MOCK_PRODUCTOS.filter(p =>
@@ -2345,45 +2480,21 @@ function App() {
                           onClick={() => {
                             setBusquedaNombre(busquedaNombre);
                             setBusquedaProducto('');
-                            setProductoActivoIndex(
-                              MOCK_PRODUCTOS.filter(p =>
-                                p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
-                                p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
-                              ).indexOf(prod)
-                            );
+                            setProductoActivoIndex(MOCK_PRODUCTOS.indexOf(prod));
                             setMostrarBuscaNombre(false);
                           }}
-                          className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+                          className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 hover:bg-blue-50 cursor-pointer text-[9px]"
                         >
-                          <span className="text-[9px] font-bold text-gray-800 shrink-0">{prod.cod}</span>
-                          <span className="text-[8px] bg-gray-200 px-0.5 rounded shrink-0">{prod.old}</span>
-                          <span className="text-[8px] text-gray-600 truncate">{prod.desc}</span>
+                          <span className="font-bold text-gray-800">{prod.cod}</span>
+                          <span className="bg-gray-200 px-0.5 rounded text-[8px]">{prod.old}</span>
+                          <span className="text-gray-600 truncate">{prod.desc}</span>
                         </div>
                       ))}
-                      {busquedaNombre.trim() && MOCK_PRODUCTOS.filter(p =>
-                        p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
-                        p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
-                      ).length === 0 && (
-                          <div className="p-3 text-center text-[10px] text-gray-500">Sin resultados</div>
-                        )}
-                      {!busquedaNombre.trim() && (
-                        <div className="p-3 text-center text-[9px] text-gray-400">Escriba para buscar...</div>
-                      )}
                     </div>
 
                     <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(false); }}
-                        className="bg-gray-200 text-gray-700 font-bold px-4 py-1.5 border border-gray-400 text-[11px] active:bg-gray-300"
-                      >Limpiar</button>
-                      <button
-                        onClick={() => {
-                          setBusquedaProducto('');
-                          setProductoActivoIndex(0);
-                          setMostrarBuscaNombre(false);
-                        }}
-                        className="bg-[#00b0f0] text-black font-bold px-4 py-1.5 border border-[#0092c8] text-[11px] active:bg-[#0092c8]"
-                      >Buscar</button>
+                      <button onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(false); }} className="bg-gray-200 text-gray-700 font-bold px-4 py-1 text-[11px] border border-gray-400">Limpiar</button>
+                      <button onClick={() => setMostrarBuscaNombre(false)} className="bg-[#00a2e8] text-white font-bold px-4 py-1 text-[11px] border border-[#008cc9]">Buscar</button>
                     </div>
                   </div>
                 </div>
@@ -2886,192 +2997,192 @@ function App() {
               {/* Paso 1: Selección de Tipo (Standardized) */}
               {!retencionTipo && (
                 <div className="flex-1 flex flex-col bg-white overflow-hidden font-sans">
-                   <div className="bg-gray-100 p-2 text-gray-800 font-bold text-sm">
-                      Retenciones de IVA
-                   </div>
-                   <div className="flex-1 p-1 flex flex-col gap-2 overflow-hidden">
-                      <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
-                        <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
-                          <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
-                          <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
-                          <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
-                          <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                          {[
-                            { tipo: 'FAC', nro: '06980316', monto: '8,87' },
-                            { tipo: 'FAC', nro: '06980336', monto: '1,38' },
-                            { tipo: 'FAC', nro: '06982446', monto: '1,79' },
-                            { tipo: 'FAC', nro: '06982447', monto: '2,84' },
-                            { tipo: 'FAC', nro: '06982589', monto: '1,99', sel: true }
-                          ].map((row, i) => (
-                            <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
-                              <div className="w-8 flex items-center justify-center py-2 border-r border-gray-300">
-                                <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
-                                  {row.sel && <span className="text-[8px]">X</span>}
-                                </div>
+                  <div className="bg-gray-100 p-2 text-gray-800 font-bold text-sm">
+                    Retenciones de IVA
+                  </div>
+                  <div className="flex-1 p-1 flex flex-col gap-2 overflow-hidden">
+                    <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
+                      <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
+                        <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
+                        <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
+                        <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
+                        <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
+                      </div>
+                      <div className="flex-1 overflow-y-auto">
+                        {[
+                          { tipo: 'FAC', nro: '06980316', monto: '8,87' },
+                          { tipo: 'FAC', nro: '06980336', monto: '1,38' },
+                          { tipo: 'FAC', nro: '06982446', monto: '1,79' },
+                          { tipo: 'FAC', nro: '06982447', monto: '2,84' },
+                          { tipo: 'FAC', nro: '06982589', monto: '1,99', sel: true }
+                        ].map((row, i) => (
+                          <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
+                            <div className="w-8 flex items-center justify-center py-2 border-r border-gray-300">
+                              <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
+                                {row.sel && <span className="text-[8px]">X</span>}
                               </div>
-                              <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">{row.tipo}</div>
-                              <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
-                              <div className="w-24 text-right px-2 py-2">{row.monto}</div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Dropdown Section */}
-                      <div className="flex flex-col gap-2 bg-[#f0f0f0] p-3 border-t border-gray-300">
-                        <div className="flex gap-2 items-center relative">
-                          <div className="flex-1 relative">
-                            <select
-                              id="metodoCombo"
-                              value={retencionMetodo}
-                              onChange={(e) => setRetencionMetodo(e.target.value)}
-                              className="w-full bg-white border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-700 outline-none appearance-none"
-                            >
-                              <option>--Seleccione--</option>
-                              <option>Escanear Retención</option>
-                              <option>Cargar PDF</option>
-                              <option>Cargar Imagen</option>
-                              <option>Cargar Manual</option>
-                            </select>
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                              <span className="text-gray-500 text-[10px]">▼</span>
-                            </div>
+                            <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">{row.tipo}</div>
+                            <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
+                            <div className="w-24 text-right px-2 py-2">{row.monto}</div>
                           </div>
-                          <button
-                            id="btnValidar"
-                            onClick={() => {
-                              if (retencionMetodo === 'Cargar Manual') {
-                                setRetencionTipo('Manual');
-                              }
-                            }}
-                            className="bg-[#e6e6e6] text-black font-bold text-[10px] py-1.5 px-4 border border-white shadow-sm active:bg-gray-300 uppercase"
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dropdown Section */}
+                    <div className="flex flex-col gap-2 bg-[#f0f0f0] p-3 border-t border-gray-300">
+                      <div className="flex gap-2 items-center relative">
+                        <div className="flex-1 relative">
+                          <select
+                            id="metodoCombo"
+                            value={retencionMetodo}
+                            onChange={(e) => setRetencionMetodo(e.target.value)}
+                            className="w-full bg-white border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-700 outline-none appearance-none"
                           >
-                            VALIDAR
-                          </button>
-                        </div>
-
-                        <div className="flex justify-between items-center mt-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase">Total retenido:</span>
-                            <div className="bg-[#b3b3b3] px-10 py-1 border border-gray-400 text-center font-bold text-sm">0</div>
+                            <option>--Seleccione--</option>
+                            <option>Escanear Retención</option>
+                            <option>Cargar PDF</option>
+                            <option>Cargar Imagen</option>
+                            <option>Cargar Manual</option>
+                          </select>
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <span className="text-gray-500 text-[10px]">▼</span>
                           </div>
-                          <button className="bg-[#e6e6e6] text-black font-bold text-[10px] py-1.5 px-6 border border-white shadow-sm active:bg-gray-300 uppercase">
-                            FINALIZAR
-                          </button>
                         </div>
+                        <button
+                          id="btnValidar"
+                          onClick={() => {
+                            if (retencionMetodo === 'Cargar Manual') {
+                              setRetencionTipo('Manual');
+                            }
+                          }}
+                          className="bg-[#e6e6e6] text-black font-bold text-[10px] py-1.5 px-4 border border-white shadow-sm active:bg-gray-300 uppercase"
+                        >
+                          VALIDAR
+                        </button>
                       </div>
-                   </div>
+
+                      <div className="flex justify-between items-center mt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase">Total retenido:</span>
+                          <div className="bg-[#b3b3b3] px-10 py-1 border border-gray-400 text-center font-bold text-sm">0</div>
+                        </div>
+                        <button className="bg-[#e6e6e6] text-black font-bold text-[10px] py-1.5 px-6 border border-white shadow-sm active:bg-gray-300 uppercase">
+                          FINALIZAR
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Paso 2: Formulario */}
-               {/* Paso 2: Formulario */}
-               {retencionTipo && !mostrarConfirmacionRetencion && (
-                 <div className="flex-1 flex flex-col bg-[#f0f0f0] overflow-hidden font-sans">
-                    {/* Header Info like Image 6 */}
-                    <div className="p-2 flex flex-col gap-2">
-                       <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-bold text-gray-600">RIF:</span>
-                          <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-xs flex-1">J312193697</div>
-                       </div>
-                       <div className="flex items-start gap-2">
-                          <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Razón Social:</span>
-                          <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-[10px] flex-1">ALTAMIRA FERRE-INDUSTRIAL -</div>
-                       </div>
-                       
-                       <div className="flex flex-col gap-1 mt-1">
-                          <div className="flex items-center gap-2">
-                             <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Fecha Comp:</span>
-                             <div className="flex-1 border-b border-gray-800">
-                                <input 
-                                  type="text" 
-                                  value={retencionFecha}
-                                  onChange={(e) => setRetencionFecha(e.target.value)}
-                                  className="w-full bg-transparent outline-none text-xs font-bold"
-                                />
-                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                             <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Comprobante:</span>
-                             <div className="flex items-center gap-2 flex-1">
-                                <div className="bg-[#b3b3b3] px-4 py-0.5 border border-gray-400 font-bold text-xs flex-1 text-center">
-                                   {retencionComprobante}
-                                </div>
-                                <div className="w-20 border-b border-gray-800">
-                                   <input 
-                                     type="text"
-                                     value={retencionComprobante}
-                                     onChange={(e) => setRetencionComprobante(e.target.value)}
-                                     placeholder="YYYYMM"
-                                     className="w-full bg-transparent outline-none text-xs font-bold text-center"
-                                   />
-                                </div>
-                             </div>
-                          </div>
-                       </div>
+              {/* Paso 2: Formulario */}
+              {retencionTipo && !mostrarConfirmacionRetencion && (
+                <div className="flex-1 flex flex-col bg-[#f0f0f0] overflow-hidden font-sans">
+                  {/* Header Info like Image 6 */}
+                  <div className="p-2 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-gray-600">RIF:</span>
+                      <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-xs flex-1">J312193697</div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Razón Social:</span>
+                      <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-[10px] flex-1">ALTAMIRA FERRE-INDUSTRIAL -</div>
                     </div>
 
-                    <div className="flex-1 p-1 flex flex-col gap-1 overflow-hidden">
-                       <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
-                          <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
-                             <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
-                             <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
-                             <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
-                             <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Fecha Comp:</span>
+                        <div className="flex-1 border-b border-gray-800">
+                          <input
+                            type="text"
+                            value={retencionFecha}
+                            onChange={(e) => setRetencionFecha(e.target.value)}
+                            className="w-full bg-transparent outline-none text-xs font-bold"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Comprobante:</span>
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="bg-[#b3b3b3] px-4 py-0.5 border border-gray-400 font-bold text-xs flex-1 text-center">
+                            {retencionComprobante}
                           </div>
-                          <div className="flex-1 overflow-y-auto">
-                              {/* Invoices like Image 6 */}
-                              {[
-                                 { nro: '06965151', monto: '98,84' },
-                                 { nro: '06965887', monto: '12,33' },
-                                 { nro: '06966250', monto: '12,33' },
-                                 { nro: '06966278', monto: '17,43' },
-                                 { nro: '06966286', monto: '3,90' },
-                                 { nro: '06980316', monto: '8,87' },
-                                 { nro: '06980336', monto: '1,38' },
-                                 { nro: '06982446', monto: '1,79' },
-                                 { nro: '06982447', monto: '2,84' },
-                                 { nro: '06982589', monto: '1,99', sel: true }
-                              ].map((row, i) => (
-                                 <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
-                                    <div className="w-8 flex items-center justify-center py-2 border-r border-gray-200">
-                                       <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
-                                          {row.sel && <span className="text-[8px] text-black font-bold">X</span>}
-                                       </div>
-                                    </div>
-                                    <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">FAC</div>
-                                    <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
-                                    <div className="w-24 text-right px-2 py-2">{row.monto}</div>
-                                 </div>
-                              ))}
+                          <div className="w-20 border-b border-gray-800">
+                            <input
+                              type="text"
+                              value={retencionComprobante}
+                              onChange={(e) => setRetencionComprobante(e.target.value)}
+                              placeholder="YYYYMM"
+                              className="w-full bg-transparent outline-none text-xs font-bold text-center"
+                            />
                           </div>
-                       </div>
-                       
-                       <div className="bg-[#f0f0f0] p-2 flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                             <div className="w-4 h-4 border border-gray-600 bg-white"></div>
-                             <span className="text-[10px] font-bold text-black font-sans uppercase">Seleccionar todo</span>
-                          </div>
-                          <div className="flex items-center gap-2 justify-between mt-1 px-2">
-                             <span className="text-[11px] font-bold text-gray-600 uppercase">Monto VES:</span>
-                             <div className="bg-[#b3b3b3] px-3 py-1.5 border border-gray-400 font-bold text-xl flex-1 text-center max-w-[180px]">
-                                0,00
-                             </div>
-                          </div>
-                          <div className="flex justify-center mt-2 px-10">
-                             <button
-                               onClick={() => setMostrarConfirmacionRetencion(true)}
-                               className="w-full bg-[#e6e6e6] text-black font-bold text-[11px] py-1.5 border border-white shadow-sm active:bg-gray-300 uppercase"
-                             >
-                               CONTINUAR
-                             </button>
-                          </div>
-                       </div>
+                        </div>
+                      </div>
                     </div>
-                 </div>
-               )}
+                  </div>
+
+                  <div className="flex-1 p-1 flex flex-col gap-1 overflow-hidden">
+                    <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
+                      <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
+                        <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
+                        <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
+                        <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
+                        <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
+                      </div>
+                      <div className="flex-1 overflow-y-auto">
+                        {/* Invoices like Image 6 */}
+                        {[
+                          { nro: '06965151', monto: '98,84' },
+                          { nro: '06965887', monto: '12,33' },
+                          { nro: '06966250', monto: '12,33' },
+                          { nro: '06966278', monto: '17,43' },
+                          { nro: '06966286', monto: '3,90' },
+                          { nro: '06980316', monto: '8,87' },
+                          { nro: '06980336', monto: '1,38' },
+                          { nro: '06982446', monto: '1,79' },
+                          { nro: '06982447', monto: '2,84' },
+                          { nro: '06982589', monto: '1,99', sel: true }
+                        ].map((row, i) => (
+                          <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
+                            <div className="w-8 flex items-center justify-center py-2 border-r border-gray-200">
+                              <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
+                                {row.sel && <span className="text-[8px] text-black font-bold">X</span>}
+                              </div>
+                            </div>
+                            <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">FAC</div>
+                            <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
+                            <div className="w-24 text-right px-2 py-2">{row.monto}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#f0f0f0] p-2 flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border border-gray-600 bg-white"></div>
+                        <span className="text-[10px] font-bold text-black font-sans uppercase">Seleccionar todo</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-between mt-1 px-2">
+                        <span className="text-[11px] font-bold text-gray-600 uppercase">Monto VES:</span>
+                        <div className="bg-[#b3b3b3] px-3 py-1.5 border border-gray-400 font-bold text-xl flex-1 text-center max-w-[180px]">
+                          0,00
+                        </div>
+                      </div>
+                      <div className="flex justify-center mt-2 px-10">
+                        <button
+                          onClick={() => setMostrarConfirmacionRetencion(true)}
+                          className="w-full bg-[#e6e6e6] text-black font-bold text-[11px] py-1.5 border border-white shadow-sm active:bg-gray-300 uppercase"
+                        >
+                          CONTINUAR
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Paso 3: Confirmación / Ajuste */}
               {mostrarConfirmacionRetencion && (
@@ -3420,40 +3531,42 @@ function App() {
                     <label className="text-[10px] text-gray-500 font-bold block mb-1">MONTO</label>
                     <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] font-bold py-1 outline-none" />
                   </div>
-                  {!formaPagoReciboSeleccionada.includes('DEPOSITO') && (
-                    <div>
-                      <label className="text-[10px] text-gray-500 font-bold block mb-1">REFERENCIA</label>
-                      <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero referencia bancaria" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
-                    </div>
-                  )}
-                  {/* Nuevos campos: Banco y Fecha */}
-                  <div className="relative">
-                    <label className="text-[10px] text-gray-500 font-bold block mb-1">BANCO</label>
-                    <div
-                      className="w-full border-b border-gray-400 text-[14px] py-1 cursor-pointer flex justify-between"
-                      onClick={() => setMostrarComboBanco(!mostrarComboBanco)}
-                    >
-                      <span className={bancoDeposito ? "text-black font-bold" : "text-gray-400"}>{bancoDeposito || "Seleccione el banco"}</span>
-                      <span className="text-gray-500 text-xs">▼</span>
-                    </div>
-                    {mostrarComboBanco && (
-                      <div className="absolute top-12 left-0 w-full bg-white border border-gray-300 shadow-lg z-[60] flex flex-col max-h-32 overflow-y-auto">
-                        {['Banco Banesco', 'Banco Mercantil', 'Banco Provincial', 'Banco de Venezuela', 'Banco Exterior'].map(b => (
-                          <div
-                            key={b}
-                            className="p-2 text-[12px] hover:bg-blue-100 cursor-pointer border-b border-gray-100 last:border-0 font-bold"
-                            onClick={() => { setBancoDeposito(b); setMostrarComboBanco(false); }}
-                          >
-                            {b}
-                          </div>
-                        ))}
+                  {/* Mostrar REFERENCIA y BANCO solo si NO es efectivo ($) */}
+                  {formaPagoReciboSeleccionada !== 'DEPOSITO $' && (
+                    <>
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1">REFERENCIA</label>
+                        <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} placeholder="Numero referencia bancaria" className="w-full border-b border-gray-400 text-[14px] py-1 outline-none" />
                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-bold block mb-1">FECHA</label>
-                    <input type="date" value={fechaDeposito} onChange={(e) => setFechaDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] py-1 outline-none font-bold" />
-                  </div>
+                      <div className="relative">
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1">BANCO</label>
+                        <div
+                          className="w-full border-b border-gray-400 text-[14px] py-1 cursor-pointer flex justify-between"
+                          onClick={() => setMostrarComboBanco(!mostrarComboBanco)}
+                        >
+                          <span className={bancoDeposito ? "text-black font-bold" : "text-gray-400"}>{bancoDeposito || "Seleccione el banco"}</span>
+                          <span className="text-gray-500 text-xs">▼</span>
+                        </div>
+                        {mostrarComboBanco && (
+                          <div className="absolute top-12 left-0 w-full bg-white border border-gray-300 shadow-lg z-[60] flex flex-col max-h-32 overflow-y-auto">
+                            {['Banco Banesco', 'Banco Mercantil', 'Banco Provincial', 'Banco de Venezuela', 'Banco Exterior'].map(b => (
+                              <div
+                                key={b}
+                                className="p-2 text-[12px] hover:bg-blue-100 cursor-pointer border-b border-gray-100 last:border-0 font-bold"
+                                onClick={() => { setBancoDeposito(b); setMostrarComboBanco(false); }}
+                              >
+                                {b}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 font-bold block mb-1">FECHA</label>
+                        <input type="date" value={fechaDeposito} onChange={(e) => setFechaDeposito(e.target.value)} className="w-full border-b border-gray-400 text-[14px] py-1 outline-none font-bold" />
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex justify-center pt-2">
                     <button onClick={() => {
@@ -3707,6 +3820,30 @@ function App() {
         >
           {isClicking && <div className="ghost-ripple" />}
         </div>
+
+        {/* CONTROLES DE SIMULACIÓN (PAUSE / STOP) */}
+        {cursorPos.visible && (
+          <div className="absolute top-10 right-4 z-[120] flex flex-col gap-2 scale-75 origin-top-right">
+            <button
+              onClick={() => {
+                const nextVal = !isPaused;
+                setIsPaused(nextVal);
+                isPausedRef.current = nextVal;
+              }}
+              className={`${isPaused ? 'bg-green-600' : 'bg-yellow-600'} text-white font-bold p-2 rounded-lg shadow-lg border border-white/50 w-24 active:scale-95 transition-all text-xs flex items-center justify-center gap-1`}
+            >
+              <span className="text-sm">{isPaused ? '▶' : '⏸'}</span>
+              {isPaused ? 'REANUDAR' : 'PAUSAR'}
+            </button>
+            <button
+              onClick={stopAllDemos}
+              className="bg-red-700 text-white font-bold p-2 rounded-lg shadow-lg border border-white/50 w-24 active:scale-95 transition-all text-xs flex items-center justify-center gap-1"
+            >
+              <span className="text-sm">⏹</span>
+              DETENER
+            </button>
+          </div>
+        )}
         {/* PANTALLA: CATÁLOGO DIGITAL MAIN */}
         {pantalla === 'catalog_main' && (
           <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
@@ -4335,8 +4472,27 @@ function App() {
                   ✕
                 </button>
               </div>
-              <div className="flex-1 overflow-auto bg-gray-200">
+              <div className="flex-1 overflow-auto bg-gray-200 relative">
                 <img src="soportepago.jpeg" alt="Soporte de Pago" className="w-full h-auto" />
+                
+                {/* EFECTO LUPA (ZOOM SOBRE EL MONTO) */}
+                {mostrarLupa && (
+                  <div 
+                    className="absolute z-[210] w-32 h-32 rounded-full border-4 border-blue-500 shadow-2xl pointer-events-none overflow-hidden animate-in zoom-in duration-500"
+                    style={{
+                      top: '55%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      backgroundImage: 'url(soportepago.jpeg)',
+                      backgroundSize: '300%', // Magnificación 3x
+                      backgroundPosition: '50% 64%', // Centrado en el monto (ajustado empíricamente)
+                      boxShadow: '0 0 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    {/* Reflejo de cristal de la lupa */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none"></div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
