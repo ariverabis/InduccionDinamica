@@ -67,8 +67,8 @@ function App() {
   const [mostrarLupa, setMostrarLupa] = useState(false);
 
   // --- LOGIN AFV FEBECA ---
-  const [loginUsername, setloginUsername] = useState('');
-  const [loginPassword, setloginPassword] = useState('');
+  const [loginUsername, setloginUsername] = useState('admin');
+  const [loginPassword, setloginPassword] = useState('1111');
   const [loginError, setloginError] = useState('');
 
   // --- RETENCION STATES ---
@@ -91,6 +91,7 @@ function App() {
   const [busquedaNombre, setBusquedaNombre] = useState('');
   const [mostrarBuscaNombre, setMostrarBuscaNombre] = useState(false);
   const [productoActivoIndex, setProductoActivoIndex] = useState(0);
+  const [mostrarDatosBotonB, setMostrarDatosBotonB] = useState(false);
 
   const MOCK_PRODUCTOS = [
     { cod: '2213021', old: 'CFLX-01', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm', p1: '15.500,00', p2: '12.800,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '500' },
@@ -1257,8 +1258,8 @@ function App() {
             <div className="relative z-10 grid grid-cols-4 gap-4 mt-6 px-2">
               {/* ICONO FEBECA */}
               <div onClick={() => {
-                setloginUsername('');
-                setloginPassword('');
+                setloginUsername('admin');
+                setloginPassword('1111');
                 setloginError('');
                 setPantalla('login_afv');
               }} title="Ingresar al módulo de AFV Febeca" className="flex flex-col items-center cursor-pointer">
@@ -1282,18 +1283,18 @@ function App() {
                 <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Beval</span>
               </div>
 
-              {/* ICONO CATALOGO FEBECA */}
+              {/* ICONO CATALOGO FEBECA (Deshabilitado temporalmente) */}
               <div
-                onClick={() => setPantalla('catalog_main')}
-                title="Abrir Catálogo Digital Febeca"
-                className="flex flex-col items-center cursor-pointer"
+                onClick={() => {}}
+                title="Módulo Catálogo Digital (En desarrollo)"
+                className="flex flex-col items-center cursor-not-allowed opacity-50"
               >
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1 relative">
                   <img src="logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-lg" />
-                  {/* Botón Run para el demo del catálogo */}
+                  {/* Botón Run para el demo del catálogo (Deshabilitado) */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); wrapDemo(runDemoDigitalCatalog)(); }}
-                    className="absolute -top-1 -right-1 bg-red-600 text-[8px] text-white font-bold p-1 rounded-full shadow-lg z-20"
+                    disabled
+                    className="absolute -top-1 -right-1 bg-gray-400 text-[8px] text-white font-bold p-1 rounded-full shadow-lg z-20 cursor-not-allowed"
                   >
                     Run
                   </button>
@@ -2320,7 +2321,7 @@ function App() {
                 </div>
                 <div className="flex items-center gap-1.5 ml-2">
                   <button
-                    onClick={() => { setBusquedaNombre(''); setMostrarBuscaNombre(true); }}
+                    onClick={() => setMostrarDatosBotonB(true)}
                     className="bg-[#dadada] text-black border border-gray-400 px-3 py-0.5 text-[11px] font-bold shadow-sm active:bg-gray-400"
                   >B.</button>
                   <button className="bg-[#dadada] text-black border border-gray-400 px-3 py-0.5 text-[11px] font-bold shadow-sm">SUB</button>
@@ -2497,6 +2498,29 @@ function App() {
                       <button onClick={() => setMostrarBuscaNombre(false)} className="bg-[#00a2e8] text-white font-bold px-4 py-1 text-[11px] border border-[#008cc9]">Buscar</button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal: Imagen Botón B. (datosbotonb.jpeg) */}
+            {mostrarDatosBotonB && (
+              <div 
+                className="absolute inset-0 bg-black/70 flex items-center justify-center z-[60]"
+                onClick={() => setMostrarDatosBotonB(false)}
+              >
+                <div className="relative w-[95%] h-[80%] flex items-center justify-center bg-transparent">
+                  <img 
+                    src="datosbotonb.jpeg" 
+                    alt="Datos Botón B" 
+                    className="max-w-full max-h-full object-contain rounded shadow-2xl"
+                  />
+                  <button 
+                    onClick={() => setMostrarDatosBotonB(false)}
+                    className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 w-8 h-8 bg-red-600 border-2 border-white rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg hover:bg-red-700"
+                    title="Cerrar imagen"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
             )}
