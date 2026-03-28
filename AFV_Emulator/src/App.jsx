@@ -84,7 +84,6 @@ function App() {
   const [retencionTipo, setRetencionTipo] = useState('');
   const [retencionMetodo, setRetencionMetodo] = useState('--Seleccione--');
   const [invoiceChecked, setInvoiceChecked] = useState(false);
-  const [mostrarConfirmacionRetencion, setMostrarConfirmacionRetencion] = useState(false);
   const [mostrarModalOtorgar, setMostrarModalOtorgar] = useState(false);
   const [condicionPedido, setCondicionPedido] = useState('0% de descuento a 30');
 
