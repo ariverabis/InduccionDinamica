@@ -61,7 +61,7 @@ function App() {
   const isPausedRef = useRef(false);
   const [stopRequested, setStopRequested] = useState(false);
   const stopRequestedRef = useRef(false);
-  const [mostrarCalculadora, setMostrarCalculadora] = useState(false);luoa en bs
+  const [mostrarCalculadora, setMostrarCalculadora] = useState(false);
   const [imgCalculadora, setImgCalculadora] = useState('calc1.png');
   const [mostrarSoporte, setMostrarSoporte] = useState(false);
   const [mostrarLupa, setMostrarLupa] = useState(false);
