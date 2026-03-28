@@ -65,6 +65,7 @@ function App() {
   const [imgCalculadora, setImgCalculadora] = useState('calc1.png');
   const [mostrarSoporte, setMostrarSoporte] = useState(false);
   const [mostrarLupa, setMostrarLupa] = useState(false);
+  const [mostrarLupaMontos, setMostrarLupaMontos] = useState(false);
 
   // --- LOGIN AFV FEBECA ---
   const [loginUsername, setloginUsername] = useState('admin');
@@ -916,8 +917,15 @@ function App() {
     setPantalla('recibo_incluidas');
     await sleep(800);
 
+    // 7.5 Efecto lupa en los montos inferiores
+    await decir("7.- Visualice la parte inferior con los montos en bolívares y dólares.");
+    setMostrarLupaMontos(true);
+    await sleep(4000);
+    setMostrarLupaMontos(false);
+    await sleep(500);
+
     // 8. Representar calculadora (calc1.png) - Cálculo de tasa
-    await decir("7.- Calculamos la tasa de la factura (Monto Bs / Monto USD).");
+    await decir("8.- Calculamos la tasa de la factura (Monto Bs / Monto USD).");
     setImgCalculadora('calc1.png');
     setMostrarCalculadora(true);
     await sleep(3500);
@@ -3553,6 +3561,29 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* EFECTO LUPA MONTOS INFERIORES */}
+            {mostrarLupaMontos && (
+              <div 
+                className="absolute z-[210] w-[260px] h-[75px] rounded-2xl border-[4px] border-[#00b0f0] pointer-events-none overflow-hidden animate-in zoom-in duration-500 bg-[#e6e6e6] flex flex-col items-center justify-center p-2"
+                style={{
+                  bottom: '60px',
+                  left: '50%',
+                  transform: 'translate(-50%, 0)',
+                  boxShadow: '0 0 30px rgba(0,0,0,0.7), inset 0 0 15px rgba(0,0,0,0.3)'
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent pointer-events-none z-10"></div>
+                <div className="flex gap-2 w-full h-full z-20">
+                  <div className="flex-1 bg-white flex items-center justify-center border border-gray-400 rounded shadow-inner">
+                    <span className="text-[17px] font-black text-red-600 font-sans tracking-tight">84,46 <span className="text-[10px]">USD</span></span>
+                  </div>
+                  <div className="flex-1 bg-white flex items-center justify-center border border-gray-400 rounded shadow-inner">
+                    <span className="text-[17px] font-black text-red-600 font-sans tracking-tight">45.718,20 <span className="text-[10px]">VES</span></span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* MODAL DEPOSITO (recibodeposito5.jpg) */}
             {mostrarModalDeposito && (
