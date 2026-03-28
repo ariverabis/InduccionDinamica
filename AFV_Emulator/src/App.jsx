@@ -61,7 +61,7 @@ function App() {
   const isPausedRef = useRef(false);
   const [stopRequested, setStopRequested] = useState(false);
   const stopRequestedRef = useRef(false);
-  const [mostrarCalculadora, setMostrarCalculadora] = useState(false);
+  const [mostrarCalculadora, setMostrarCalculadora] = useState(false);luoa en bs
   const [imgCalculadora, setImgCalculadora] = useState('calc1.png');
   const [mostrarSoporte, setMostrarSoporte] = useState(false);
   const [mostrarLupa, setMostrarLupa] = useState(false);
@@ -1300,7 +1300,7 @@ function App() {
 
               {/* ICONO CATALOGO FEBECA (Deshabilitado temporalmente) */}
               <div
-                onClick={() => {}}
+                onClick={() => { }}
                 title="Módulo Catálogo Digital (En desarrollo)"
                 className="flex flex-col items-center cursor-not-allowed opacity-50"
               >
@@ -2373,7 +2373,7 @@ function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-[12px] italic text-gray-500 font-medium">P1</span>
-                    <div 
+                    <div
                       onClick={() => { setAfvCalcPrecio(productoActivo?.p1); setAfvCalcNombre('P1'); setAfvDctoComercial(productoActivo?.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
                       className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[13px] font-bold text-gray-800 border border-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] cursor-pointer active:bg-blue-200"
                     >
@@ -2382,7 +2382,7 @@ function App() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[12px] italic text-gray-500 font-medium">P2</span>
-                    <div 
+                    <div
                       onClick={() => { setAfvCalcPrecio(productoActivo?.p2); setAfvCalcNombre('P2'); setAfvDctoComercial(productoActivo?.dscto !== '0,00' ? productoActivo.dscto + '%' : ''); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
                       className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[13px] font-bold text-gray-800 border border-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] cursor-pointer active:bg-blue-200"
                     >
@@ -2431,13 +2431,13 @@ function App() {
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] w-12">Cant.:</span>
                   <div className="flex-1 flex gap-2">
-                    <input 
-                      type="text" 
-                      value={cantidadProducto} 
-                      onChange={(e) => setCantidadProducto(e.target.value)} 
+                    <input
+                      type="text"
+                      value={cantidadProducto}
+                      onChange={(e) => setCantidadProducto(e.target.value)}
                       className="flex-1 bg-white border-b border-gray-600 h-7 text-center text-[14px] outline-none focus:border-blue-600"
                     />
-                    <button 
+                    <button
                       onClick={() => setPantalla('detalle_pedido_con_producto')}
                       className="bg-[#dadada] text-black font-bold h-7 px-10 text-[12px] border border-gray-400 shadow-sm active:bg-gray-400 flex items-center justify-center"
                     >
@@ -2519,17 +2519,17 @@ function App() {
 
             {/* Modal: Imagen Botón B. (datosbotonb.jpeg) */}
             {mostrarDatosBotonB && (
-              <div 
+              <div
                 className="absolute inset-0 bg-black/70 flex items-center justify-center z-[60]"
                 onClick={() => setMostrarDatosBotonB(false)}
               >
                 <div className="relative w-[95%] h-[80%] flex items-center justify-center bg-transparent">
-                  <img 
-                    src="datosbotonb.jpeg" 
-                    alt="Datos Botón B" 
+                  <img
+                    src="datosbotonb.jpeg"
+                    alt="Datos Botón B"
                     className="max-w-full max-h-full object-contain rounded shadow-2xl"
                   />
-                  <button 
+                  <button
                     onClick={() => setMostrarDatosBotonB(false)}
                     className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 w-8 h-8 bg-red-600 border-2 border-white rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg hover:bg-red-700"
                     title="Cerrar imagen"
@@ -3081,7 +3081,7 @@ function App() {
                             <span>{retencionMetodo}</span>
                             <span className="text-gray-500 text-[10px]">▼</span>
                           </div>
-                          
+
                           {/* Dropdown visual simulado */}
                           {mostrarComboRetencion && (
                             <div className="absolute left-0 top-[100%] mt-px bg-white border border-gray-400 shadow-lg z-50 w-full rounded-sm overflow-hidden">
@@ -3564,7 +3564,7 @@ function App() {
 
             {/* EFECTO LUPA MONTOS INFERIORES */}
             {mostrarLupaMontos && (
-              <div 
+              <div
                 className="absolute z-[210] w-[260px] h-[75px] rounded-2xl border-[4px] border-[#00b0f0] pointer-events-none overflow-hidden animate-in zoom-in duration-500 bg-[#e6e6e6] flex flex-col items-center justify-center p-2"
                 style={{
                   bottom: '60px',
@@ -4540,10 +4540,10 @@ function App() {
               </div>
               <div className="flex-1 overflow-auto bg-gray-200 relative">
                 <img src="soportepago.jpeg" alt="Soporte de Pago" className="w-full h-auto" />
-                
+
                 {/* EFECTO LUPA (ZOOM SOBRE EL MONTO) */}
                 {mostrarLupa && (
-                  <div 
+                  <div
                     className="absolute z-[210] w-32 h-32 rounded-full border-4 border-blue-500 shadow-2xl pointer-events-none overflow-hidden animate-in zoom-in duration-500"
                     style={{
                       top: '55%',
