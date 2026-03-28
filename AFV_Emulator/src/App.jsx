@@ -74,8 +74,10 @@ function App() {
   // --- RETENCION STATES ---
   const [mostrarRetencionImg, setMostrarRetencionImg] = useState(false);
   const [retencionImgSrc, setRetencionImgSrc] = useState('');
-  const [retencionFecha, setRetencionFecha] = useState('22-02-2026');
-  const [retencionComprobante, setRetencionComprobante] = useState('202602');
+  const [retencionFecha, setRetencionFecha] = useState('06-12-2025');
+  const [retencionComprobante, setRetencionComprobante] = useState('');
+  const [mostrarConfirmacionRetencion, setMostrarConfirmacionRetencion] = useState(false);
+  const [mostrarComboRetencion, setMostrarComboRetencion] = useState(false);
   const [retencionMonto, setRetencionMonto] = useState('870,30');
   const [mostrarRetencionCombo, setMostrarRetencionCombo] = useState(false);
   const [retencionesLista, setRetencionesLista] = useState([]);
@@ -1081,10 +1083,16 @@ function App() {
     await sleep(1500);
 
     // 5. Seleccionamos carga manual en el combo
-    await decir("5.- Seleccionamos 'Carga Manual' en el combo.");
+    await decir("5.- Seleccionamos 'Cargar Manual' en el combo.");
     setCursorPos({ x: 140, y: 515, visible: true }); // Combo position
     await sleep(1200);
     await triggerClick();
+    setMostrarComboRetencion(true);
+    await sleep(1500); // Give user time to read the options
+    setCursorPos({ x: 140, y: 640, visible: true }); // Move cursor to 'Cargar Manual'
+    await sleep(1200);
+    await triggerClick();
+    setMostrarComboRetencion(false);
     setRetencionMetodo('Cargar Manual');
     await sleep(1000);
 
@@ -3058,21 +3066,25 @@ function App() {
                     <div className="flex flex-col gap-2 bg-[#f0f0f0] p-3 border-t border-gray-300">
                       <div className="flex gap-2 items-center relative">
                         <div className="flex-1 relative">
-                          <select
+                          <div
                             id="metodoCombo"
-                            value={retencionMetodo}
-                            onChange={(e) => setRetencionMetodo(e.target.value)}
-                            className="w-full bg-white border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-700 outline-none appearance-none"
+                            onClick={() => setMostrarComboRetencion(!mostrarComboRetencion)}
+                            className="w-full bg-white border border-gray-400 px-2 py-1 text-[11px] font-bold text-gray-700 flex justify-between items-center cursor-pointer"
                           >
-                            <option>--Seleccione--</option>
-                            <option>Escanear Retención</option>
-                            <option>Cargar PDF</option>
-                            <option>Cargar Imagen</option>
-                            <option>Cargar Manual</option>
-                          </select>
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <span>{retencionMetodo}</span>
                             <span className="text-gray-500 text-[10px]">▼</span>
                           </div>
+                          
+                          {/* Dropdown visual simulado */}
+                          {mostrarComboRetencion && (
+                            <div className="absolute left-0 top-[100%] mt-px bg-white border border-gray-400 shadow-lg z-50 w-full rounded-sm overflow-hidden">
+                              <div onClick={() => { setRetencionMetodo('--Seleccione--'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === '--Seleccione--' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>--Seleccione--</div>
+                              <div onClick={() => { setRetencionMetodo('Escanear Retencion'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Escanear Retencion' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Escanear Retencion</div>
+                              <div onClick={() => { setRetencionMetodo('Cargar PDF'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Cargar PDF' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar PDF</div>
+                              <div onClick={() => { setRetencionMetodo('Cargar Imagen'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Cargar Imagen' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar Imagen</div>
+                              <div onClick={() => { setRetencionMetodo('Cargar Manual'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Cargar Manual' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar Manual</div>
+                            </div>
+                          )}
                         </div>
                         <button
                           id="btnValidar"
