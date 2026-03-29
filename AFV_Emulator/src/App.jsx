@@ -75,9 +75,11 @@ function App() {
   // --- RETENCION STATES ---
   const [mostrarRetencionImg, setMostrarRetencionImg] = useState(false);
   const [retencionImgSrc, setRetencionImgSrc] = useState('');
-  const [retencionFecha, setRetencionFecha] = useState('06-12-2025');
+  const [retencionFecha, setRetencionFecha] = useState('');
+  const [retencionPeriodo, setRetencionPeriodo] = useState('');
+  const [retencionSecuencia, setRetencionSecuencia] = useState('');
   const [retencionComprobante, setRetencionComprobante] = useState('');
-  const [mostrarConfirmacionRetencion, setMostrarConfirmacionRetencion] = useState(false);
+  const [mostrarDetalleRetencion, setMostrarDetalleRetencion] = useState(false);
   const [mostrarComboRetencion, setMostrarComboRetencion] = useState(false);
   const [retencionMonto, setRetencionMonto] = useState('870,30');
   const [mostrarRetencionCombo, setMostrarRetencionCombo] = useState(false);
@@ -1047,6 +1049,14 @@ function App() {
   };
 
   const runDemoRetencion = async () => {
+    // Reset all modal and form states for clean demo
+    setInvoiceChecked(false);
+    setMostrarDetalleRetencion(false);
+    setRetencionMonto('870,30');
+    setRetencionFecha('');
+    setRetencionPeriodo('');
+    setRetencionSecuencia('');
+
     // 0. Inicio en 073 Ventas Menu
     await decir("1.- Ingrese Módulo de cobranza.");
     setCursorPos({ x: 290, y: 60, visible: true });
@@ -1096,7 +1106,7 @@ function App() {
     await triggerClick();
     setMostrarComboRetencion(true);
     await sleep(1500); // Give user time to read the options
-    setCursorPos({ x: 140, y: 640, visible: true }); // Move cursor to 'Cargar Manual'
+    setCursorPos({ x: 140, y: 495, visible: true }); // Move cursor up to 'Cargar Manual' (since dropdown opens upward now)
     await sleep(1200);
     await triggerClick();
     setMostrarComboRetencion(false);
@@ -1116,50 +1126,64 @@ function App() {
     setCursorPos({ x: 160, y: 140, visible: true });
     await sleep(1200);
     await triggerClick();
-    setRetencionFecha('12-03-2026');
+    setRetencionFecha('27-03-2026');
     await sleep(1500);
 
     // 8. Llenamos el campo comprobante real
-    await decir("8.- Llenamos el campo comprobante (año y mes).");
-    setCursorPos({ x: 230, y: 180, visible: true });
+    await decir("8.- Llenamos el campo numero de comprobante.");
+    setCursorPos({ x: 190, y: 180, visible: true });
     await sleep(1200);
     await triggerClick();
-    setRetencionComprobante('202603');
+    setRetencionPeriodo('202603');
+    await sleep(800);
+    setCursorPos({ x: 260, y: 180, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setRetencionSecuencia('00001234');
     await sleep(1500);
 
     // 9. Marcamos el check de la factura (Simulando scroll o selección de la última)
     await decir("9.- Marcamos el check de la factura aplicable.");
-    setCursorPos({ x: 25, y: 510, visible: true }); // Última fila aprox
+    setCursorPos({ x: 35, y: 310, visible: true }); // Fila 06982589 aprox
     await sleep(1200);
     await triggerClick();
     setInvoiceChecked(true);
     await sleep(1500);
 
-    // 10. Siguiente paso (Continuar)
-    await decir("10.- Pulsamos CONTINUAR.");
-    setCursorPos({ x: 160, y: 585, visible: true });
+    // 10. Seleccionar barra azul
+    await decir("10.- Pulsamos sobre la barra azul para abrir el detalle y ajustar la retención.");
+    setCursorPos({ x: 150, y: 310, visible: true }); // Sobre la barra
     await sleep(1200);
     await triggerClick();
-    setMostrarConfirmacionRetencion(true);
+    setMostrarDetalleRetencion(true);
     await sleep(1500);
 
-    // 11. Corregir monto en el modal real
-    await decir("11.- Pulsando en el monto corregimos de 870,30 a 870.");
-    setCursorPos({ x: 230, y: 440, visible: true });
+    // 11. Editar el monto
+    await decir("11.- Editamos la Retención para igualar el comprobante físico del cliente.");
+    setCursorPos({ x: 200, y: 460, visible: true }); // Dentro del input de Retención en el modal
     await sleep(1200);
     await triggerClick();
-    setRetencionMonto('870');
-    await sleep(2000);
+    setRetencionMonto('870,30'); // Simulando el tipeo
+    await sleep(1500);
 
-    // 12. Pulsamos SÍ, CONFIRMAR
-    await decir("12.- Pulsamos SÍ, CONFIRMAR para finalizar.");
-    setCursorPos({ x: 160, y: 540, visible: true }); // Botón Sí central
+    // 12. Confirmar cambio OK
+    await decir("12.- Confirmamos los cambios pulsando OK.");
+    setCursorPos({ x: 100, y: 520, visible: true }); // OK botón en el modal
     await sleep(1200);
     await triggerClick();
-    setRetencionesLista([{ comprobante: '202603', fecha: '12-03-2026', monto: '870' }]);
-    setMostrarConfirmacionRetencion(false);
+    setMostrarDetalleRetencion(false);
+    await sleep(1500);
+
+    // 13. Siguiente paso (FIN)
+    await decir("13.- Finalizamos pulsando FIN.");
+    setCursorPos({ x: 245, y: 65, visible: true }); // Boton FIN
+    await sleep(1200);
+    await triggerClick();
+    setRetencionesLista([{ comprobante: retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000'), fecha: retencionFecha, monto: retencionMonto }]);
     setPantalla('retencion_list');
-    await sleep(2500);
+    setRetencionTipo('');
+    await sleep(1500);
+
 
     // Regresar al menú
     setNarracionTexto("");
@@ -2924,38 +2948,41 @@ function App() {
           </div>
         )}
 
-        {/* PANTALLA: LISTA DE RETENCIONES (Functional - Standardized) */}
+        {/* PANTALLA: LISTA DE RETENCIONES (Functional - Standardized to match ret00.jpeg) */}
         {pantalla === 'retencion_list' && (
-          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+          <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-[#00b0f0] p-2.5 flex items-center text-black border-b border-[#0092c8] shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
                   <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
                 </div>
-                <span className="text-[13px] font-bold text-black font-sans tracking-tight uppercase">060 - Retenciones de IVA</span>
+                <span className="text-[14px] text-black font-sans tracking-tight">061 - Retenciones</span>
               </div>
-              <div className="text-[14px] font-bold">⋮</div>
             </div>
 
             <div className="flex flex-col flex-1 bg-[#f0f0f0]">
-              {/* Toolbar de Cliente Estándar */}
-              <div className="flex items-center justify-between bg-[#c0c0c0] px-3 py-1.5 shadow-inner mb-1">
-                <span className="text-[12px] font-bold text-gray-800 font-sans truncate">GRUPO ISO HOME, C.A - 2531318</span>
+              {/* Toolbar de Cliente y Volver */}
+              <div className="flex items-center justify-between bg-[#f0f0f0] px-2 py-2 mb-1">
+                <div className="bg-[#b3b3b3] px-3 py-1 flex-1 shadow-sm border border-gray-400 flex items-center h-8 text-[14px]">
+                  <span className="bg-[#b3b3b3] text-black font-sans font-medium uppercase truncate">
+                    ALTAMIRA FERRE-INDUSTRIAL - 21311
+                  </span>
+                </div>
                 <button
                   onClick={() => setPantalla('recibo_menu')}
-                  className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-[#808080] border-2 border-[#808080] shadow-sm transform hover:scale-105 active:scale-95 transition-transform"
+                  className="w-8 h-8 ml-2 bg-gradient-to-b from-[#e6e6e6] to-[#cccccc] rounded-full flex items-center justify-center text-[#666666] border border-[#a6a6a6] shadow-md transform hover:scale-105 active:scale-95 transition-transform"
                 >
-                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                  <span className="font-bold text-2xl leading-none mt-[-2px]">←</span>
                 </button>
               </div>
 
-              <div className="flex-1 p-1 flex flex-col gap-2">
-                <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden font-sans">
-                  <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
-                    <div className="w-8 text-center py-1.5 border-r border-gray-400">ST</div>
-                    <div className="flex-1 px-2 py-1.5 border-r border-gray-400">Nro. Comp</div>
-                    <div className="w-16 text-center py-1.5 border-r border-gray-400">Fecha</div>
-                    <div className="w-20 text-right px-2 py-1.5">Monto</div>
+              <div className="flex-1 flex flex-col gap-1 pb-2">
+                <div className="flex-1 mx-2 border border-black bg-white flex flex-col font-sans overflow-hidden">
+                  <div className="flex bg-[#a6a6a6] text-white font-bold text-[12px] border-b border-gray-400">
+                    <div className="w-12 text-center py-1.5 border-r border-[#cfcfcf]">E</div>
+                    <div className="flex-1 text-center py-1.5 border-r border-[#cfcfcf]">Comprobante</div>
+                    <div className="flex-1 text-center py-1.5 border-r border-[#cfcfcf]">Monto (USD)</div>
+                    <div className="w-4 bg-[#a6a6a6]"></div>
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
@@ -2965,41 +2992,34 @@ function App() {
                       </div>
                     ) : (
                       retencionesLista.map((ret, idx) => (
-                        <div key={idx} className="flex border-b border-gray-200 text-[10px] font-bold text-black hover:bg-gray-100 transition-colors">
-                          <div className="w-8 flex items-center justify-center py-2 border-r border-gray-200">
-                            <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                        <div key={idx} className="flex border-b border-gray-200 text-[12px] text-black hover:bg-gray-100 transition-colors">
+                          <div className="w-12 flex items-center justify-center py-2 border-r border-gray-200">
                           </div>
-                          <div className="flex-1 px-2 py-2 border-r border-gray-200">{ret.comprobante}</div>
-                          <div className="w-16 text-center py-2 border-r border-gray-200 text-gray-600">{ret.fecha}</div>
-                          <div className="w-20 text-right px-2 py-2 font-bold">{ret.monto}</div>
+                          <div className="flex-1 text-center px-2 py-2 border-r border-gray-200">{ret.comprobante}</div>
+                          <div className="flex-1 text-center px-2 py-2 border-r border-gray-200">{ret.monto}</div>
+                          <div className="w-4 bg-gray-50 border-l border-gray-200"></div>
                         </div>
                       ))
                     )}
                   </div>
 
-                  <div className="bg-[#d0d0d0] p-1.5 border-t border-gray-400 flex justify-between items-center px-2">
-                    <span className="text-[10px] font-bold text-black uppercase">Registros: {retencionesLista.length}</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-[10px] font-bold text-black uppercase">Total:</span>
-                      <span className="text-[11px] font-bold text-black">
-                        {retencionesLista.length > 0 ? retencionesLista[retencionesLista.length - 1].monto : '0,00'}
-                      </span>
-                    </div>
+                  <div className="bg-[#cccccc] py-1 border-t border-gray-400 flex items-center">
+                    <span className="text-[12px] font-bold text-black ml-10">Total:</span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 p-3 justify-center">
+                <div className="flex gap-4 p-2 justify-center">
+                  <button className="bg-[#e6e6e6] text-black font-sans text-[13px] py-1.5 px-6 shadow-sm border border-[#a6a6a6] active:bg-gray-300">
+                    ANULAR
+                  </button>
                   <button
                     onClick={() => {
                       setRetencionTipo('');
                       setPantalla('retencion_form');
                     }}
-                    className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase"
+                    className="bg-[#e6e6e6] text-black font-sans text-[13px] py-1.5 px-6 shadow-sm border border-[#a6a6a6] active:bg-gray-300"
                   >
                     NUEVO
-                  </button>
-                  <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase">
-                    ENVIAR EMAIL
                   </button>
                 </div>
               </div>
@@ -3015,8 +3035,8 @@ function App() {
                 <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden p-0.5">
                   <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center text-white font-serif italic text-xs border border-blue-300">f</div>
                 </div>
-                <span className="text-[13px] font-bold text-black font-sans tracking-tight uppercase">
-                  {!retencionTipo ? "124 - Retenciones de IVA" : "097 - Retenciones"}
+                <span className="text-[14px] text-black font-sans tracking-tight">
+                  097 - Retenciones
                 </span>
               </div>
               <button
@@ -3053,12 +3073,11 @@ function App() {
                           { tipo: 'FAC', nro: '06980336', monto: '1,38' },
                           { tipo: 'FAC', nro: '06982446', monto: '1,79' },
                           { tipo: 'FAC', nro: '06982447', monto: '2,84' },
-                          { tipo: 'FAC', nro: '06982589', monto: '1,99', sel: true }
+                          { tipo: 'FAC', nro: '06982589', monto: '1,99' }
                         ].map((row, i) => (
-                          <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
+                          <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold text-black`}>
                             <div className="w-8 flex items-center justify-center py-2 border-r border-gray-300">
-                              <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
-                                {row.sel && <span className="text-[8px]">X</span>}
+                              <div className={`w-3 h-3 border border-gray-600 bg-white`}>
                               </div>
                             </div>
                             <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">{row.tipo}</div>
@@ -3084,12 +3103,12 @@ function App() {
 
                           {/* Dropdown visual simulado */}
                           {mostrarComboRetencion && (
-                            <div className="absolute left-0 top-[100%] mt-px bg-white border border-gray-400 shadow-lg z-50 w-full rounded-sm overflow-hidden">
+                            <div className="absolute left-0 bottom-[100%] mb-1 bg-white border border-gray-400 shadow-lg z-50 w-full rounded-sm overflow-hidden flex flex-col-reverse">
                               <div onClick={() => { setRetencionMetodo('--Seleccione--'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === '--Seleccione--' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>--Seleccione--</div>
                               <div onClick={() => { setRetencionMetodo('Escanear Retencion'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Escanear Retencion' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Escanear Retencion</div>
                               <div onClick={() => { setRetencionMetodo('Cargar PDF'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Cargar PDF' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar PDF</div>
                               <div onClick={() => { setRetencionMetodo('Cargar Imagen'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Cargar Imagen' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar Imagen</div>
-                              <div onClick={() => { setRetencionMetodo('Cargar Manual'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans cursor-pointer hover:bg-gray-100 ${retencionMetodo === 'Cargar Manual' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar Manual</div>
+                              <div onClick={() => { setRetencionMetodo('Cargar Manual'); setMostrarComboRetencion(false); }} className={`px-2 py-1.5 text-[11px] font-sans cursor-pointer hover:bg-gray-100 border-b border-gray-200 ${retencionMetodo === 'Cargar Manual' ? 'bg-[#00b0f0] text-black font-bold' : 'text-gray-700'}`}>Cargar Manual</div>
                             </div>
                           )}
                         </div>
@@ -3121,45 +3140,72 @@ function App() {
               )}
 
               {/* Paso 2: Formulario */}
-              {/* Paso 2: Formulario */}
-              {retencionTipo && !mostrarConfirmacionRetencion && (
+              {retencionTipo && (
                 <div className="flex-1 flex flex-col bg-[#f0f0f0] overflow-hidden font-sans">
-                  {/* Header Info like Image 6 */}
-                  <div className="p-2 flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-gray-600">RIF:</span>
-                      <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-xs flex-1">J312193697</div>
+                  {/* Header Info like Image ret1.jpeg */}
+                  <div className="px-2 py-2 flex flex-col gap-1.5 bg-[#f0f0f0]">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1 flex-1">
+                        <span className="text-[11px] text-gray-500 w-[60px] text-right bg-[#f0f0f0] bg-opacity-0">RIF:</span>
+                        <div className="bg-[#b3b3b3] px-2 py-0.5 font-sans text-[12px] flex-1 text-black tracking-tight font-medium">J312193697</div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            setRetencionesLista([{ comprobante: retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000'), fecha: retencionFecha, monto: retencionMonto }]);
+                            setPantalla('retencion_list');
+                            setRetencionTipo('');
+                          }}
+                          className="bg-[#d9d9d9] font-sans text-[11px] font-bold text-black px-3 py-1 border border-gray-400 shadow-sm active:bg-gray-300 transition-colors"
+                        >
+                          FIN
+                        </button>
+                        <button
+                          onClick={() => setRetencionTipo('')}
+                          className="w-7 h-7 bg-gradient-to-b from-[#e6e6e6] to-[#cccccc] rounded-full flex items-center justify-center text-[#666666] border border-[#a6a6a6] shadow-md transform hover:scale-105 active:scale-95 transition-transform"
+                        >
+                          <span className="font-bold text-lg leading-none mt-[-1px]">←</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Razón Social:</span>
-                      <div className="bg-[#b3b3b3] px-3 py-0.5 border border-gray-400 font-bold text-[10px] flex-1">ALTAMIRA FERRE-INDUSTRIAL -</div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[11px] text-gray-500 whitespace-nowrap w-[60px] text-right">Razón Social:</span>
+                      <div className="bg-[#cccccc] px-2 py-0.5 font-sans text-[12px] flex-1 text-black font-medium truncate">ALTAMIRA FERRE-INDUSTRIAL -</div>
                     </div>
 
-                    <div className="flex flex-col gap-1 mt-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Fecha Comp:</span>
-                        <div className="flex-1 border-b border-gray-800">
+                    <div className="flex flex-col gap-1.5 mt-2 px-1">
+                      <div className="flex items-center gap-2 border-b border-gray-500 pb-0.5">
+                        <span className="text-[11px] text-gray-500 whitespace-nowrap w-[65px] text-left">Fecha Comp:</span>
+                        <div className="flex-1">
                           <input
                             type="text"
                             value={retencionFecha}
                             onChange={(e) => setRetencionFecha(e.target.value)}
-                            className="w-full bg-transparent outline-none text-xs font-bold"
+                            className="bg-transparent outline-none text-[12px] font-bold text-black w-full font-sans tracking-wide px-1"
                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Comprobante:</span>
-                        <div className="flex items-center gap-2 flex-1">
-                          <div className="bg-[#b3b3b3] px-4 py-0.5 border border-gray-400 font-bold text-xs flex-1 text-center">
-                            {retencionComprobante}
-                          </div>
-                          <div className="w-20 border-b border-gray-800">
+                      <div className="flex items-center gap-2 pb-0.5 border-b border-gray-600">
+                        <span className="text-[11px] text-gray-500 whitespace-nowrap w-[65px] text-left">Comprobante:</span>
+                        <div className="flex items-center gap-2 flex-1 relative top-0.5">
+                          <div className="bg-[#b3b3b3] px-1 py-0.5 w-16">
                             <input
                               type="text"
-                              value={retencionComprobante}
-                              onChange={(e) => setRetencionComprobante(e.target.value)}
+                              value={retencionPeriodo}
+                              onChange={(e) => setRetencionPeriodo(e.target.value.replace(/\D/g, ''))}
                               placeholder="YYYYMM"
-                              className="w-full bg-transparent outline-none text-xs font-bold text-center"
+                              maxLength={6}
+                              className="bg-transparent outline-none text-[12px] font-bold text-black w-full font-sans tracking-wider text-center"
+                            />
+                          </div>
+                          <div className="flex-1 border-b-[2px] border-[#3f51b5] pb-0.5 ml-1 mr-1">
+                            <input
+                              type="text"
+                              value={retencionSecuencia}
+                              onChange={(e) => setRetencionSecuencia(e.target.value.replace(/\D/g, ''))}
+                              placeholder="00000000"
+                              maxLength={8}
+                              className="w-full bg-transparent outline-none text-[12px] font-bold text-black font-sans tracking-wider px-1 text-left"
                             />
                           </div>
                         </div>
@@ -3167,115 +3213,133 @@ function App() {
                     </div>
                   </div>
 
-                  <div className="flex-1 p-1 flex flex-col gap-1 overflow-hidden">
-                    <div className="flex-1 border border-gray-500 flex flex-col bg-white overflow-hidden shadow-sm">
-                      <div className="flex bg-[#a6a6a6] text-white font-bold text-[10px] uppercase">
-                        <div className="w-8 text-center py-1.5 border-r border-gray-400">[]</div>
-                        <div className="w-12 text-center py-1.5 border-r border-gray-400">Tipo</div>
-                        <div className="flex-1 px-2 py-1.5 border-r border-gray-400">No. Fiscal</div>
-                        <div className="w-24 text-right px-2 py-1.5">Monto (USD)</div>
+                  <div className="flex-1 px-1 flex flex-col gap-1 overflow-hidden mt-1 pb-1">
+                    <div className="flex-1 border border-black flex flex-col bg-white overflow-hidden font-sans mx-1 mb-1">
+                      <div className="flex bg-[#a6a6a6] text-white font-medium text-[11px]">
+                        <div className="w-10 text-center py-1 border-r border-[#cfcfcf]">Tipo</div>
+                        <div className="flex-1 px-1 py-1 border-r border-[#cfcfcf] text-center">No. Fiscal</div>
+                        <div className="w-20 text-center py-1">Monto (USD)</div>
                       </div>
                       <div className="flex-1 overflow-y-auto">
-                        {/* Invoices like Image 6 */}
                         {[
-                          { nro: '06965151', monto: '98,84' },
-                          { nro: '06965887', monto: '12,33' },
-                          { nro: '06966250', monto: '12,33' },
-                          { nro: '06966278', monto: '17,43' },
-                          { nro: '06966286', monto: '3,90' },
-                          { nro: '06980316', monto: '8,87' },
-                          { nro: '06980336', monto: '1,38' },
-                          { nro: '06982446', monto: '1,79' },
-                          { nro: '06982447', monto: '2,84' },
-                          { nro: '06982589', monto: '1,99', sel: true }
-                        ].map((row, i) => (
-                          <div key={i} className={`flex border-b border-gray-200 text-[10px] font-bold ${row.sel ? 'bg-[#00b0f0] text-black' : 'text-black'}`}>
-                            <div className="w-8 flex items-center justify-center py-2 border-r border-gray-200">
-                              <div className={`w-3 h-3 border border-gray-600 bg-white ${row.sel ? 'flex items-center justify-center' : ''}`}>
-                                {row.sel && <span className="text-[8px] text-black font-bold">X</span>}
+                          { nro: '06980316', monto: '8,87', isTarget: false },
+                          { nro: '06980336', monto: '1,38', isTarget: false },
+                          { nro: '06982446', monto: '1,79', isTarget: false },
+                          { nro: '06982447', monto: '2,84', isTarget: false },
+                          { nro: '06982589', monto: '1.160,40', isTarget: true },
+                          { nro: '06984423', monto: '4,41', isTarget: false },
+                          { nro: '06985798', monto: '22,31', isTarget: false },
+                          { nro: '06987571', monto: '2,97', isTarget: false },
+                          { nro: '06987584', monto: '0,65', isTarget: false },
+                          { nro: '06989077', monto: '9,27', isTarget: false },
+                          { nro: '06990475', monto: '6,05', isTarget: false }
+                        ].map((row, i) => {
+                          const isSel = row.isTarget ? invoiceChecked : false;
+                          return (
+                            <div key={i} onClick={() => { 
+                              if (row.isTarget) {
+                                setInvoiceChecked(false);
+                                setMostrarDetalleRetencion(false);
+                                setTimeout(() => {
+                                  setInvoiceChecked(true);
+                                  setMostrarDetalleRetencion(true);
+                                }, 50);
+                              }
+                            }} className={`flex border-b border-gray-200 text-[11px] text-black cursor-pointer hover:bg-gray-100 ${isSel ? 'bg-[#00b0f0]' : ''}`}>
+                              <div className="w-10 flex items-center justify-center py-1.5 border-r border-gray-200">
+                                <div className={`w-3 h-3 border border-gray-600 bg-white flex items-center justify-center`}>
+                                  {isSel && (
+                                    <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="w-10 flex items-center justify-center font-bold px-1 py-1.5 border-r border-gray-200 text-[10px]">FAC</div>
+                              <div className="flex-1 font-bold px-2 py-1.5 border-r border-gray-200 text-center">{row.nro}</div>
+                              <div className="w-20 font-bold text-right px-2 py-1.5">{row.monto}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Modal Detalle Retencion (reten8.jpeg) */}
+                    {mostrarDetalleRetencion && (
+                      <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100]">
+                        <div className="bg-[#f0f0f0] w-[270px] flex flex-col font-sans shadow-2xl border border-gray-600 animate-in fade-in zoom-in duration-200">
+                          <div className="bg-white p-2.5 flex justify-between items-center border-b border-gray-300">
+                            <h2 className="text-[14px] font-bold text-black font-sans leading-none mt-1">098 - Detalle Retencion</h2>
+                            <button className="bg-gradient-to-br from-[#e6e6e6] to-[#b3b3b3] border border-gray-400 shadow-md text-gray-500 rounded-full w-6 h-6 flex items-center justify-center font-bold text-[12px] hover:scale-105 transition-transform" onClick={() => setMostrarDetalleRetencion(false)}>✖</button>
+                          </div>
+                          <div className="p-3 flex flex-col gap-1.5 bg-white">
+                            <div className="flex border-b border-gray-400 pb-1 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700">Comprobante:</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[13px] text-black">
+                                {retencionPeriodo ? retencionPeriodo : '202603'}
+                                {retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00001234'}
                               </div>
                             </div>
-                            <div className="w-12 text-center py-2 border-r border-gray-200 uppercase">FAC</div>
-                            <div className="flex-1 px-2 py-2 border-r border-gray-200">{row.nro}</div>
-                            <div className="w-24 text-right px-2 py-2">{row.monto}</div>
+                            <div className="flex border-b border-gray-400 pb-1 mt-2 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700">Tipo Doc:</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[13px] text-black">FAC</div>
+                            </div>
+                            <div className="flex border-b border-gray-400 pb-1 mt-0.5 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700">Nro. Doc:</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[13px] text-black">06982589</div>
+                            </div>
+                            <div className="flex border-b border-gray-400 pb-1 mt-0.5 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700">Nro. Control:</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[13px] text-black opacity-0">.</div>
+                            </div>
+                            <div className="flex border-b border-gray-400 pb-1 mt-2 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700 leading-tight">Alicuota (%):</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[12px] tracking-tight text-black">16,00% Ret: 75.0%</div>
+                            </div>
+                            <div className="flex border-b border-gray-400 pb-1 mt-0.5 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700">Base:</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[13px] text-black">8.615,78</div>
+                            </div>
+                            <div className="flex border-b border-gray-400 pb-1 mt-0.5 items-center">
+                              <span className="w-[85px] text-[12px] text-gray-700">Impuesto:</span>
+                              <div className="bg-[#cccccc] flex-1 px-2 py-1 text-right font-sans text-[13px] text-black">1.160,40</div>
+                            </div>
+                            <div className="flex border-b border-gray-400 pb-0.5 mt-2 items-center relative">
+                              <span className="w-[85px] text-[12px] text-gray-700">Retención:</span>
+                              <input
+                                type="text"
+                                value={retencionMonto}
+                                onChange={(e) => setRetencionMonto(e.target.value)}
+                                className="bg-white flex-1 px-1 py-1 text-right font-sans text-[15px] text-black outline-none font-medium ml-2"
+                              />
+                              <div className="absolute right-0 bottom-0.5 w-[140px] h-px bg-gray-500"></div>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="bg-[#f0f0f0] p-2 flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border border-gray-600 bg-white"></div>
-                        <span className="text-[10px] font-bold text-black font-sans uppercase">Seleccionar todo</span>
-                      </div>
-                      <div className="flex items-center gap-2 justify-between mt-1 px-2">
-                        <span className="text-[11px] font-bold text-gray-600 uppercase">Monto VES:</span>
-                        <div className="bg-[#b3b3b3] px-3 py-1.5 border border-gray-400 font-bold text-xl flex-1 text-center max-w-[180px]">
-                          0,00
+                          <div className="bg-[#f0f0f0] flex justify-center gap-4 py-3 border-t border-gray-300">
+                            <button onClick={() => setMostrarDetalleRetencion(false)} className="bg-[#d9d9d9] px-6 py-1.5 font-sans font-bold text-[13px] text-black border border-[#a6a6a6] shadow-sm active:bg-gray-300">OK</button>
+                            <button onClick={() => setMostrarDetalleRetencion(false)} className="bg-[#d9d9d9] px-4 py-1.5 font-sans font-medium text-[13px] text-black border border-[#a6a6a6] shadow-sm active:bg-gray-300">Cancelar</button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex justify-center mt-2 px-10">
-                        <button
-                          onClick={() => setMostrarConfirmacionRetencion(true)}
-                          className="w-full bg-[#e6e6e6] text-black font-bold text-[11px] py-1.5 border border-white shadow-sm active:bg-gray-300 uppercase"
-                        >
-                          CONTINUAR
-                        </button>
+                    )}
+
+                    <div className="bg-[#f0f0f0] p-1 flex flex-col gap-1 mx-1">
+                      <div className="flex items-center gap-2 border-b border-gray-400 pb-1.5 mb-0.5">
+                        <div className="w-4 h-4 border border-gray-600 bg-transparent flex items-center justify-center"></div>
+                        <span className="text-[11px] text-black font-sans">Seleccionar todo</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-between">
+                        <span className="text-[11px] text-gray-500 font-sans">Monto VES:</span>
+                        <div className="bg-[#b3b3b3] px-2 py-1 font-sans font-bold text-[13px] flex-1 text-black tracking-wide ml-1 text-right">
+                          2.800,30
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Paso 3: Confirmación / Ajuste */}
-              {mostrarConfirmacionRetencion && (
-                <div className="flex flex-col gap-3">
-                  <div className="bg-white border border-gray-400 p-5 flex flex-col items-center gap-4 shadow-sm relative overflow-hidden">
-                    <div className="w-12 h-12 bg-gray-100 border border-gray-300 rounded-full flex items-center justify-center text-2xl shadow-inner">🤔</div>
-                    <div className="text-center flex flex-col gap-1">
-                      <h3 className="text-sm font-bold text-black uppercase font-sans">¿Corregir Monto?</h3>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase font-sans px-2">¿El monto de la retención coincide con el comprobante físico del cliente?</p>
-                    </div>
 
-                    <div className="w-full flex flex-col gap-3">
-                      <div className="bg-[#fffbe6] p-3 border border-gray-400 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-black uppercase font-sans">Monto Calculado:</span>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[11px] font-bold text-gray-400 line-through opacity-60">1.160,40</span>
-                          <input
-                            id="inputMontoFinal"
-                            type="text"
-                            value={retencionMonto}
-                            onChange={(e) => setRetencionMonto(e.target.value)}
-                            className="bg-transparent text-[16px] font-bold text-blue-600 text-right outline-none w-24 font-sans"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 justify-center pt-2">
-                        <button
-                          id="btnSi"
-                          onClick={() => {
-                            setRetencionesLista([{ comprobante: retencionComprobante, fecha: retencionFecha, monto: retencionMonto }]);
-                            setMostrarConfirmacionRetencion(false);
-                            setPantalla('retencion_list');
-                          }}
-                          className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase"
-                        >
-                          SÍ, CONFIRMAR
-                        </button>
-                        <button
-                          id="btnNo"
-                          onClick={() => setMostrarConfirmacionRetencion(false)}
-                          className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] py-2 px-6 border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] active:bg-gray-300 uppercase"
-                        >
-                          NO
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
