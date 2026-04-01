@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react'
+import { supabase } from './lib/supabase'
 
 function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
   const [pantalla, setPantalla] = useState('inicio');
+  const [empresaSeleccionada, setEmpresaSeleccionada] = useState('Febeca');
   const [mostrarSubmenu, setMostrarSubmenu] = useState(false);
   const [mostrarFormaPagoCombo, setMostrarFormaPagoCombo] = useState(false);
   const [formaPago, setFormaPago] = useState('TRANSFERENCIA USD 1..');
@@ -16,6 +18,20 @@ function App() {
   const [mostrarComboNivel, setMostrarComboNivel] = useState(false);
   const [modalCierraGV1, setModalCierraGV1] = useState(false);
   const [modalCierraGV2, setModalCierraGV2] = useState(false);
+
+  // --- ESTILOS DINAMICOS POR EMPRESA ---
+  const getCompanyStyle = () => {
+    switch (empresaSeleccionada) {
+      case 'Beval':
+        return { bg: '#c4d600', border: '#a2b000', text: 'black' };
+      case 'Sillaca':
+        return { bg: '#E4006B', border: '#b00052', text: 'white' };
+      case 'Febeca':
+      default:
+        return { bg: '#00b0f0', border: '#0092c8', text: 'black' };
+    }
+  };
+  const theme = getCompanyStyle();
 
   // --- OBSERVACIONES PEDIDO (pantalla 016 +) ---
   const [mostrarObservaciones, setMostrarObservaciones] = useState(false);
@@ -48,7 +64,39 @@ function App() {
   const [lastSyncDate, setLastSyncDate] = useState('02-03-2026 08:30 AM');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
-  const [busquedaCatalog, setBusquedaCatalog] = useState('');
+
+  // --- NUEVOS ESTADOS PARA CATÃLOGO DIGITAL ---
+  const [usuarioActivo, setUsuarioActivo] = useState({
+    nombre: 'Invitado',
+    rol: 'vendedor', // 'vendedor' o 'cliente'
+    empresa: 'Febeca'
+  });
+  const [favoritos, setFavoritos] = useState([]); // Array de SKUs
+  const [listasPersonalizadas, setListasPersonalizadas] = useState([]);
+  const [carrito, setCarrito] = useState([]);
+  const [subclientes, setSubclientes] = useState([
+    { id: 1, nombre: 'Ferretería El Martillo', rif: 'J-1234567-8' }
+  ]);
+  const [subclienteSeleccionado, setSubclienteSeleccionado] = useState(null);
+  const [mostrarFavoritos, setMostrarFavoritos] = useState(false);
+  const [mostrarCotizaciones, setMostrarCotizaciones] = useState(false);
+  const [subPantallaCatalog, setSubPantallaCatalog] = useState('inicio'); // 'inicio', 'busqueda', 'detalle'
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('TODOS');
+  const [mostrarMenuCategorias, setMostrarMenuCategorias] = useState(false);
+
+  // Datos de ejemplo para productos (para que la búsqueda funcione mientras conectamos Supabase)
+  const [productosBusqueda, setProductosBusqueda] = useState([
+    { sku: 'MACHETE-01', nombre: 'MACHETE 22 PULGADAS PULIDO', precio: 12.50, imagen: '🔪', marca: 'EMTOP', categoria: 'AGRÍCOLA Y JARDINERÍA' },
+    { sku: 'LLAVE-IMP', nombre: 'LLAVE DE IMPACTO 1/2', precio: 381.83, imagen: '🔧', marca: 'TOTAL', categoria: 'HERRAMIENTAS' },
+    { sku: 'CAVA-46L', nombre: 'CAVA ARCTIC 46L AZUL', precio: 118.61, imagen: '📦', marca: 'ARCTIC', categoria: 'HOGAR' },
+    { sku: 'TALADRO-1/2', nombre: 'TALADRO PERCUTOR 1/2 600W', precio: 45.00, imagen: '🔨', marca: 'TOTAL', categoria: 'HERRAMIENTAS' },
+    { sku: 'BROCA-SED', nombre: 'SET DE BROCAS PARA METAL 13PCS', precio: 8.90, imagen: '🔩', marca: 'EMTOP', categoria: 'FERRETERÍA' },
+    { sku: 'BOMB-LED', nombre: 'BOMBILLO LED 12W LUZ BLANCA', precio: 1.50, imagen: '💡', marca: 'SYLVANIA', categoria: 'ILUMINACIÓN' },
+    { sku: 'PINT-CAU', nombre: 'PINTURA CAUCHO BLANCO MATE 1GAL', precio: 14.20, imagen: '🎨', marca: 'FLAMUKO', categoria: 'PINTURAS' }
+  ]);
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+
+  const saying = useRef(null); const [busquedaCatalog, setBusquedaCatalog] = useState('');
   const [cantidadMachete, setCantidadMachete] = useState('0');
   const [errorMachete, setErrorMachete] = useState('');
 
@@ -77,6 +125,7 @@ function App() {
   const [retencionImgSrc, setRetencionImgSrc] = useState('');
   const [retencionFecha, setRetencionFecha] = useState('');
   const [retencionPeriodo, setRetencionPeriodo] = useState('');
+  const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [retencionSecuencia, setRetencionSecuencia] = useState('');
   const [retencionComprobante, setRetencionComprobante] = useState('');
   const [mostrarDetalleRetencion, setMostrarDetalleRetencion] = useState(false);
@@ -97,7 +146,7 @@ function App() {
   const [productoActivoIndex, setProductoActivoIndex] = useState(0);
   const [mostrarDatosBotonB, setMostrarDatosBotonB] = useState(false);
 
-  const MOCK_PRODUCTOS = [
+  const PRODUCTOS_FEBECA = [
     { cod: '2213021', old: 'CFLX-01', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm', p1: '15.500,00', p2: '12.800,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '500' },
     { cod: '2213005', old: 'CFLX-02', desc: 'Canilla flexible malla acero 1/2 x 1/2 x 120', p1: '16.200,00', p2: '13.500,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '420' },
     { cod: '2213001', old: 'CFLX-03', desc: 'Canilla flexible de lujo malla acero 1/2 x 1/2', p1: '18.000,00', p2: '15.000,00', inv: 'UND', emp: '12', cmin: '1', dscto: '5,00', exist: '150' },
@@ -114,6 +163,18 @@ function App() {
     { cod: '9988777', old: 'CAB-10', desc: 'Cable cobre THHN 10 AWG negro 100m', p1: '115.000,00', p2: '100.000,00', inv: 'ROL', emp: '1', cmin: '1', dscto: '15,00', exist: '30' },
     { cod: '4455667', old: 'TU-PVC1', desc: 'Tubo PVC aguas blancas 1/2 x 3m', p1: '4.500,00', p2: '3.800,00', inv: 'UND', emp: '20', cmin: '5', dscto: '0,00', exist: '800' }
   ];
+
+  const PRODUCTOS_BEVAL = [
+    { cod: '0101066', old: 'ROD-01', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '15,00' },
+    { cod: '0101068', old: 'ROD-02', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '10,00' },
+    { cod: '0101069', old: 'ROD-03', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '25,00' },
+    { cod: '0101070', old: 'ROD-04', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '5,00' },
+    { cod: '0101071', old: 'ROD-05', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '8,00' },
+    { cod: '0101072', old: 'ROD-06', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '12,00' },
+    { cod: '0101073', old: 'ROD-07', desc: 'RODAMIENTO ALTERNADOR SELLOS PLASTICOS 6', p1: '2,14', p2: '1,63', inv: '1 PZA', emp: '4', cmin: '1', dscto: '0,00', exist: '18,00' }
+  ];
+
+  const MOCK_PRODUCTOS = empresaSeleccionada === 'Beval' ? PRODUCTOS_BEVAL : PRODUCTOS_FEBECA;
 
   // Filter by code only (main input)
   // Filter by name or old code (B. button modal)
@@ -206,7 +267,7 @@ function App() {
     setCursorPos({ x: 160, y: 600, visible: true });
     await sleep(100);
 
-    // 1. Move to "PEDIDOS DEL CATÁLOGO" button
+    // 1. Move to "PEDIDOS DEL CATÃLOGO" button
     setCursorPos({ x: 160, y: 130, visible: true });
     //await sleep(1200);
     await sleep(400);
@@ -1083,7 +1144,7 @@ function App() {
 
     // 3. Pulsamos en botón retenciones (Real Component)
     await decir("3.- Pulsamos en botón retenciones.");
-    setCursorPos({ x: 160, y: 350, visible: true });
+    setCursorPos({ x: 160, y: 300, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('retencion_list');
@@ -1091,7 +1152,7 @@ function App() {
 
     // 4. Pulsamos botón nuevo en la lista real
     await decir("4.- Pulsamos botón nuevo.");
-    setCursorPos({ x: 80, y: 560, visible: true });
+    setCursorPos({ x: 200, y: 560, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('retencion_form');
@@ -1101,12 +1162,12 @@ function App() {
 
     // 5. Seleccionamos carga manual en el combo
     await decir("5.- Seleccionamos 'Cargar Manual' en el combo.");
-    setCursorPos({ x: 140, y: 515, visible: true }); // Combo position
+    setCursorPos({ x: 100, y: 350, visible: true }); // Combo position
     await sleep(1200);
     await triggerClick();
     setMostrarComboRetencion(true);
     await sleep(1500); // Give user time to read the options
-    setCursorPos({ x: 140, y: 495, visible: true }); // Move cursor up to 'Cargar Manual' (since dropdown opens upward now)
+    setCursorPos({ x: 110, y: 300, visible: true }); // Move cursor up to 'Cargar Manual' (since dropdown opens upward now)
     await sleep(1200);
     await triggerClick();
     setMostrarComboRetencion(false);
@@ -1115,28 +1176,37 @@ function App() {
 
     // 6. Pulsamos VALIDAR
     await decir("6.- Pulsamos VALIDAR.");
-    setCursorPos({ x: 260, y: 515, visible: true }); // Botón Validar next to combo
+    setCursorPos({ x: 260, y: 430, visible: true }); // Botón Validar next to combo
     await sleep(1200);
     await triggerClick();
     setRetencionTipo('Manual');
     await sleep(1500);
 
-    // 7. Colocamos la fecha en el campo real
-    await decir("7.- Colocamos la fecha en el campo Fecha Comp.");
-    setCursorPos({ x: 160, y: 140, visible: true });
+    // 7. Colocamos la fecha en el campo real haciend clic en el calendario
+    await decir("7.- Colocamos la fecha seleccionándola en el calendario.");
+    setCursorPos({ x: 160, y: 210, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarCalendario(true);
+    await sleep(1000);
+
+    // Movemos el ratón al día 27 del calendario
+    setCursorPos({ x: 140, y: 285, visible: true });
     await sleep(1200);
     await triggerClick();
     setRetencionFecha('27-03-2026');
-    await sleep(1500);
+    setMostrarCalendario(false);
+    await sleep(1200);
 
     // 8. Llenamos el campo comprobante real
-    await decir("8.- Llenamos el campo numero de comprobante.");
-    setCursorPos({ x: 190, y: 180, visible: true });
-    await sleep(1200);
-    await triggerClick();
+
+    setCursorPos({ x: 190, y: 200, visible: true });
+    //await sleep(1200);
+    //await triggerClick();
     setRetencionPeriodo('202603');
+    await decir("8.- Llenamos el campo numero de comprobante.");
     await sleep(800);
-    setCursorPos({ x: 260, y: 180, visible: true });
+    //setCursorPos({ x: 260, y: 250, visible: true });
     await sleep(800);
     await triggerClick();
     setRetencionSecuencia('00001234');
@@ -1144,7 +1214,7 @@ function App() {
 
     // 9. Marcamos el check de la factura (Simulando scroll o selección de la última)
     await decir("9.- Marcamos el check de la factura aplicable.");
-    setCursorPos({ x: 35, y: 310, visible: true }); // Fila 06982589 aprox
+    setCursorPos({ x: 35, y: 350, visible: true }); // Fila 06980316
     await sleep(1200);
     await triggerClick();
     setInvoiceChecked(true);
@@ -1152,7 +1222,7 @@ function App() {
 
     // 10. Seleccionar barra azul
     await decir("10.- Pulsamos sobre la barra azul para abrir el detalle y ajustar la retención.");
-    setCursorPos({ x: 150, y: 310, visible: true }); // Sobre la barra
+    setCursorPos({ x: 150, y: 380, visible: true }); // Sobre la barra
     await sleep(1200);
     await triggerClick();
     setMostrarDetalleRetencion(true);
@@ -1163,8 +1233,12 @@ function App() {
     setCursorPos({ x: 200, y: 460, visible: true }); // Dentro del input de Retención en el modal
     await sleep(1200);
     await triggerClick();
-    setRetencionMonto('870,30'); // Simulando el tipeo
-    await sleep(1500);
+    setRetencionMonto('870,3'); // Simulando borrar el 0
+    await sleep(200);
+    setRetencionMonto('870,');  // Simulando borrar el 3
+    await sleep(200);
+    setRetencionMonto('870');   // Simulando borrar la coma
+    await sleep(1100);
 
     // 12. Confirmar cambio OK
     await decir("12.- Confirmamos los cambios pulsando OK.");
@@ -1192,74 +1266,9 @@ function App() {
   };
 
   const runDemoDigitalCatalog = async () => {
-    // 1. Click en Catálogo Febeca (Escritorio)
-    await decir("a).- Menú.");
-    setPantalla('escritorio');
-    setCursorPos({ x: 160, y: 600, visible: true });
-    await sleep(200);
-    setCursorPos({ x: 280, y: 155, visible: true }); // Icono Febeca en el grid
-    await sleep(1200);
-    await triggerClick();
-    setPantalla('catalog_main');
-    await sleep(800);
-
-    await decir("b).- Escriba Criterio.");
-    setCursorPos({ x: 160, y: 85, visible: true }); // Barra búsqueda
-    await sleep(1200);
-    await triggerClick();
-    setBusquedaCatalog('machete');
-    await sleep(1000);
-    setCursorPos({ x: 295, y: 85, visible: true }); // Lupa
-    await sleep(800);
-    await triggerClick();
-    setPantalla('catalog_search');
-    await sleep(800);
-
-    // 2. Click en el resultado (imagen lista machete)
-    await decir("c).- Seleccione el producto de la lista.");
-    setCursorPos({ x: 160, y: 300, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setPantalla('catalog_lista_machete');
-    await sleep(1000);
-
-    // 3. Click en la lista para ver detalle
-    await decir("d).- Ver detalle del producto.");
-    setCursorPos({ x: 160, y: 300, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setPantalla('catalog_detalle_producto');
-    await sleep(1000);
-
-    // 4. Click en Carrito / Solicitar Cotización
-    await decir("e).- Seleccione Solicitud de Cotización (Carrito).");
-    setCursorPos({ x: 260, y: 520, visible: true }); // Aproximado para el área del carrito
-    await sleep(1200);
-    await triggerClick();
-    setPantalla('catalog_detalle_machete_cantidad');
-    setCantidadMachete('0');
-    setErrorMachete('');
-    await sleep(1000);
-
-    // 5. Ingresar cantidad (múltiplo de 3)
-    await decir("f).- Ingrese la cantidad (Debe ser múltiplo de 3).");
-    setCursorPos({ x: 160, y: 320, visible: true }); // Input de cantidad
-    await sleep(1200);
-    await triggerClick();
-    setCantidadMachete('6');
-    await sleep(1500);
-
-    // 6. Click en Aceptar
-    await decir("g).- Pulse Aceptar para añadir al carrito.");
-    setCursorPos({ x: 220, y: 400, visible: true }); // Botón Aceptar
-    await sleep(1200);
-    await triggerClick();
-    setPantalla('catalog_main');
-    await sleep(1500);
-
+    await decir("El Catálogo Digital está deshabilitado.");
+    await sleep(2000);
     setNarracionTexto("");
-    setBusquedaCatalog("");
-    setCursorPos({ x: -100, y: -100, visible: false });
   };
 
   return (
@@ -1294,69 +1303,449 @@ function App() {
         {pantalla === 'escritorio' && (
           <div className="flex-1 bg-blue-800 mt-8 rounded-t-2xl p-4 relative">
 
-            <div className="relative z-10 grid grid-cols-4 gap-4 mt-6 px-2">
-              {/* ICONO FEBECA */}
+            <div className="relative z-10 grid grid-cols-3 gap-6 mt-6 px-4">
+              {/* === FEBECA === */}
               <div onClick={() => {
+                setEmpresaSeleccionada('Febeca');
                 setloginUsername('admin');
                 setloginPassword('1111');
                 setloginError('');
                 setPantalla('login_afv');
-              }} title="Ingresar al módulo de AFV Febeca" className="flex flex-col items-center cursor-pointer">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="logoafv.jpeg" alt="Febeca" className="w-full h-full object-contain rounded-lg" />
+              }} title="AFV Febeca" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logoafv.jpeg" alt="AFV Febeca" className="w-full h-full object-contain rounded-xl" />
                 </div>
-                <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Febeca</span>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Febeca</span>
               </div>
 
-              <div title="Módulo AFV Sillaca (No disponible)" className="flex flex-col items-center opacity-70 cursor-help">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="logoafv.jpeg" alt="Sillaca" className="w-full h-full object-contain rounded-lg" />
+              <div onClick={() => { 
+                setEmpresaSeleccionada('Febeca'); 
+                setSubPantallaCatalog('inicio');
+                setPantalla('catalogo'); 
+              }} title="Catálogo Febeca" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-xl" />
                 </div>
-                <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Sillaca</span>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">Catálogo<br />Febeca</span>
               </div>
 
-              <div title="Módulo AFV Beval (No disponible)" className="flex flex-col items-center opacity-70 cursor-help">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1">
-                  <img src="logoafv.jpeg" alt="Beval" className="w-full h-full object-contain rounded-lg" />
+              <div onClick={() => { setEmpresaSeleccionada('Febeca'); setPantalla('sds'); }} title="SDS Febeca" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logo sds febeca.jpg" alt="SDS Febeca" className="w-full h-full object-contain rounded-xl" />
                 </div>
-                <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">AFV<br />Beval</span>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">SDS<br />Febeca</span>
               </div>
 
-              {/* ICONO CATALOGO FEBECA (Deshabilitado temporalmente) */}
-              <div
-                onClick={() => { }}
-                title="Módulo Catálogo Digital (En desarrollo)"
-                className="flex flex-col items-center cursor-not-allowed opacity-50"
-              >
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md mb-1 relative">
-                  <img src="logocatalogofebeca.png" alt="Catálogo Febeca" className="w-full h-full object-contain rounded-lg" />
-                  {/* Botón Run para el demo del catálogo (Deshabilitado) */}
-                  <button
-                    disabled
-                    className="absolute -top-1 -right-1 bg-gray-400 text-[8px] text-white font-bold p-1 rounded-full shadow-lg z-20 cursor-not-allowed"
-                  >
-                    Run
-                  </button>
+              {/* === SILLACA === */}
+              <div onClick={() => {
+                setEmpresaSeleccionada('Sillaca');
+                setloginUsername('admin');
+                setloginPassword('2222');
+                setloginError('');
+                setPantalla('login_afv');
+              }} title="AFV Sillaca" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logoafv.jpeg" alt="AFV Sillaca" className="w-full h-full object-contain rounded-xl" />
                 </div>
-                <span className="text-[9px] text-white font-medium text-center leading-tight drop-shadow-md">Catálogo<br />Febeca</span>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Sillaca</span>
+              </div>
+
+              <div onClick={() => { setEmpresaSeleccionada('Sillaca'); setPantalla('catalogo'); }} title="Catálogo Sillaca" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logocatalogosillaca.png" alt="Catálogo Sillaca" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">Catálogo<br />Sillaca</span>
+              </div>
+
+              <div onClick={() => { setEmpresaSeleccionada('Sillaca'); setPantalla('sds'); }} title="SDS Sillaca" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logo sds sillaca.jpg" alt="SDS Sillaca" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">SDS<br />Sillaca</span>
+              </div>
+
+              {/* === BEVAL === */}
+              <div onClick={() => {
+                setEmpresaSeleccionada('Beval');
+                setloginUsername('admin');
+                setloginPassword('3333');
+                setloginError('');
+                setPantalla('login_afv');
+              }} title="AFV Beval" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logoafv.jpeg" alt="AFV Beval" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Beval</span>
+              </div>
+
+              <div onClick={() => { setEmpresaSeleccionada('Beval'); setPantalla('catalogo'); }} title="Catálogo Beval" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logoscatalogobeval.png" alt="Catálogo Beval" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">Catálogo<br />Beval</span>
+              </div>
+
+              <div onClick={() => { setEmpresaSeleccionada('Beval'); setPantalla('sds'); }} title="SDS Beval" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="logo sds beval.jpg" alt="SDS Beval" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">SDS<br />Beval</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* PANTALLA 1.5: LOGIN AFV FEBECA */}
-        {pantalla === 'login_afv' && (
-          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col p-6 items-center justify-center relative">
-            <button
-              onClick={() => setPantalla('escritorio')}
-              className="absolute top-4 left-4 text-gray-500 font-bold"
-            >
-              ←
-            </button>
-            <div className="w-24 h-24 mb-6">
-              <img src="logoafv.jpeg" alt="AFV Logo" className="w-full h-full object-contain" />
+        {/* PANTALLA: CATALOGO DIGITAL */}
+        {pantalla === 'catalogo' && (
+          <div className="flex-1 bg-[#f5f5f5] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden font-sans">
+            {/* CABECERA ESTILO SMARTSALES */}
+            <div className="p-3 flex items-center justify-between shadow-md z-30" style={{ backgroundColor: theme.bg, color: theme.text }}>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setMostrarMenuCategorias(true)} className="text-2xl">☰</button>
+                <div className="h-8 w-24">
+                  <img src={empresaSeleccionada === 'Febeca' ? 'logotipofebeca.jpg' : empresaSeleccionada === 'Sillaca' ? 'logotiposillaca.jpeg' : 'logotipobeval.jpg'} alt="Logo" className="h-full w-full object-contain brightness-0 invert" />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <button className="text-xl">🔍</button>
+                <button className="text-xl relative">
+                  🛒
+                  {carrito.length > 0 && (
+                    <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center border border-white font-bold">{carrito.length}</span>
+                  )}
+                </button>
+                <button onClick={() => setPantalla('escritorio')} className="text-xl">✕</button>
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6 font-sans">Login AFV Febeca</h2>
+
+            {/* BUSCADOR PROMINENTE */}
+            <div className="bg-white p-3 shadow-sm z-20 flex gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Buscar Producto..."
+                  className="w-full bg-gray-100 rounded-full py-2 px-4 pl-10 text-sm outline-none border border-gray-200"
+                  value={busquedaCatalog}
+                  onChange={(e) => {
+                    setBusquedaCatalog(e.target.value);
+                    if (e.target.value.length > 2) setSubPantallaCatalog('busqueda');
+                  }}
+                />
+                <span className="absolute left-3 top-2.5 opacity-40">🔍</span>
+              </div>
+              <button className="bg-gray-800 text-white text-[10px] px-3 rounded-full font-bold uppercase tracking-tighter">Buscar por</button>
+            </div>
+
+            {/* CONTENIDO DINÁMICO SEGÚN SUBPANTALLA */}
+            <div className="flex-1 overflow-y-auto pb-6">
+              
+              {subPantallaCatalog === 'inicio' && (
+                <>
+                  {/* SALUDO */}
+                  <div className="p-4 bg-white mb-2">
+                    <p className="text-[13px] text-gray-800 font-medium">¡Bienvenido!, <span className="font-bold">INVERSIONES ALAFV, C.A.</span></p>
+                  </div>
+
+                  {/* BANNER CARRUSEL (Simulado con imagen principal) */}
+                  <div className="px-4 mb-4">
+                    <div className="w-full h-40 bg-blue-100 rounded-xl overflow-hidden shadow-sm relative">
+                      <img src="catalogo.jpg" className="w-full h-full object-cover object-top" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex flex-col justify-end p-4">
+                        <span className="text-white text-xs font-bold bg-blue-600 self-start px-2 py-0.5 rounded-full mb-1">PROMO</span>
+                        <h3 className="text-white font-bold text-lg">Nueva Línea EMTOP</h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MARCAS DESTACADAS */}
+                  <div className="px-4 mb-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Marcas Destacadas</h4>
+                      <button className="text-blue-600 text-[11px] font-bold">VER TODAS</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { name: 'Emtop', img: 'logo emtop horizontal.jpg' },
+                        { name: 'Arctic', img: 'catalogo.jpg' } // Fallback
+                      ].map(marca => (
+                        <div key={marca.name} onClick={() => setSubPantallaCatalog('busqueda')} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                          <img src={marca.img} className="h-12 w-full object-contain" />
+                          <span className="text-[10px] font-bold text-gray-500">{marca.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* RECIENTEMENTE VISTOS */}
+                  <div className="px-4 mb-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Vistos recientemente</h4>
+                      <button className="text-blue-600 text-[11px] font-bold">VER TODAS</button>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
+                      {productosBusqueda.map(prod => (
+                        <div key={prod.sku} className="min-w-[140px] bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden snap-start">
+                          <div className="h-28 bg-gray-50 p-4 flex items-center justify-center text-3xl">{prod.imagen}</div>
+                          <div className="p-2">
+                            <p className="text-[9px] text-gray-400 font-bold uppercase">{prod.marca}</p>
+                            <p className="text-[10px] text-gray-700 font-bold line-clamp-2 h-7 mb-1">{prod.nombre}</p>
+                            <p className="text-blue-600 font-bold text-xs">USD {prod.precio.toFixed(2)}</p>
+                            <div className="flex justify-between mt-2 pt-2 border-t border-gray-50">
+                              <button className="text-gray-300">🤍</button>
+                              <button onClick={() => setCarrito([...carrito, prod])} className="text-blue-600">🛒</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {subPantallaCatalog === 'busqueda' && (
+                <div className="p-2 space-y-2">
+                  <div className="flex justify-between items-center px-2 py-1">
+                    <button onClick={() => { setSubPantallaCatalog('inicio'); setCategoriaSeleccionada('TODOS'); }} className="text-blue-600 text-xs font-bold">← Volver</button>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase">{categoriaSeleccionada} | {productosBusqueda.filter(p => (categoriaSeleccionada === 'TODOS' || p.categoria === categoriaSeleccionada) && p.nombre.toLowerCase().includes(busquedaCatalog.toLowerCase())).length} Resultados</span>
+                  </div>
+                  {productosBusqueda.filter(p => (categoriaSeleccionada === 'TODOS' || p.categoria === categoriaSeleccionada) && p.nombre.toLowerCase().includes(busquedaCatalog.toLowerCase())).map(prod => (
+                    <div key={prod.sku} onClick={() => { setProductoSeleccionado(prod); setSubPantallaCatalog('detalle'); }} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex gap-3 relative cursor-pointer active:bg-gray-50">
+                      <div className="w-24 h-24 bg-gray-50 rounded-lg flex items-center justify-center text-4xl">{prod.imagen}</div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-[8px] text-gray-400 font-bold tracking-tighter uppercase">{prod.marca} | {prod.sku}</p>
+                            <h5 className="text-[12px] text-gray-800 font-bold leading-tight mb-1">{prod.nombre}</h5>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-[10px] text-gray-500">Disp: <span className="font-bold text-green-600">99+ UND</span></p>
+                          <div className="flex justify-between items-end mt-1">
+                            <p className="text-blue-600 font-black text-sm">USD {prod.precio.toFixed(2)}</p>
+                            <div className="flex gap-2">
+                               <button className="p-1.5 bg-gray-100 rounded-full text-gray-400 text-[10px]">🤍</button>
+                               <button onClick={(e) => { e.stopPropagation(); setCarrito([...carrito, prod]); }} className="p-1.5 bg-blue-600 text-white rounded-full text-[10px]">🛒</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {subPantallaCatalog === 'detalle' && productoSeleccionado && (
+                <div className="bg-white min-h-full pb-10">
+                   <div className="p-4 flex items-center gap-2 border-b">
+                      <button onClick={() => setSubPantallaCatalog('busqueda')} className="text-blue-600 text-lg">←</button>
+                      <span className="font-bold text-sm text-gray-700">Detalles del Producto</span>
+                   </div>
+                   <div className="w-full h-80 bg-gray-100 p-10 flex items-center justify-center text-8xl mb-4 group relative">
+                      {productoSeleccionado.imagen}
+                      <button className="absolute bottom-4 right-4 bg-white/80 p-2 rounded-full shadow-md">🔍</button>
+                   </div>
+                   <div className="px-6">
+                      <p className="text-xs font-black text-blue-600 mb-1 uppercase tracking-widest">{productoSeleccionado.marca}</p>
+                      <h2 className="text-xl font-bold text-gray-900 leading-tight mb-2">{productoSeleccionado.nombre}</h2>
+                      <p className="text-[11px] text-gray-400 mb-6">SKU: {productoSeleccionado.sku} | CAT: {productoSeleccionado.categoria}</p>
+
+                      <div className="flex items-center justify-between mb-8">
+                         <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Precio de Lista</p>
+                            <p className="text-2xl font-black text-blue-600">USD {productoSeleccionado.precio.toFixed(2)}</p>
+                         </div>
+                         <div className="text-right">
+                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Existencia</p>
+                             <p className="text-lg font-bold text-green-600">99+ UND</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-3">
+                         <button onClick={() => setCarrito([...carrito, productoSeleccionado])} className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <span>🛒</span> ENVIAR A PEDIDO
+                         </button>
+                         <button className="w-full bg-[#fbd000] text-gray-800 font-bold py-4 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <span>📄</span> ENVIAR A COTIZACIÓN
+                         </button>
+                      </div>
+
+                      <div className="mt-10 border-t pt-6">
+                         <h4 className="font-bold text-sm mb-2 uppercase text-gray-400 tracking-wider">Descripción detallada</h4>
+                         <p className="text-xs text-gray-600 leading-relaxed">
+                            Este producto de la marca {productoSeleccionado.marca} cumple con los estándares de calidad más exigentes del mercado ferretero.
+                            Ideal para uso profesional y doméstico intenso. Garantía limitada de fábrica incluida con la compra.
+                         </p>
+                      </div>
+                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* OVERLAY MENÚ LATERAL (CATEGORÍAS Y OPCIONES) */}
+            {mostrarMenuCategorias && (
+              <div className="fixed inset-0 z-[100] flex animate-fade-in">
+                {/* Fondo Oscuro con Blur */}
+                <div onClick={() => setMostrarMenuCategorias(false)} className="flex-1 bg-black/40 backdrop-blur-sm"></div>
+                
+                {/* Menú Lateral Deslizable desde la izquierda */}
+                <div className="w-80 bg-white h-full shadow-2xl flex flex-col animate-slide-in-left absolute left-0 top-0">
+                  {/* Header del Menú */}
+                  <div className="p-6 flex items-center gap-4 border-b shadow-sm" style={{ backgroundColor: theme.bg, color: theme.text }}>
+                    <div className="w-12 h-12 bg-white rounded-full p-2 flex items-center justify-center shadow-md">
+                       <img src={empresaSeleccionada === 'Febeca' ? 'logotipoafv.jpeg' : 'logotiposillaca.jpeg'} className="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-base leading-none mb-1">{empresaSeleccionada}</p>
+                      <p className="text-[10px] opacity-80 uppercase tracking-widest font-medium">Catálogo Digital</p>
+                    </div>
+                    <button onClick={() => setMostrarMenuCategorias(false)} className="ml-auto text-2xl hover:scale-110 transition-transform">✕</button>
+                  </div>
+                  
+                  {/* Lista de Opciones Scrolleable */}
+                  <div className="flex-1 overflow-y-auto py-2 bg-gray-50/50">
+                    
+                    {/* SECCIÓN 1: Principal */}
+                    <div className="bg-white mb-2 pb-2">
+                       {[
+                         { icon: '🏠', label: 'Inicio', action: () => setSubPantallaCatalog('inicio') },
+                         { icon: '🏢', label: 'Mi Compañía' },
+                         { icon: '🔔', label: 'Notificaciones', badge: '19 nuevas' },
+                         { icon: '❤️', label: 'Listas de Productos' },
+                         { icon: '👍', label: 'Recomendados' },
+                         { icon: '👥', label: 'Clientes' }
+                       ].map((item, i) => (
+                         <button key={i} onClick={() => { if(item.action) item.action(); setMostrarMenuCategorias(false); }} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 active:bg-blue-50 transition-colors border-b border-gray-50 group">
+                           <span className="text-xl w-6 text-center">{item.icon}</span>
+                           <span className="text-[13px] font-semibold text-gray-700 flex-1 text-left">{item.label}</span>
+                           {item.badge && <span className="text-[10px] italic text-blue-500 font-bold">{item.badge}</span>}
+                         </button>
+                       ))}
+                    </div>
+
+                    {/* SECCIÓN 2: Solicitudes de Cotización */}
+                    <div className="px-6 py-2">
+                       <h5 className="text-[11px] font-black text-blue-500 uppercase tracking-widest mb-2">Solicitudes de Cotización</h5>
+                    </div>
+                    <div className="bg-white mb-2">
+                       {[
+                         { icon: '🛒', label: 'Solicitud Abierta' },
+                         { icon: '📋', label: 'Solicitudes Cerradas' }
+                       ].map((item, i) => (
+                         <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 border-b border-gray-50">
+                           <span className="text-lg w-6 text-center opacity-60">{item.icon}</span>
+                           <span className="text-[13px] font-semibold text-gray-700 flex-1 text-left">{item.label}</span>
+                         </button>
+                       ))}
+                    </div>
+
+                    {/* SECCIÓN 3: Mis Cotizaciones */}
+                    <div className="px-6 py-2">
+                       <h5 className="text-[11px] font-black text-[#fbd000] uppercase tracking-widest mb-2">Mis Cotizaciones</h5>
+                    </div>
+                    <div className="bg-white mb-2">
+                       {[
+                         { icon: '🛒', label: 'Cotizaciones Abiertas' },
+                         { icon: '📋', label: 'Cotizaciones Cerradas' }
+                       ].map((item, i) => (
+                         <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 border-b border-gray-50">
+                           <span className="text-lg w-6 text-center opacity-60">{item.icon}</span>
+                           <span className="text-[13px] font-semibold text-gray-700 flex-1 text-left">{item.label}</span>
+                         </button>
+                       ))}
+                    </div>
+
+                    {/* SECCIÓN 4: Comunicación */}
+                    <div className="px-6 py-2">
+                       <h5 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Comunicación</h5>
+                    </div>
+                    <div className="bg-white mb-2">
+                       {[
+                         { icon: '✉️', label: 'Contáctanos' },
+                         { icon: '🔗', label: 'Invitar Amigos' }
+                       ].map((item, i) => (
+                         <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 border-b border-gray-50">
+                           <span className="text-lg w-6 text-center opacity-60">{item.icon}</span>
+                           <span className="text-[13px] font-semibold text-gray-700 flex-1 text-left">{item.label}</span>
+                         </button>
+                       ))}
+                    </div>
+
+                    {/* SECCIÓN 5: Configuración (de menucatalogofebeca2) */}
+                    <div className="px-6 py-2">
+                       <h5 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Configuración</h5>
+                    </div>
+                    <div className="bg-white mb-2">
+                       {[
+                         { icon: '👤', label: 'Mi Cuenta' },
+                         { icon: '🖼️', label: 'Manejo de Imágenes' }
+                       ].map((item, i) => (
+                         <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 border-b border-gray-50">
+                           <span className="text-lg w-6 text-center opacity-60">{item.icon}</span>
+                           <span className="text-[13px] font-semibold text-gray-700 flex-1 text-left">{item.label}</span>
+                         </button>
+                       ))}
+                    </div>
+
+                    {/* SECCIÓN 6: Ayuda */}
+                    <div className="px-6 py-2">
+                       <h5 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Ayuda</h5>
+                    </div>
+                    <div className="bg-white">
+                       {[
+                         { icon: '📖', label: 'Mensaje Bienvenida' },
+                         { icon: '⚠️', label: 'Reportar Error' },
+                         { icon: 'ℹ️', label: 'Acerca de' }
+                       ].map((item, i) => (
+                         <button key={i} className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 border-b border-gray-50">
+                           <span className="text-lg w-6 text-center opacity-60">{item.icon}</span>
+                           <span className="text-[13px] font-semibold text-gray-700 flex-1 text-left">{item.label}</span>
+                         </button>
+                       ))}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PANTALLA: SDS APP */}
+        {pantalla === 'sds' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-[8px] font-bold text-gray-800">AFV</span>
+                </div>
+                <span className="text-[13px] font-normal font-sans">Módulo SDS - {empresaSeleccionada || 'Febeca'}</span>
+              </div>
+              <button onClick={() => setPantalla('escritorio')} className="text-xl leading-none">✕</button>
+            </div>
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Aplicación SDS</h2>
+              <p className="text-sm text-gray-500 mb-6">Módulo en construcción.</p>
+              <div className={`w-32 h-32 opacity-30 grayscale`}>
+                <img src={empresaSeleccionada === 'Febeca' ? 'logo sds febeca.jpg' : empresaSeleccionada === 'Sillaca' ? 'logo sds sillaca.jpg' : 'logo sds beval.jpg'} alt="SDS" className="w-full h-full object-contain" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PANTALLA 1.5: LOGIN AFV */}
+        {pantalla === 'login_afv' && (
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-[8px] font-bold text-gray-800">AFV</span>
+                </div>
+                <span className="text-[13px] font-normal font-sans">Login AFV - {empresaSeleccionada || 'Febeca'}</span>
+              </div>
+              <button onClick={() => setPantalla('escritorio')} className="text-xl leading-none">←</button>
+            </div>
+            <div className="flex-1 flex flex-col p-6 items-center justify-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-6 font-sans">Bienvenido</h2>
 
             <div className="w-full space-y-4 font-sans">
               <div>
@@ -1385,27 +1774,42 @@ function App() {
               )}
 
               <button
-                onClick={() => {
-                  if (loginUsername === 'admin' && loginPassword === '1111') {
-                    setloginError('');
-                    setPantalla('config');
-                  } else {
-                    setloginError('Usuario o contraseña incorrectos.');
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase
+                      .from('usuarios')
+                      .select('*')
+                      .eq('username', loginUsername)
+                      .eq('password', loginPassword)
+                      .single();
+
+                    if (data) {
+                      setloginError('');
+                      setPantalla('config');
+                    } else {
+                      setloginError('Usuario o contraseña incorrectos.');
+                    }
+                  } catch (err) {
+                    setloginError('Error de conexión con la base de datos.');
                   }
                 }}
-                className="w-full bg-[#00b0f0] text-white font-bold py-3 mt-4 rounded-lg shadow-md active:bg-[#0092c8] transition-colors"
+                className="w-full text-white font-bold py-3 mt-4 rounded-lg shadow-md transition-colors"
+                style={{ backgroundColor: theme.bg }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.border}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = theme.bg}
               >
                 INGRESAR
               </button>
             </div>
           </div>
+        </div>
         )}
 
         {/* PANTALLA 2: CONFIGURACIÓN (Corresponde a 016a) */}
         {pantalla === 'config' && (
-          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col">
-            <div className="bg-[#009bba] p-3 flex items-center justify-between text-white shadow-md">
-              <span className="font-bold text-[11px] uppercase tracking-wider">000 - Sin Título</span>
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col overflow-hidden">
+            <div className="p-3 flex items-center justify-between shadow-md border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
+              <span className="font-bold text-[11px] uppercase tracking-wider">016a - Configuración - {empresaSeleccionada}</span>
               <span className="text-xl leading-none">⋮</span>
             </div>
 
@@ -1444,11 +1848,11 @@ function App() {
 
         {/* PANTALLA 3: MENÚ VENTAS Y SUBMENÚ (Corresponde a 107) */}
         {pantalla === 'menu' && (
-          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative">
-            <div className="bg-[#009bba] p-3 flex items-center justify-between text-white shadow-md">
+          <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
+            <div className="p-3 flex items-center justify-between shadow-md border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
-                <button onClick={() => setPantalla('config')} className="text-lg leading-none">←</button>
-                <span className="font-bold text-[11px] uppercase tracking-wider">073 - Ventas menu</span>
+                <button onClick={() => setPantalla('config')} className="text-lg leading-none">← </button>
+                <span className="font-bold text-[11px] uppercase tracking-wider">073 - Ventas menú - {empresaSeleccionada}</span>
               </div>
               <span onClick={() => setMostrarSubmenu(!mostrarSubmenu)} className="text-xl leading-none cursor-pointer">⋮</span>
             </div>
@@ -1496,18 +1900,18 @@ function App() {
           </div>
         )}
 
-        {/* PANTALLA 5: PEDIDOS DEL CATÁLOGO (118) */}
+        {/* PANTALLA 5: PEDIDOS DEL CATÃLOGO (118) */}
         {pantalla === 'pedidos_catalogo' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            {/* Cabecera Celeste */}
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-gray-400">
+            {/* Cabecera Celeste Dinámica */}
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">AFV</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">118 - Pedidos del Catálogo</span>
+                <span className="text-[13px] font-normal font-sans">118 - Pedidos del Catálogo - {empresaSeleccionada}</span>
               </div>
-              <span className="text-xl leading-none text-gray-700">⋮</span>
+              <span className="text-xl leading-none">⋮</span>
             </div>
 
             {/* Contenido */}
@@ -1519,7 +1923,7 @@ function App() {
                   <span className="text-[13px] text-gray-800 font-sans">FM IMPORT PARTS, C.A. - 2535</span>
                 </div>
                 <button onClick={() => setPantalla('menu')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
 
@@ -1580,13 +1984,13 @@ function App() {
         {/* PANTALLA 6: DETALLES DEL PEDIDO (119) */}
         {pantalla === 'detalles_pedido' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            {/* Cabecera Celeste */}
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-gray-400">
+            {/* Cabecera Celeste Dinámica */}
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">AFV</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">119 - Detalle Pedido Catálogo</span>
+                <span className="text-[13px] font-normal font-sans">119 - Detalle Pedido Catálogo - {empresaSeleccionada}</span>
               </div>
             </div>
 
@@ -1599,7 +2003,7 @@ function App() {
                   <span className="text-[13px] text-gray-800 font-sans block truncate">2535249 - FM IMPORT PARTS, </span>
                 </div>
                 <button onClick={() => setPantalla('pedidos_catalogo')} title="Regresar a la lista de pedidos del catálogo" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
 
@@ -1661,13 +2065,13 @@ function App() {
         {/* PANTALLA 7: PROMOCIONES ASOCIATIVAS (107) */}
         {pantalla === 'promociones_asociativas' && (
           <div className="flex-1 bg-gray-500 mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            {/* Cabecera Celeste */}
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+            {/* Cabecera Dinámica */}
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">AFV</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">107 - Promociones Asociativas</span>
+                <span className="text-[13px] font-normal font-sans">107 - Promociones Asociativas - {empresaSeleccionada}</span>
               </div>
             </div>
 
@@ -1710,13 +2114,13 @@ function App() {
                   <div className="bg-[#f0f0f0] w-full rounded shadow-2xl overflow-hidden shadow-black">
                     <div className="border-b-2 border-[#00b0f0] p-3 flex items-center gap-2 bg-[#f0f0f0]">
                       <div className="opacity-60 text-[#00b0f0] text-2xl leading-none">
-                        ☁
+
                       </div>
                       <span className="text-[16px] text-[#00b0f0] font-sans">Confirmación</span>
                     </div>
                     <div className="bg-[#f9f9f9] p-4 border-b border-gray-300">
                       <p className="text-[14px] text-gray-800 font-sans">
-                        ¿Desea otorgar 7 porciento de descuento?
+                        ¿Desea ¿Desea otorgar 7 porciento de descuento?
                       </p>
                     </div>
                     <div className="flex bg-[#f9f9f9]">
@@ -1738,13 +2142,13 @@ function App() {
         {/* PANTALLA 8: FINALIZAR PEDIDO (016) */}
         {pantalla === 'finalizar_pedido' && (
           <div className="flex-1 bg-[#b3b3b3] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            {/* Cabecera Celeste */}
-            <div className="bg-[#00b0f0] p-2.5 flex items-center text-black border-b border-[#0092c8]">
+            {/* Cabecera Dinámica */}
+            <div className="p-2.5 flex items-center border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">AFV</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">016 - Finalizar Pedido</span>
+                <span className="text-[13px] font-normal font-sans">016 - Finalizar Pedido - {empresaSeleccionada}</span>
               </div>
             </div>
 
@@ -1755,7 +2159,7 @@ function App() {
                 <span className="w-[85px] text-[11px] text-gray-700 font-sans">Pedido:</span>
                 <div className="flex-1 bg-[#999999] text-black text-right pr-2 py-0.5 font-sans text-[13px]">62115</div>
                 <button onClick={() => setPantalla('promociones_asociativas')} title="Regresar a Promociones Asociativas" className="ml-2 w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#8a8a8a] shadow-sm flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
 
@@ -1983,13 +2387,13 @@ function App() {
         {/* PANTALLA 9: CONSULTA DE PEDIDOS (023) */}
         {pantalla === 'consulta_pedidos' && (
           <div className="flex-1 bg-gray-100 mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            {/* Cabecera Celeste */}
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+            {/* Cabecera Dinámica */}
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">AFV</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">023 - Consulta de Pedidos</span>
+                <span className="text-[13px] font-normal font-sans">023 - Consulta de Pedidos - {empresaSeleccionada}</span>
               </div>
             </div>
 
@@ -2001,7 +2405,7 @@ function App() {
                   <span className="text-[13px] text-gray-800 font-sans whitespace-nowrap">FM IMPORT PARTS, C.A. - 2535</span>
                 </div>
                 <button onClick={() => setPantalla('menu')} title="Regresar al menú principal" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
 
@@ -2045,14 +2449,14 @@ function App() {
         {/* PANTALLA 10: CLIENTES (088) */}
         {pantalla === 'clientes' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">f</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">088 - Clientes</span>
+                <span className="text-[13px] font-normal font-sans">088 - Clientes - {empresaSeleccionada}</span>
               </div>
-              <span className="text-xl leading-none text-gray-700">⋮</span>
+              <span className="text-xl leading-none">⋮</span>
             </div>
             <div className="flex-1 flex flex-col p-2 bg-gray-100 overflow-hidden">
               <div className="flex items-center mb-2 justify-between">
@@ -2063,31 +2467,38 @@ function App() {
                   </select>
                 </div>
                 <button onClick={() => setPantalla('menu')} title="Regresar al menú principal" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm ml-2 flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
               <div className="flex items-center mb-2 gap-2">
                 <span className="text-[12px] font-bold text-gray-700 font-sans">Cliente:</span>
-                <input type="text" value="2531318" readOnly className="bg-[#b3b3b3] text-black font-sans text-[13px] px-2 py-1 flex-1 text-center outline-none border-b border-gray-400" />
+                <input type="text" value={empresaSeleccionada === 'Beval' ? "2503001" : "2531318"} readOnly className="bg-[#b3b3b3] text-black font-sans text-[13px] px-2 py-1 flex-1 text-center outline-none border-b border-gray-400" />
                 <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-2 py-1 text-[11px] font-sans shadow-sm hover:bg-[#d4d4d4]">O.P.</button>
                 <button className="bg-[#e6e6e6] text-[#333] border border-[#a6a6a6] px-2 py-1 text-[11px] font-sans shadow-sm hover:bg-[#d4d4d4]">B.</button>
               </div>
 
               <div className="bg-white border border-gray-400 p-1 mb-1">
-                <span className="text-[12px] text-gray-800 font-sans">GRUPO ISO HOME, C.A - 2531318</span>
+                <span className="text-[12px] text-gray-800 font-sans">{empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A. - 2503001' : 'GRUPO ISO HOME, C.A - 2531318'}</span>
               </div>
 
               <div className="flex-1 border border-gray-400 bg-white overflow-y-auto">
                 <div onClick={() => setPantalla('gestion_ventas')} className="bg-[#00b0f0] text-black font-bold text-[11px] px-2 py-2 font-sans border-b border-gray-200 cursor-pointer">
-                  GRUPO ISO HOME, C.A - 2531318
+                  {empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A. - 2503001' : 'GRUPO ISO HOME, C.A - 2531318'}
                 </div>
-                {[
+                {(empresaSeleccionada === 'Beval' ? [
+                  'AUTO ADORNOS Y ACCESSORIOS ROJUL, CA - 2569055',
+                  'AUTO PARTES MAURO 2007, C.A - 2503021',
+                  'AUTO REPUESTOS CARS 2015, C,A - 2670008',
+                  'AUTO REPUESTOS JHOMANSI C.A - 2503031',
+                  'AUTO REPUESTOS TELDE, C.A - 2503051',
+                  'AUTO REPUESTOS Y ACCESORIOS TELDE C.A. - 2775020'
+                ] : [
                   'EMPACADURAS INDUSTRIALES DEL CI - 2531976',
                   'GRUPO TRIFERCA, C.A - 2580160',
                   'HIPER HIERRO, C.A - 2531151',
-                  'HOGAR 245, C.A - ',
+                  'HOGAR 245, C.A - 2503342',
                   'INVERSIONES C MIGUEL A C.A - 2525053'
-                ].map((cli, i) => (
+                ]).map((cli, i) => (
                   <div key={i} onClick={() => setPantalla('gestion_ventas')} className="bg-white text-black font-bold text-[10px] px-2 py-2.5 font-sans border-b border-gray-200 cursor-pointer hover:bg-gray-100 active:bg-gray-200">
                     {cli}
                   </div>
@@ -2105,28 +2516,28 @@ function App() {
         {/* PANTALLA 11: GESTIÓN DE VENTAS (028) */}
         {pantalla === 'gestion_ventas' && (
           <div className="flex-1 bg-gray-100 mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">f</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">028 - Gestión de Ventas</span>
+                <span className="text-[13px] font-normal font-sans">028 - Gestión de Ventas - {empresaSeleccionada}</span>
               </div>
-              <span className="text-xl leading-none text-gray-700">⋮</span>
+              <span className="text-xl leading-none">⋮</span>
             </div>
 
             <div className="p-2 flex flex-col flex-1">
               <div className="flex items-center justify-between mb-2">
                 <div className="bg-[#d3d3d3] py-2 px-2 flex-1 mr-2 border border-gray-300 text-ellipsis overflow-hidden">
-                  <span className="text-[12px] font-bold text-gray-800 font-sans whitespace-nowrap">GRUPO ISO HOME, C.A - 2531318</span>
+                  <span className="text-[12px] font-bold text-gray-800 font-sans whitespace-nowrap">{empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A. - 2503001' : 'GRUPO ISO HOME, C.A - 2531318'}</span>
                 </div>
                 <button onClick={() => setPantalla('clientes')} title="Regresar a Clientes" className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
 
               <div className="mb-4">
-                <span className="text-[11px] text-gray-700 font-sans">Código Cliente: 2531976</span>
+                <span className="text-[11px] text-gray-700 font-sans">Código Cliente: {empresaSeleccionada === 'Beval' ? '2503001' : '2531976'}</span>
               </div>
 
               <div className="flex flex-col gap-3 items-center flex-1">
@@ -2169,26 +2580,26 @@ function App() {
         {/* PANTALLA 12: DETALLE PEDIDO NUEVO (021) */}
         {pantalla === 'detalle_pedido_nuevo' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8]">
+            <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">f</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">021 - Detalle Pedido</span>
+                <span className="text-[13px] font-normal font-sans">021 - Detalle Pedido - {empresaSeleccionada}</span>
               </div>
-              <span className="text-xl leading-none text-gray-700">⋮</span>
+              <span className="text-xl leading-none">⋮</span>
             </div>
 
             <div className="p-1 flex flex-col flex-1 bg-gray-100">
               <div className="flex items-center mb-1">
                 <div className="bg-[#d3d3d3] py-1.5 px-2 flex-1 border border-gray-300 text-ellipsis overflow-hidden">
-                  <span className="text-[11px] font-bold text-gray-800 font-sans whitespace-nowrap">GRUPO ISO HOME, C.A - 2531318..</span>
+                  <span className="text-[11px] font-bold text-gray-800 font-sans whitespace-nowrap">{empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A. - 2503001..' : 'GRUPO ISO HOME, C.A - 2531318..'}</span>
                 </div>
                 <div className="flex gap-1 ml-1">
                   <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[10px] px-2 py-0 border border-gray-400 shadow-sm active:bg-gray-300">FIN</button>
                   <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[10px] px-2 py-0 border border-gray-400 shadow-sm active:bg-gray-300">X</button>
                   <button onClick={() => setPantalla('gestion_ventas')} className="w-6 h-6 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[2px] border-[#999999] shadow-sm flex-shrink-0">
-                    ←
+                    ←
                   </button>
                 </div>
               </div>
@@ -2230,12 +2641,12 @@ function App() {
         {/* PANTALLA 13: PRODUCTOS (034) */}
         {pantalla === 'productos_busqueda' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-            <div className="bg-[#00b0f0] p-2.5 flex items-center text-black border-b border-[#0092c8]">
+            <div className="p-2.5 flex items-center border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">f</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">034 - Productos</span>
+                <span className="text-[13px] font-normal font-sans">034 - Productos - {empresaSeleccionada}</span>
               </div>
             </div>
 
@@ -2243,7 +2654,7 @@ function App() {
               <div className="flex justify-between items-center mb-6">
                 <span className="text-[14px] font-bold text-gray-800 font-sans">Artículo</span>
                 <button onClick={() => setPantalla('detalle_pedido_nuevo')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm flex-shrink-0">
-                  ←
+                  ←
                 </button>
               </div>
 
@@ -2321,15 +2732,15 @@ function App() {
         {/* PANTALLA 14: 080 - Productos (Rediseñada según pedidoizq/pedidoder.jpeg) */}
         {pantalla === 'resultados_busqueda' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden font-sans">
-            {/* Cabecera Azul con logo 'f' */}
-            <div className="bg-[#00a2e8] p-2 flex items-center justify-between text-white border-b border-[#008cc9]">
+            {/* Cabecera con color dinámico */}
+            <div className="p-2 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 flex items-center justify-center">
                   <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30">
-                    <span className="text-xl font-black italic text-white drop-shadow-md">f</span>
+                    <span className="text-xl font-black italic drop-shadow-md">f</span>
                   </div>
                 </div>
-                <span className="text-[15px] font-normal tracking-wide">080 - Productos</span>
+                <span className="text-[15px] font-normal tracking-wide">080 - Productos - {empresaSeleccionada}</span>
               </div>
               <span className="text-xl leading-none cursor-pointer px-2">⋮</span>
             </div>
@@ -2474,7 +2885,7 @@ function App() {
               {/* Botón volver flotante (Igual que en las otras pantallas) */}
               <div className="absolute top-[85%] right-4">
                 <button onClick={() => setPantalla('productos_busqueda')} className="w-8 h-8 bg-gray-400/80 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-500 border-2 border-white/50">
-                  ←
+                  ←
                 </button>
               </div>
             </div>
@@ -2491,7 +2902,7 @@ function App() {
                       </div>
                       <span className="text-[12px] font-bold font-sans">080 - Buscar por Nombre</span>
                     </div>
-                    <button onClick={() => setMostrarBuscaNombre(false)} className="text-white font-bold text-lg leading-none">×</button>
+                    <button onClick={() => setMostrarBuscaNombre(false)} className="text-white font-bold text-lg leading-none">✕</button>
                   </div>
 
                   <div className="p-3 flex flex-col gap-3">
@@ -2558,7 +2969,7 @@ function App() {
                     className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 w-8 h-8 bg-red-600 border-2 border-white rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg hover:bg-red-700"
                     title="Cerrar imagen"
                   >
-                    ×
+                    ✕
                   </button>
                 </div>
               </div>
@@ -2588,7 +2999,7 @@ function App() {
                   <button onClick={() => setPantalla('finalizar_pedido_gv')} className="bg-[#e6e6e6] text-black font-bold font-sans text-[10px] px-2 py-0 border border-gray-400 shadow-sm active:bg-gray-300">FIN</button>
                   <button className="bg-[#e6e6e6] text-black font-bold font-sans text-[10px] px-2 py-0 border border-gray-400 shadow-sm active:bg-gray-300">X</button>
                   <button onClick={() => setPantalla('gestion_ventas')} className="w-6 h-6 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[2px] border-[#999999] shadow-sm flex-shrink-0">
-                    ←
+                    ←
                   </button>
                 </div>
               </div>
@@ -2654,7 +3065,7 @@ function App() {
                 <span className="w-[85px] text-[11px] text-gray-700 font-sans">Pedido:</span>
                 <div className="flex-1 bg-[#b3b3b3] text-black font-sans text-[12px] px-2 py-1 text-right font-bold">60063</div>
                 <button onClick={() => setPantalla('detalle_pedido_con_producto')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm ml-2">
-                  ←
+                  ←
                 </button>
               </div>
 
@@ -2750,7 +3161,7 @@ function App() {
                         </div>
                         <span className="text-[12px] font-bold text-black font-sans">016 - Toma de Observación</span>
                       </div>
-                      <button onClick={() => setMostrarObservaciones(false)} className="text-black font-bold text-lg leading-none">×</button>
+                      <button onClick={() => setMostrarObservaciones(false)} className="text-black font-bold text-lg leading-none">✕</button>
                     </div>
                     <div className="p-4 flex flex-col gap-3">
                       <div>
@@ -2806,7 +3217,7 @@ function App() {
                 <div className="bg-white rounded-lg shadow-2xl w-[260px] overflow-hidden">
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[22px]">☁</span>
+                      <span className="text-[22px]"></span>
                       <span className="text-[#00b0f0] font-bold text-[15px] font-sans">Confirmación</span>
                     </div>
                     <p className="text-[12px] text-gray-700 font-sans leading-relaxed">
@@ -2827,7 +3238,7 @@ function App() {
                 <div className="bg-white rounded-lg shadow-2xl w-[260px] overflow-hidden">
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[22px]">☁</span>
+                      <span className="text-[22px]"></span>
                       <span className="text-[#00b0f0] font-bold text-[15px] font-sans">Confirmación</span>
                     </div>
                     <p className="text-[12px] text-gray-700 font-sans leading-relaxed">
@@ -2857,7 +3268,7 @@ function App() {
                 <span className="text-[13px] font-normal text-black font-sans">088 - Clientes</span>
               </div>
               <button onClick={() => setPantalla('menu')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
-                ←
+                ←
               </button>
             </div>
             <div className="flex-1 flex flex-col p-2 bg-gray-100 overflow-hidden">
@@ -2910,7 +3321,7 @@ function App() {
                   onClick={() => setPantalla('recibo_cliente')}
                   className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-[#808080] border-2 border-[#808080] shadow-sm transform hover:scale-105 active:scale-95 transition-transform"
                 >
-                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
                 </button>
               </div>
               <div className="px-3 py-1 bg-white/50 border-b border-gray-300">
@@ -2972,7 +3383,7 @@ function App() {
                   onClick={() => setPantalla('recibo_menu')}
                   className="w-8 h-8 ml-2 bg-gradient-to-b from-[#e6e6e6] to-[#cccccc] rounded-full flex items-center justify-center text-[#666666] border border-[#a6a6a6] shadow-md transform hover:scale-105 active:scale-95 transition-transform"
                 >
-                  <span className="font-bold text-2xl leading-none mt-[-2px]">←</span>
+                  <span className="font-bold text-2xl leading-none mt-[-2px]">←</span>
                 </button>
               </div>
 
@@ -3164,7 +3575,7 @@ function App() {
                           onClick={() => setRetencionTipo('')}
                           className="w-7 h-7 bg-gradient-to-b from-[#e6e6e6] to-[#cccccc] rounded-full flex items-center justify-center text-[#666666] border border-[#a6a6a6] shadow-md transform hover:scale-105 active:scale-95 transition-transform"
                         >
-                          <span className="font-bold text-lg leading-none mt-[-1px]">←</span>
+                          <span className="font-bold text-lg leading-none mt-[-1px]">←</span>
                         </button>
                       </div>
                     </div>
@@ -3174,16 +3585,43 @@ function App() {
                     </div>
 
                     <div className="flex flex-col gap-1.5 mt-2 px-1">
-                      <div className="flex items-center gap-2 border-b border-gray-500 pb-0.5">
+                      <div className="flex items-center gap-2 border-b border-gray-500 pb-0.5 relative">
                         <span className="text-[11px] text-gray-500 whitespace-nowrap w-[65px] text-left">Fecha Comp:</span>
                         <div className="flex-1">
                           <input
                             type="text"
                             value={retencionFecha}
-                            onChange={(e) => setRetencionFecha(e.target.value)}
-                            className="bg-transparent outline-none text-[12px] font-bold text-black w-full font-sans tracking-wide px-1"
+                            readOnly
+                            onClick={() => setMostrarCalendario(true)}
+                            className="bg-transparent outline-none text-[12px] font-bold text-black w-full font-sans tracking-wide px-1 cursor-pointer"
                           />
                         </div>
+                        {/* CALENDARIO SIMULADO */}
+                        {mostrarCalendario && (
+                          <div className="absolute top-full left-14 mt-1 bg-white border border-gray-400 shadow-2xl z-50 w-44 rounded-sm overflow-hidden select-none">
+                            <div className="bg-[#00b0f0] text-black font-bold text-center text-[10px] py-1 border-b border-[#0092c8]">Marzo 2026</div>
+                            <div className="grid grid-cols-7 text-[8px] font-bold text-gray-500 text-center bg-gray-100 py-0.5 border-b border-gray-300">
+                              <div>D</div><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div>
+                            </div>
+                            <div className="grid grid-cols-7 text-[10px] text-black font-bold text-center p-1 gap-y-1">
+                              <div className="text-gray-300">1</div><div className="text-gray-300">2</div><div className="text-gray-300">3</div><div className="text-gray-300">4</div>
+                              <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div>
+                              <div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div>
+                              <div>19</div><div>20</div><div>21</div><div>22</div><div>23</div><div>24</div><div>25</div>
+                              <div>26</div>
+                              <div
+                                onClick={() => {
+                                  setRetencionFecha('27-03-2026');
+                                  setMostrarCalendario(false);
+                                }}
+                                className="bg-[#00b0f0] text-white rounded-sm cursor-pointer shadow-sm hover:bg-[#0092c8]"
+                              >
+                                27
+                              </div>
+                              <div>28</div><div>29</div><div>30</div><div>31</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 pb-0.5 border-b border-gray-600">
                         <span className="text-[11px] text-gray-500 whitespace-nowrap w-[65px] text-left">Comprobante:</span>
@@ -3222,11 +3660,11 @@ function App() {
                       </div>
                       <div className="flex-1 overflow-y-auto">
                         {[
-                          { nro: '06980316', monto: '8,87', isTarget: false },
+                          { nro: '06980316', monto: '8,87', isTarget: true },
                           { nro: '06980336', monto: '1,38', isTarget: false },
                           { nro: '06982446', monto: '1,79', isTarget: false },
                           { nro: '06982447', monto: '2,84', isTarget: false },
-                          { nro: '06982589', monto: '1.160,40', isTarget: true },
+                          { nro: '06982589', monto: '1.160,40', isTarget: false },
                           { nro: '06984423', monto: '4,41', isTarget: false },
                           { nro: '06985798', monto: '22,31', isTarget: false },
                           { nro: '06987571', monto: '2,97', isTarget: false },
@@ -3236,7 +3674,7 @@ function App() {
                         ].map((row, i) => {
                           const isSel = row.isTarget ? invoiceChecked : false;
                           return (
-                            <div key={i} onClick={() => { 
+                            <div key={i} onClick={() => {
                               if (row.isTarget) {
                                 setInvoiceChecked(false);
                                 setMostrarDetalleRetencion(false);
@@ -3270,7 +3708,7 @@ function App() {
                         <div className="bg-[#f0f0f0] w-[270px] flex flex-col font-sans shadow-2xl border border-gray-600 animate-in fade-in zoom-in duration-200">
                           <div className="bg-white p-2.5 flex justify-between items-center border-b border-gray-300">
                             <h2 className="text-[14px] font-bold text-black font-sans leading-none mt-1">098 - Detalle Retencion</h2>
-                            <button className="bg-gradient-to-br from-[#e6e6e6] to-[#b3b3b3] border border-gray-400 shadow-md text-gray-500 rounded-full w-6 h-6 flex items-center justify-center font-bold text-[12px] hover:scale-105 transition-transform" onClick={() => setMostrarDetalleRetencion(false)}>✖</button>
+                            <button className="bg-gradient-to-br from-[#e6e6e6] to-[#b3b3b3] border border-gray-400 shadow-md text-gray-500 rounded-full w-6 h-6 flex items-center justify-center font-bold text-[12px] hover:scale-105 transition-transform" onClick={() => setMostrarDetalleRetencion(false)}>œ–</button>
                           </div>
                           <div className="p-3 flex flex-col gap-1.5 bg-white">
                             <div className="flex border-b border-gray-400 pb-1 items-center">
@@ -3367,7 +3805,7 @@ function App() {
                   onClick={() => setPantalla('recibo_menu')}
                   className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-[#808080] border-2 border-[#808080] shadow-sm transform hover:scale-105 active:scale-95 transition-transform"
                 >
-                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
                 </button>
               </div>
 
@@ -3427,7 +3865,7 @@ function App() {
                   onClick={() => setPantalla('recibo_index')}
                   className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-gray-500 border-2 border-gray-400 shadow-sm"
                 >
-                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                  <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
                 </button>
               </div>
 
@@ -3561,10 +3999,10 @@ function App() {
                 <div className="flex items-center justify-between bg-[#c0c0c0] px-2 py-0.5 shadow-inner">
                   <span className="text-[9px] font-bold text-gray-700 uppercase">DOCUMENTOS</span>
                   <div className="flex items-center gap-1.5">
-                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">👁</button>
+                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">ðŸ‘</button>
                     <button onClick={() => setPantalla('recibo_sel_factura')} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px] font-bold">+</button>
-                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">×</button>
-                    <button onClick={() => setPantalla('recibo_sel_factura')} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">←</button>
+                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">✕</button>
+                    <button onClick={() => setPantalla('recibo_sel_factura')} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">←</button>
                   </div>
                 </div>
                 <div className="flex-1 border border-gray-400 bg-white flex flex-col overflow-hidden">
@@ -3596,7 +4034,7 @@ function App() {
                     <span className="text-[9px] font-bold text-gray-500">0</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">×</button>
+                    <button className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px]">✕</button>
                     <button onClick={() => setMostrarModalDeposito(true)} className="w-5 h-5 bg-[#f0f0f0] rounded-full border border-gray-400 flex items-center justify-center shadow-sm text-[10px] font-bold">+</button>
                   </div>
                 </div>
@@ -3733,7 +4171,7 @@ function App() {
                   <label className="text-[9px] font-bold text-gray-500 w-16 text-right">Tipo Doc:</label>
                   <div className="flex-1 bg-[#b0b0b0] border border-gray-400 px-2 py-0.5 text-[10px] font-bold text-gray-800">FACTURAS</div>
                   <button onClick={() => setPantalla('recibo_incluidas')} className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center text-gray-500 border-2 border-gray-400 shadow-sm">
-                    <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
+                    <span className="font-bold text-sm leading-none mt-[-1px]">←</span>
                   </button>
                 </div>
 
@@ -3836,12 +4274,12 @@ function App() {
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px] font-bold text-gray-800">f</span>
                 </div>
-                <span className="text-[13px] font-normal text-black font-sans">045 - Pago de Facuras</span>
+                <span className="text-[13px] font-normal text-black font-sans">045 - Pago de Facturas</span>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => setPantalla('recibo_listo')} className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] px-3 py-1 border border-gray-400 shadow-sm active:bg-gray-300">FIN</button>
                 <button onClick={() => setPantalla('recibo_incluidas')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
-                  ←
+                  ←
                 </button>
               </div>
             </div>
@@ -3887,7 +4325,7 @@ function App() {
                 <span className="text-[13px] font-normal text-black font-sans">023 - Consulta de Pedidos</span>
               </div>
               <button onClick={() => setPantalla('menu')} className="w-7 h-7 bg-[#b3b3b3] rounded-full flex items-center justify-center text-white font-bold leading-none border-[3px] border-[#999999] shadow-sm">
-                ←
+                ←
               </button>
             </div>
             <div className="flex-1 flex flex-col bg-gray-100 p-2">
@@ -3940,12 +4378,13 @@ function App() {
 
         {/* GHOST MOUSE POINTER */}
         <div
-          className="absolute z-[100] w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_rgba(239,68,68,0.8)] flex items-center justify-center overflow-visible"
+          className={`absolute z-[100] w-6 h-6 rounded-full border-2 border-white pointer-events-none transition-all ease-in-out flex items-center justify-center overflow-visible ${isClicking ? 'bg-red-700 shadow-[0_0_5px_rgba(185,28,28,0.8)]' : 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]'}`}
           style={{
             left: `${cursorPos.x}px`,
             top: `${cursorPos.y}px`,
-            transform: 'translate(-50%, -50%)',
-            opacity: cursorPos.visible ? 0.7 : 0
+            transform: `translate(-50%, -50%) scale(${isClicking ? 0.75 : 1})`,
+            transitionDuration: isClicking ? '150ms' : '1000ms',
+            opacity: cursorPos.visible ? (isClicking ? 1 : 0.7) : 0
           }}
         >
           {isClicking && <div className="ghost-ripple" />}
@@ -3974,348 +4413,7 @@ function App() {
             </button>
           </div>
         )}
-        {/* PANTALLA: CATÁLOGO DIGITAL MAIN */}
-        {pantalla === 'catalog_main' && (
-          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
-            {/* Header azul Febeca */}
-            <div className="bg-[#00b0f0] p-3 flex items-center shadow-md z-20">
-              <button
-                onClick={() => setMostrarMenuCatalog(true)}
-                className="text-white text-2xl mr-4"
-              >
-                ≡
-              </button>
-              <div className="flex-1 flex items-center justify-center pr-6">
-                <span className="text-white font-bold text-lg italic tracking-widest">Febeca</span>
-              </div>
-              <button className="text-white text-xl">🔍</button>
-            </div>
 
-            {/* Content area */}
-            <div className="flex-1 overflow-y-auto bg-gray-100 p-2 space-y-3">
-              {/* Search bar faux */}
-              <div
-                className="bg-white p-2 rounded shadow-sm flex items-center cursor-pointer"
-                onClick={() => setPantalla('catalog_search')}
-              >
-                <input
-                  type="text"
-                  placeholder="Buscar"
-                  className="w-full text-sm outline-none bg-transparent pointer-events-none"
-                  value={busquedaCatalog}
-                  readOnly
-                />
-                <span className="text-gray-400">🔍</span>
-              </div>
-
-              {/* Banner / Welcome */}
-              <div className="bg-white p-3 rounded shadow-sm border-l-4 border-green-500">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-xl font-bold">T</div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold text-gray-800">¡Bienvenido!</p>
-                    <p className="text-[8px] text-gray-500 line-clamp-2">Para realizar su pago de manera rápida y segura...</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Marcas destacadas */}
-              <div className="bg-white p-2 rounded shadow-sm">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] font-bold text-gray-800 uppercase">Marcas Destacadas</span>
-                  <span className="text-[9px] text-[#00b0f0] font-bold">VER TODOS</span>
-                </div>
-                <div className="h-20 bg-gray-50 border border-gray-100 rounded flex items-center justify-center overflow-hidden">
-                  <img src="promocion_asociativa.jpg" alt="Marca" className="h-full w-full object-cover opacity-50" />
-                  <span className="absolute text-[12px] font-bold text-gray-400">EMTOP</span>
-                </div>
-              </div>
-
-              {/* Productos recientemente vistos */}
-              <div className="bg-white p-2 rounded shadow-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-bold text-gray-800 uppercase">Recientemente Vistos</span>
-                  <span className="text-[9px] text-[#00b0f0] font-bold">VER TODOS</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="border border-gray-100 p-2 flex flex-col items-center">
-                    <div className="h-16 bg-gray-50 w-full flex items-center justify-center text-2xl">📦</div>
-                    <p className="text-[7px] text-center mt-1 font-bold text-gray-600 uppercase">CAVA ARCTIC 46L</p>
-                    <p className="text-[9px] font-bold mt-1 text-black">USD 118,61</p>
-                  </div>
-                  <div className="border border-gray-100 p-2 flex flex-col items-center">
-                    <div className="h-16 bg-gray-50 w-full flex items-center justify-center text-2xl">🛠️</div>
-                    <p className="text-[7px] text-center mt-1 font-bold text-gray-600 uppercase">LLAVE IMPACTO</p>
-                    <p className="text-[9px] font-bold mt-1 text-black">USD 381,83</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar Menu Overlay */}
-            {mostrarMenuCatalog && (
-              <div className="absolute inset-0 z-[100] flex">
-                <div className="w-[80%] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
-                  <div className="bg-[#00b0f0] p-6 text-white flex items-center gap-3 shadow-lg">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-[#00b0f0] font-bold italic">f</span>
-                    </div>
-                    <span className="font-bold text-xl italic tracking-widest">Febeca</span>
-                  </div>
-                  <div className="flex-1 overflow-y-auto py-2">
-                    <div className="px-4 py-2 text-[10px] font-bold text-[#00b0f0] uppercase tracking-wider">Solicitudes de Cotización</div>
-                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100">
-                      <span className="text-lg">🛒</span>
-                      <span className="text-sm font-semibold text-gray-700">Solicitud Abierta</span>
-                    </div>
-                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100 border-b border-gray-100">
-                      <span className="text-lg">📋</span>
-                      <span className="text-sm font-semibold text-gray-700">Solicitudes Cerradas</span>
-                    </div>
-
-                    <div className="px-4 py-2 mt-2 text-[10px] font-bold text-[#f7d117] uppercase tracking-wider">Mis Cotizaciones</div>
-                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100">
-                      <span className="text-lg">📄</span>
-                      <span className="text-sm font-semibold text-gray-700">Cotizaciones Abiertas</span>
-                    </div>
-                    <div className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100 border-b border-gray-100">
-                      <span className="text-lg">📦</span>
-                      <span className="text-sm font-semibold text-gray-700">Cotizaciones Cerradas</span>
-                    </div>
-
-                    <div className="px-4 py-2 mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Configuración</div>
-                    <div
-                      onClick={() => { setPantalla('catalog_cuenta'); setMostrarMenuCatalog(false); }}
-                      className="flex items-center gap-4 px-6 py-3 hover:bg-gray-100 cursor-pointer"
-                    >
-                      <span className="text-lg">👤</span>
-                      <span className="text-sm font-semibold text-gray-700">Mi Cuenta</span>
-                    </div>
-                  </div>
-                  <div className="p-4 border-t border-gray-100 flex justify-end">
-                    <button onClick={() => setMostrarMenuCatalog(false)} className="text-[#00b0f0] font-bold text-sm">Cerrar</button>
-                  </div>
-                </div>
-                <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setMostrarMenuCatalog(false)}></div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PANTALLA: CATÁLOGO CUENTA */}
-        {pantalla === 'catalog_cuenta' && (
-          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
-            <div className="bg-[#00b0f0] p-3 flex items-center shadow-md">
-              <button onClick={() => setPantalla('catalog_main')} className="text-white text-2xl mr-4">←</button>
-              <div className="flex-1 flex items-center justify-center pr-10">
-                <span className="text-white font-bold text-lg italic tracking-widest">Febeca</span>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              <div className="flex flex-col items-center py-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-[#00b0f0] text-4xl mb-3 border-2 border-white shadow-inner">👤</div>
-                <p className="font-bold text-gray-800 text-lg">Alberto Gonzalez</p>
-                <p className="text-xs text-gray-400">agonzalez@febeca.com.ve</p>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="flex flex-col p-4 border-b border-gray-50">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Correo Registrado</span>
-                  <span className="text-sm text-gray-700">agonzalez@febeca.com.ve</span>
-                </div>
-                <div className="flex flex-col p-4 border-b border-gray-50 bg-blue-50/30">
-                  <span className="text-[10px] text-[#00b0f0] uppercase font-bold tracking-widest mb-1">Última Sincronización</span>
-                  <span className="text-sm text-gray-700 font-semibold">{lastSyncDate}</span>
-                </div>
-                <button
-                  onClick={() => setIsSyncing(true)}
-                  className="w-full text-left p-4 border-b border-gray-50 hover:bg-gray-50 flex justify-between items-center transition-colors active:bg-blue-50"
-                >
-                  <span className="text-sm font-bold text-gray-700">Iniciar sincronización manual</span>
-                  <span className="text-[#00b0f0] text-xl">↻</span>
-                </button>
-                <button className="w-full text-left p-4 hover:bg-red-50 text-red-500 font-bold text-sm transition-colors uppercase tracking-wider">
-                  Cerrar Sesión
-                </button>
-              </div>
-            </div>
-
-            {/* Sync Overlay */}
-            {isSyncing && (
-              <div className="absolute inset-0 bg-white z-[200] flex flex-col items-center justify-center p-10 text-center">
-                <div className="relative w-48 h-48 flex items-center justify-center">
-                  <svg className="absolute inset-0 w-full h-full -rotate-90">
-                    <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
-                    <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="502.6" strokeDashoffset={502.6 - (502.6 * syncProgress) / 100} className="text-[#00b0f0] transition-all duration-500" />
-                  </svg>
-                  <span className="text-5xl font-light text-gray-800">{syncProgress}%</span>
-                </div>
-                <p className="text-gray-400 text-sm font-sans mt-8 tracking-[0.3em] uppercase animate-pulse">Cargando Datos</p>
-                <button
-                  onClick={() => setIsSyncing(false)}
-                  className="mt-12 border-2 border-gray-200 px-8 py-2 rounded-full uppercase text-[10px] font-bold text-gray-400 hover:border-red-200 hover:text-red-400 transition-all active:scale-95"
-                >
-                  Detener Sincronización
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PANTALLA: CATÁLOGO BÚSQUEDA */}
-        {pantalla === 'catalog_search' && (
-          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
-            <div className="bg-[#00b0f0] p-1 flex flex-col shadow-lg z-20">
-              <div className="flex items-center p-2">
-                <button onClick={() => setPantalla('catalog_main')} className="text-white text-2xl mr-4">←</button>
-                <span className="text-white font-bold text-sm uppercase tracking-wider">Busqueda de Producto</span>
-                <span className="ml-auto text-xl text-white">⋮</span>
-              </div>
-              <div className="flex text-white text-[9px] font-bold uppercase tracking-tighter mt-1">
-                <div className="flex-1 text-center py-2 border-b-4 border-white">Productos</div>
-                <div className="flex-1 text-center py-2 opacity-60">Categorias</div>
-                <div className="flex-1 text-center py-2 opacity-60">Subcategorias</div>
-                <div className="flex-1 text-center py-2 opacity-60">Marcas</div>
-              </div>
-            </div>
-
-            <div className="flex-1 bg-gray-50 flex flex-col p-3">
-              <div className="flex items-center bg-white border border-gray-200 rounded-lg p-3 shadow-sm mb-4 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <input
-                  autoFocus
-                  type="text"
-                  value={busquedaCatalog}
-                  onChange={(e) => setBusquedaCatalog(e.target.value)}
-                  className="flex-1 outline-none text-sm font-sans font-medium"
-                  placeholder="Escriba Criterio"
-                />
-                {busquedaCatalog && <button onClick={() => setBusquedaCatalog('')} className="text-gray-300 ml-2 text-lg">✕</button>}
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-1 bg-white rounded-xl border border-gray-100 shadow-inner">
-                {busquedaCatalog.toLowerCase().includes('machete') ? (
-                  <div
-                    className="h-full w-full cursor-pointer"
-                    onClick={() => setPantalla('catalog_lista_machete')}
-                  >
-                    <img src="catalogolistamachete.jpg" alt="Lista Machete" className="w-full h-auto" />
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center p-10 opacity-30">
-                    <span className="text-6xl mb-4">🔍</span>
-                    <p className="text-sm font-bold">Sin resultados</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PANTALLA: CATALOGO LISTA MACHETE */}
-        {pantalla === 'catalog_lista_machete' && (
-          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
-            <div className="flex-1 overflow-y-auto">
-              <img
-                src="catalogolistamachete.jpg"
-                alt="Lista Machete Full"
-                className="w-full h-auto cursor-pointer"
-                onClick={() => setPantalla('catalog_detalle_producto')}
-              />
-            </div>
-            <div className="absolute top-2 left-2">
-              <button onClick={() => setPantalla('catalog_search')} className="bg-black/20 text-white p-2 rounded-full">←</button>
-            </div>
-          </div>
-        )}
-
-        {/* PANTALLA: CATALOGO DETALLE PRODUCTO */}
-        {pantalla === 'catalog_detalle_producto' && (
-          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
-            <div className="flex-1 overflow-y-auto relative">
-              <img
-                src="catalogodetalleproducto.jpg"
-                alt="Detalle Producto"
-                className="w-full h-auto"
-              />
-              {/* Botón Carrito / Solicitar Cotización */}
-              <div
-                className="absolute top-[80%] right-[10%] w-16 h-16 cursor-pointer"
-                onClick={() => {
-                  setPantalla('catalog_detalle_machete_cantidad');
-                  setCantidadMachete('0');
-                  setErrorMachete('');
-                }}
-              ></div>
-            </div>
-            <div className="absolute top-2 left-2">
-              <button onClick={() => setPantalla('catalog_lista_machete')} className="bg-black/20 text-white p-2 rounded-full">←</button>
-            </div>
-          </div>
-        )}
-
-        {/* PANTALLA: CATALOGO DETALLE MACHETE CANTIDAD */}
-        {pantalla === 'catalog_detalle_machete_cantidad' && (
-          <div className="flex-1 bg-white flex flex-col relative overflow-hidden font-sans">
-            <div className="flex-1 relative">
-              <img
-                src="catalogodetallemachetecantidad.jpg"
-                alt="Detalle Cantidad"
-                className="w-full h-auto"
-              />
-
-              {/* Overlay para entrada de cantidad */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 p-6">
-                <div className="bg-white rounded-xl p-6 shadow-2xl w-full max-w-[260px] flex flex-col gap-4">
-                  <h3 className="font-bold text-gray-800 text-center">Cantidad a Solicitar</h3>
-                  <p className="text-[10px] text-blue-500 text-center font-semibold uppercase tracking-wider">Múltiplos de 3 (Empaquedado)</p>
-
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={cantidadMachete}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCantidadMachete(val);
-                        if (parseInt(val) % 3 !== 0) {
-                          setErrorMachete('La cantidad debe ser múltiplo de 3');
-                        } else {
-                          setErrorMachete('');
-                        }
-                      }}
-                      className={`w-full border-2 p-3 text-center text-xl font-bold rounded-lg outline-none transition-all ${errorMachete ? 'border-red-500 bg-red-50' : 'border-blue-400 focus:border-blue-600'}`}
-                    />
-                    {errorMachete && (
-                      <p className="text-[10px] text-red-500 mt-1 font-bold text-center">{errorMachete}</p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPantalla('catalog_detalle_producto')}
-                      className="flex-1 py-3 text-sm font-bold text-gray-500 bg-gray-100 rounded-lg active:bg-gray-200"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (parseInt(cantidadMachete) > 0 && parseInt(cantidadMachete) % 3 === 0) {
-                          alert('Producto añadido con éxito!');
-                          setPantalla('catalog_main');
-                        } else if (parseInt(cantidadMachete) % 3 !== 0) {
-                          setErrorMachete('Error: Debe ser múltiplo de 3');
-                        }
-                      }}
-                      className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 rounded-lg active:bg-blue-700 shadow-md"
-                    >
-                      Aceptar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         {/* OVERLAY CALCULADORA AFV (084 - Consulta de Precios) */}
         {mostrarAfvCalc && (() => {
           // Parse price: "15.500,00" -> 15500.00
@@ -4336,7 +4434,7 @@ function App() {
           return (
             <div className="absolute inset-0 bg-black/50 z-[300] flex items-center justify-center">
               <div className="w-[300px] bg-[#f0f0f0] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-400">
-                {/* Header — blue bar */}
+                {/* Header €” blue bar */}
                 <div className="bg-[#00b0f0] px-2 py-1.5 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center border border-gray-300">
@@ -4347,23 +4445,23 @@ function App() {
                   <button
                     onClick={() => setMostrarAfvCalc(false)}
                     className="w-7 h-7 bg-gray-300 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm border border-gray-400 shadow-sm active:bg-gray-400"
-                  >◁</button>
+                  >✕</button>
                 </div>
 
                 {/* Top section: table + tipo precio */}
                 <div className="flex bg-white border-b border-gray-300">
-                  {/* Días / Descuento table */}
+                  {/* Das / Descuento table */}
                   <div className="flex-1 border-r border-gray-300">
                     <div className="flex bg-[#595959] text-white text-[10px] font-bold">
-                      <div className="flex-1 text-center py-1 border-r border-gray-500">Días</div>
+                      <div className="flex-1 text-center py-1 border-r border-gray-500">Das</div>
                       <div className="flex-1 text-center py-1">Descuento</div>
                     </div>
-                    {/* Row 1 — normal (not highlighted) */}
+                    {/* Row 1 €” normal (not highlighted) */}
                     <div className="flex text-[11px] font-sans border-b border-gray-200">
                       <div className="flex-1 text-center py-1 border-r border-gray-200 text-gray-700">0,00</div>
                       <div className="flex-1 text-center py-1 text-gray-700">{fmt(dctoPromoNum)}</div>
                     </div>
-                    {/* Row 2 — highlighted blue (active) */}
+                    {/* Row 2 €” highlighted blue (active) */}
                     <div className="flex text-[11px] font-bold bg-[#00b0f0]">
                       <div className="flex-1 text-center py-1 border-r border-[#0092c8]">30,00</div>
                       <div className="flex-1 text-center py-1">{fmt(dctoFPNum)}</div>
@@ -4389,9 +4487,9 @@ function App() {
                 {/* Price fields section */}
                 <div className="flex flex-col bg-[#f0f0f0] px-2 py-1 gap-0.5">
 
-                  {/* Precio del Artículo */}
+                  {/* Precio del Artculo */}
                   <div className="flex items-center gap-1 py-1 border-b border-gray-300">
-                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Precio del Artículo:</span>
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Precio del Artculo:</span>
                     <div className="flex-1 bg-[#b3b3b3] text-black text-[12px] font-bold px-2 py-0.5 text-right">{afvCalcPrecio}</div>
                     <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">USD</span>
                   </div>
@@ -4412,7 +4510,7 @@ function App() {
 
                   {/* Dscto. Promoción (dropdown) */}
                   <div className="flex items-center gap-1 py-1 border-b border-gray-300">
-                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Promoción:</span>
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Promocin:</span>
                     <select
                       value={afvDctoComercial}
                       onChange={(e) => setAfvDctoComercial(e.target.value)}
@@ -4486,7 +4584,7 @@ function App() {
           <div className="absolute inset-0 bg-black/80 z-[400] flex items-center justify-center animate-in fade-in duration-300">
             <div className="relative w-[90%] max-h-[90%] shadow-2xl rounded-lg overflow-hidden border-2 border-white/20 bg-white">
               <div className="absolute top-0 left-0 right-0 bg-blue-600/90 text-white p-2 text-[10px] font-bold z-10 flex justify-between items-center backdrop-blur-sm">
-                <span>SIMULACIÓN PRECARGA RETENCIÓN</span>
+                <span>SIMULACI\u00D3N PRECARGA RETENCI\u00D3N</span>
                 <button
                   onClick={() => setMostrarRetencionImg(false)}
                   className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-colors"
@@ -4495,7 +4593,7 @@ function App() {
               <div className="relative">
                 <img src={retencionImgSrc} alt="Retencion" className="w-full h-auto" />
 
-                {/* Elementos dinámicos sobre la imagen para simular interacción */}
+                {/* Elementos dinmicos sobre la imagen para simular interaccin */}
                 {retencionImgSrc === 'retencion4.jpeg' && (
                   <div className="absolute top-[68%] left-[45%] bg-white px-2 py-0.5 border border-blue-500 text-[10px] font-bold shadow-md animate-pulse">
                     {retencionFecha}
@@ -4544,13 +4642,13 @@ function App() {
                   </div>
                   <div className="flex gap-2">
                     <span className="cursor-pointer px-1 hover:bg-gray-200">-</span>
-                    <span className="cursor-pointer px-1 hover:bg-gray-200">□</span>
+                    <span className="cursor-pointer px-1 hover:bg-gray-200">\u25FB</span>
                     <button onClick={() => setMostrarCalculadora(false)} className="px-2 hover:bg-red-500 hover:text-white transition-colors">✕</button>
                   </div>
                 </div>
                 <div className="px-4 pt-4 pb-2">
                   <div className="text-right text-gray-500 text-[13px] h-5 mb-1">
-                    {imgCalculadora === 'calc1.png' ? '45718.20 ÷ 84.46 =' : '10988.39 ÷ 541.30 ='}
+                    {imgCalculadora === 'calc1.png' ? '45718.20 / 84.46 =' : '10988.39 - 541.30 ='}
                   </div>
                   <div className="text-right text-4xl font-semibold text-gray-900 mb-2 truncate tracking-tight">
                     {imgCalculadora === 'calc1.png' ? '541.3' : '20.30'}
@@ -4559,16 +4657,16 @@ function App() {
                 <div className="px-1 pb-1">
                   <div className="grid grid-cols-4 gap-[2px]">
                     {/* Fila 1 */}
-                    {['%', 'CE', 'C', '⌫'].map(btn => (
+                    {['%', 'CE', 'C', '\u232B'].map(btn => (
                       <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
                     ))}
                     {/* Fila 2 */}
-                    {['1/x', 'x²', '√x', '÷'].map(btn => (
+                    {['1/x', 'x\u00B2', '\u221A', '/'].map(btn => (
                       <button key={btn} className="bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700 text-sm py-3 rounded-sm">{btn}</button>
                     ))}
                     {/* Fila 3 */}
-                    {['7', '8', '9', '×'].map(btn => (
-                      <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['×'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
+                    {['7', '8', '9', 'X'].map(btn => (
+                      <button key={'btn_' + btn} className={`text-sm py-3 rounded-sm ${['X'].includes(btn) ? 'bg-[#f9f9f9] hover:bg-[#eaeaea] text-gray-700' : 'bg-white hover:bg-[#f9f9f9] text-gray-900 font-semibold shadow-sm'}`}>{btn}</button>
                     ))}
                     {/* Fila 4 */}
                     {['4', '5', '6', '-'].map(btn => (
@@ -4633,3 +4731,4 @@ function App() {
 }
 
 export default App
+
