@@ -1,0 +1,198 @@
+[
+  {
+    "__EMPTY": "CODIGO",
+    "__EMPTY_1": "RAZON",
+    "__EMPTY_2": "ZONA",
+    "__EMPTY_3": "VENDEDOR",
+    "__EMPTY_4": "SUPERVISOR",
+    "__EMPTY_5": "TIPO DE CONTACTO",
+    "__EMPTY_6": "NOMBRE Y APELLIDO",
+    "__EMPTY_7": "TELEFONO MOVIL",
+    "__EMPTY_8": "CORREO"
+  },
+  {
+    "__EMPTY": "25-31-964",
+    "__EMPTY_1": "LA SOLUCION DEL HOGAR ETB, C.A.",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "dueño",
+    "__EMPTY_6": "Evangel Teran Presidente ",
+    "__EMPTY_7": "0412- 5051969",
+    "__EMPTY_8": "lasoluciondelhogarb@gmail.com"
+  },
+  {
+    "__EMPTY": "25-35-296",
+    "__EMPTY_1": "INVERSIONES HG21, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "dueño",
+    "__EMPTY_6": "lino hernandez",
+    "__EMPTY_7": "O424 4689356",
+    "__EMPTY_8": "lijoher1965@gmail.com"
+  },
+  {
+    "__EMPTY": "25-35-842",
+    "__EMPTY_1": "SERVI-PROTEC 2014, C.A.",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "dueño",
+    "__EMPTY_6": "eusabet santana",
+    "__EMPTY_7": "412-4087221",
+    "__EMPTY_8": "serviprotec2014@gmail.com"
+  },
+  {
+    "__EMPTY": "25-35-846",
+    "__EMPTY_1": "WINDOOR HOUSE, C.A.",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "cerrar",
+    "__EMPTY_6": "alexander montilla",
+    "__EMPTY_7": "58 412-8912135",
+    "__EMPTY_8": "windoorhouseca@gmail.com"
+  },
+  {
+    "__EMPTY": "25-35-848",
+    "__EMPTY_1": "CORPORACION FERRE R & S, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "dueño",
+    "__EMPTY_6": "ruben GIL",
+    "__EMPTY_7": 4166447742,
+    "__EMPTY_8": "ferrecorporacion@gmail.com"
+  },
+  {
+    "__EMPTY": "25-35-849",
+    "__EMPTY_1": "SINOXFERCA, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "marcel chirinos",
+    "__EMPTY_7": 4244358761,
+    "__EMPTY_8": "compras.sinoxferca@gmail.com"
+  },
+  {
+    "__EMPTY": "25-69-942",
+    "__EMPTY_1": "INVERSORA MULTINACIONAL, C.A.",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "isis castillos",
+    "__EMPTY_7": "0414-4332409",
+    "__EMPTY_8": "invmultinacional@gmail.com"
+  },
+  {
+    "__EMPTY": "25-79-026",
+    "__EMPTY_1": "INVERSIONES SANTA CLARA 24, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_7": 4244966896,
+    "__EMPTY_8": "inversionessantaclara24@hotmail.com"
+  },
+  {
+    "__EMPTY": "25-81-315",
+    "__EMPTY_1": "METALURGICA LA CERCHA, C.A.",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": ". CARMELO GONZALEZ",
+    "__EMPTY_7": 4244455132,
+    "__EMPTY_8": "\"Metalúrgica La Cerchá C.A\" <metal.lacercha@hotmail.com>"
+  },
+  {
+    "__EMPTY": "25-83-512",
+    "__EMPTY_1": "SUPPLI360, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "dueño",
+    "__EMPTY_6": "williams caballero",
+    "__EMPTY_7": "58 412-9711499",
+    "__EMPTY_8": "ventas@suppli360.com"
+  },
+  {
+    "__EMPTY": "25-83-522",
+    "__EMPTY_1": "LOS AGUACATES C.A.",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "isis castillos",
+    "__EMPTY_7": "58 414-4332409",
+    "__EMPTY_8": "gonzalezhcarlosa@gmail.com"
+  },
+  {
+    "__EMPTY": "25-83-545",
+    "__EMPTY_1": "DISTRIBUIDORA GUSYEL 2000, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "eduardo romero",
+    "__EMPTY_7": "58 414-4141217",
+    "__EMPTY_8": "distribuidoragusyel2000@gmail.com"
+  },
+  {
+    "__EMPTY": "25-83-547",
+    "__EMPTY_1": "CORPORACION TODO REPUESTOS D.P., C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "dueño",
+    "__EMPTY_6": "juan peraza",
+    "__EMPTY_7": "58 414-4208606"
+  },
+  {
+    "__EMPTY": "25-83-550",
+    "__EMPTY_1": "FERRETONGO 2022, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "genesis castellanos",
+    "__EMPTY_7": "58 412-8449680",
+    "__EMPTY_8": "ferretongo2022@gmail.com"
+  },
+  {
+    "__EMPTY": "25-83-562",
+    "__EMPTY_1": "INVERSIONES 2323 EL TORO, C.A",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "marian colmenares",
+    "__EMPTY_7": "58 414-9412809",
+    "__EMPTY_8": "inversiones2323eltoroca@hotmail.com"
+  },
+  {
+    "__EMPTY": "25-95-017",
+    "__EMPTY_1": "TORVALCA CA",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "enzo sicaruza",
+    "__EMPTY_7": "58 414-4332817",
+    "__EMPTY_8": "Correo: torvalcaval@gmail.com"
+  },
+  {
+    "__EMPTY": "25-97-013",
+    "__EMPTY_1": "TORNILLOS LE VITE GRAVITE CA",
+    "__EMPTY_2": 158,
+    "__EMPTY_3": "ALVARO RIVERA",
+    "__EMPTY_4": "ESTHER CASTILLO",
+    "__EMPTY_5": "comprador",
+    "__EMPTY_6": "enzo sicaruza",
+    "__EMPTY_7": "58 414-4332817",
+    "__EMPTY_8": "Correo: torvalcaval@gmail.com"
+  }
+]
