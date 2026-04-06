@@ -196,7 +196,7 @@ function App() {
   const productoActivo = productosFiltrados[productoActivoIndex] || productosFiltrados[0] || null;
 
   const sleep = (ms) => new Promise((resolve, reject) => {
-    let remaining = ms * 0.5; // Velocidad ajustada (multiplicador 0.5 - 2x más rápido que lo normal)
+    let remaining = ms; // Velocidad normal (restaurada)
 
     const check = () => {
       if (stopRequestedRef.current) {
@@ -4383,7 +4383,7 @@ function App() {
             left: `${cursorPos.x}px`,
             top: `${cursorPos.y}px`,
             transform: `translate(-50%, -50%) scale(${isClicking ? 0.75 : 1})`,
-            transitionDuration: isClicking ? '150ms' : '1000ms',
+            transitionDuration: isClicking ? '150ms' : '500ms',
             opacity: cursorPos.visible ? (isClicking ? 1 : 0.7) : 0
           }}
         >
