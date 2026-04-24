@@ -23,10 +23,12 @@ function App() {
   const getCompanyStyle = () => {
     switch (empresaSeleccionada) {
       case 'Beval':
+      case 'Mundial de Partes':
         return { bg: '#c4d600', border: '#a2b000', text: 'black' };
       case 'Sillaca':
         return { bg: '#E4006B', border: '#b00052', text: 'white' };
       case 'Febeca':
+      case 'Cofersa':
       default:
         return { bg: '#00b0f0', border: '#0092c8', text: 'black' };
     }
@@ -1285,9 +1287,7 @@ function App() {
         {/* PANTALLA 0: INICIO DE SESIÓN (La que ya tenías) */}
         {pantalla === 'inicio' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col items-center justify-center p-6 bg-gradient-to-b from-white to-gray-50">
-            <div className="w-40 h-40 mb-2 flex items-center justify-center">
-              <img src="logoafv.jpeg" alt="AFV Logo" className="max-w-full max-h-full object-contain" />
-            </div>
+
             <p className="text-gray-400 text-[10px] tracking-widest mb-12 uppercase">Samsung Enterprise</p>
             <button
               onClick={() => setPantalla('escritorio')}
@@ -1391,6 +1391,70 @@ function App() {
                 </div>
                 <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">SDS<br />Beval</span>
               </div>
+
+              {/* === COFERSA === */}
+              <div onClick={() => {
+                setEmpresaSeleccionada('Cofersa');
+                setloginUsername('admin');
+                setloginPassword('4444');
+                setloginError('');
+                setPantalla('login_afv');
+              }} title="AFV Cofersa" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="img/Cofersa.png" alt="AFV Cofersa" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Cofersa</span>
+              </div>
+
+              <div onClick={() => { 
+                setEmpresaSeleccionada('Cofersa'); 
+                setSubPantallaCatalog('inicio');
+                setPantalla('catalogo'); 
+              }} title="Catálogo Cofersa" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="img/Cofersa.png" alt="Catálogo Cofersa" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">Catálogo<br />Cofersa</span>
+              </div>
+
+              <div onClick={() => { setEmpresaSeleccionada('Cofersa'); setPantalla('sds'); }} title="SDS Cofersa" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="img/Cofersa.png" alt="SDS Cofersa" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">SDS<br />Cofersa</span>
+              </div>
+
+              {/* === MUNDIAL DE PARTES === */}
+              <div onClick={() => {
+                setEmpresaSeleccionada('Mundial de Partes');
+                setloginUsername('admin');
+                setloginPassword('5555');
+                setloginError('');
+                setPantalla('login_afv');
+              }} title="AFV Mundial" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="img/Mundial.png" alt="AFV Mundial" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Mundial</span>
+              </div>
+
+              <div onClick={() => { 
+                setEmpresaSeleccionada('Mundial de Partes'); 
+                setSubPantallaCatalog('inicio');
+                setPantalla('catalogo'); 
+              }} title="Catálogo Mundial" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="img/Mundial.png" alt="Catálogo Mundial" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">Catálogo<br />Mundial</span>
+              </div>
+
+              <div onClick={() => { setEmpresaSeleccionada('Mundial de Partes'); setPantalla('sds'); }} title="SDS Mundial" className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src="img/Mundial.png" alt="SDS Mundial" className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">SDS<br />Mundial</span>
+              </div>
             </div>
           </div>
         )}
@@ -1403,7 +1467,13 @@ function App() {
               <div className="flex items-center gap-3">
                 <button onClick={() => setMostrarMenuCategorias(true)} className="text-2xl">☰</button>
                 <div className="h-8 w-24">
-                  <img src={empresaSeleccionada === 'Febeca' ? 'logotipofebeca.jpg' : empresaSeleccionada === 'Sillaca' ? 'logotiposillaca.jpeg' : 'logotipobeval.jpg'} alt="Logo" className="h-full w-full object-contain brightness-0 invert" />
+                  <img src={
+                    empresaSeleccionada === 'Febeca' ? 'logotipofebeca.jpg' : 
+                    empresaSeleccionada === 'Sillaca' ? 'logotiposillaca.jpeg' : 
+                    empresaSeleccionada === 'Beval' ? 'logotipobeval.jpg' :
+                    empresaSeleccionada === 'Cofersa' ? 'img/Cofersa.png' :
+                    'img/Mundial.png'
+                  } alt="Logo" className="h-full w-full object-contain brightness-0 invert" />
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -1592,7 +1662,13 @@ function App() {
                   {/* Header del Menú */}
                   <div className="p-6 flex items-center gap-4 border-b shadow-sm" style={{ backgroundColor: theme.bg, color: theme.text }}>
                     <div className="w-12 h-12 bg-white rounded-full p-2 flex items-center justify-center shadow-md">
-                       <img src={empresaSeleccionada === 'Febeca' ? 'logotipoafv.jpeg' : 'logotiposillaca.jpeg'} className="w-full h-full object-contain" />
+                       <img src={
+                         empresaSeleccionada === 'Febeca' ? 'logotipoafv.jpeg' : 
+                         empresaSeleccionada === 'Sillaca' ? 'logotiposillaca.jpeg' : 
+                         empresaSeleccionada === 'Beval' ? 'logotipobeval.jpg' :
+                         empresaSeleccionada === 'Cofersa' ? 'img/Cofersa.png' :
+                         'img/Mundial.png'
+                       } className="w-full h-full object-contain" />
                     </div>
                     <div>
                       <p className="font-bold text-base leading-none mb-1">{empresaSeleccionada}</p>
