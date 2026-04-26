@@ -90,14 +90,20 @@ const PortalInicio = () => {
           .schema('portal_afv')
           .from('evaluadores_autorizados')
           .select('*')
-          .eq('email', data.usuario)
-          .single();
+          .ilike('email', data.usuario.trim())
+          .maybeSingle();
+
+        // 🛡️ SEGURIDAD: Los evaluadores autorizados NUNCA pueden ser admin accidentalmente
+        const isAuthorizedEval = evalData !== null;
+        const finalRole = isAuthorizedEval ? 'evaluador' : data.rol;
 
         const userData = { 
           ...data, 
           loginDate: new Date().toISOString(),
-          rol: evalData ? 'evaluador' : data.rol 
+          rol: finalRole 
         };
+        
+        console.log("Login exitoso. Rol detectado:", finalRole);
         
         setUserSession(userData);
         localStorage.setItem('portalUser', JSON.stringify(userData));

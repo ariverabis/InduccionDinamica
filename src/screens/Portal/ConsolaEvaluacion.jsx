@@ -41,7 +41,13 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const fetchInitialData = async () => {
     try {
       setIsLoading(true);
-      const { data: evalAuth } = await supabase.schema('portal_afv').from('evaluadores_autorizados').select('*, departamentos(*)').eq('email', user.usuario).single();
+      const { data: evalAuth } = await supabase
+        .schema('portal_afv')
+        .from('evaluadores_autorizados')
+        .select('*, departamentos(*)')
+        .ilike('email', user.usuario.trim())
+        .maybeSingle();
+
       const deptoParaCarga = evalAuth?.departamentos || (user.rol === 'admin' ? { id: null, nombre: 'Admin Global' } : null);
       setDepartamento(deptoParaCarga);
       const { data: deptos } = await supabase.schema('portal_afv').from('departamentos').select('*');
@@ -196,31 +202,21 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         <header className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-black text-slate-950">Consola de Evaluación y Reclutamiento</h1>
-            <div className="flex gap-3 mt-6">
-              <button 
-                onClick={() => setViewMode('manual')} 
-                className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'manual' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-              >
-                📝 Evaluación e Historial
-              </button>
-              
-              {user.rol === 'admin' && (
-                <button 
-                  onClick={() => setViewMode('automatico')} 
-                  className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'automatico' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-                >
-                  📥 Aspirantes Excel
-                </button>
-              )}
-
-              {user.rol === 'admin' && (
-                <button 
-                  onClick={() => setViewMode('configuracion')} 
-                  className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'configuracion' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-                >
-                  ⚙️ Biblioteca de Temas
-                </button>
-              )}
+            <div className="flex gap-4 mt-6">
+             <button onClick={() => setViewMode('manual')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'manual' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                👥 Evaluaciones
+             </button>
+             <button onClick={() => setViewMode('mi-academia')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'mi-academia' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                📚 Mi Academia
+             </button>
+             <button onClick={() => setViewMode('automatico')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'automatico' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                📥 Aspirantes Excel
+             </button>
+             {user.rol === 'admin' && (
+               <button onClick={() => setViewMode('configuracion')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'configuracion' ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                  ⚙️ Biblioteca Temas
+               </button>
+             )}
             </div>
           </div>
           <button onClick={onBack} className="px-8 py-3 bg-slate-900 text-white font-bold text-[9px] uppercase rounded-full shadow-lg">← Volver</button>
@@ -280,7 +276,14 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                 {/* FOTO DE PERFIL EN EVALUACIÓN */}
                                 <div className="w-20 h-20 rounded-[2rem] bg-slate-800 border-2 border-slate-700 overflow-hidden shadow-2xl flex items-center justify-center">
                                     {selectedAsesor.foto_url ? (
-                                        <img src={selectedAsesor.foto_url} alt="Perfil" className="w-full h-full object-cover" />
+                                        <img 
+                                          src={selectedAsesor.foto_url.includes('drive.google.com') 
+                                            ? selectedAsesor.foto_url.replace('/file/d/', '/thumbnail?id=').replace('/view?usp=sharing', '').replace('/view?usp=drive_link', '').replace('/view', '') 
+                                            : selectedAsesor.foto_url} 
+                                          alt="Perfil" 
+                                          className="w-full h-full object-cover" 
+                                          onError={(e) => e.target.style.display = 'none'}
+                                        />
                                     ) : (
                                         <span className="text-2xl font-black text-blue-400">{selectedAsesor.nombre?.substring(0,1)}</span>
                                     )}
@@ -381,7 +384,14 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           <div className="flex items-center gap-4">
                              <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
                                 {nota.foto_url ? (
-                                    <img src={nota.foto_url} alt="Foto" className="w-full h-full object-cover" />
+                                    <img 
+                                      src={nota.foto_url.includes('drive.google.com') 
+                                        ? nota.foto_url.replace('/file/d/', '/thumbnail?id=').replace('/view?usp=sharing', '').replace('/view?usp=drive_link', '').replace('/view', '') 
+                                        : nota.foto_url} 
+                                      alt="Foto" 
+                                      className="w-full h-full object-cover" 
+                                      onError={(e) => e.target.style.display = 'none'}
+                                    />
                                 ) : (
                                     <span className="text-slate-400 text-xs font-black">{nota.nombre_apellido?.substring(0,1)}</span>
                                 )}
@@ -405,6 +415,42 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                   ))}
                 </tbody>
              </table>
+          </div>
+        )}
+
+        {viewMode === 'mi-academia' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             {/* CABECERA DE DEPARTAMENTO */}
+             <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex items-center justify-between overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl">📚</div>
+                <div className="relative z-10">
+                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.4em] mb-2 block">Departamento Autorizado</span>
+                   <h2 className="text-4xl font-black text-slate-900 tracking-tighter">{departamento?.nombre || 'General / Admin'}</h2>
+                   <p className="text-sm text-slate-400 mt-2 font-medium">Usted tiene autoridad para evaluar los siguientes temas académicos.</p>
+                </div>
+                <div className="bg-slate-50 px-8 py-4 rounded-2xl border border-slate-100 text-center">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Temas Cargados</p>
+                   <p className="text-2xl font-black text-slate-900">{submodulos.length}</p>
+                </div>
+             </div>
+
+             {/* LISTA DE TEMAS */}
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {submodulos.length > 0 ? (
+                  submodulos.map((sub) => (
+                    <div key={sub.id} className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                       <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl mb-6 group-hover:scale-110 transition-transform">📘</div>
+                       <h4 className="text-xs font-black text-slate-900 mb-2 uppercase tracking-tight leading-tight">{sub.nombre_tarea}</h4>
+                       <p className="text-[10px] text-slate-500 font-medium leading-relaxed mb-4">{sub.descripcion || 'Sin descripción detallada.'}</p>
+                       <div className="h-[2px] w-12 bg-blue-100 group-hover:w-full transition-all duration-500"></div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full bg-white p-20 rounded-[3rem] text-center border-2 border-dashed border-slate-100">
+                     <p className="text-sm text-slate-400 font-bold uppercase tracking-widest italic">Aun no hay temas cargados en su biblioteca.</p>
+                  </div>
+                )}
+             </div>
           </div>
         )}
 
