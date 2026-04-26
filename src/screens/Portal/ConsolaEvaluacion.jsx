@@ -160,6 +160,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     try {
       const { data: newUser } = await supabase.schema('portal_afv').from('usuarios').upsert({
           usuario: candidatoAlta.email_contacto,
+          correo: candidatoAlta.email_contacto,
           nombre: candidatoAlta.nombre_apellido,
           clave: candidatoAlta.cedula,
           rol: 'asesor',

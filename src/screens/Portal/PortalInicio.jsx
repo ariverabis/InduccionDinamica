@@ -50,6 +50,7 @@ const PortalInicio = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -110,7 +111,7 @@ const PortalInicio = () => {
   };
 
   const handleRegister = async () => {
-    if (!username || !password || !fullName) return setLoginError('Complete todos los campos');
+    if (!username || !password || !fullName || !email) return setLoginError('Complete todos los campos');
     setIsLoading(true);
     setLoginError('');
 
@@ -123,6 +124,7 @@ const PortalInicio = () => {
             usuario: username, 
             clave: password, 
             nombre: fullName, 
+            correo: email,
             empresa: selectedCompany,
             rol: 'asesor'
           }
@@ -191,7 +193,10 @@ const PortalInicio = () => {
           </div>
           <div className="space-y-3">
             {isRegistering && (
-              <input type="text" placeholder="Nombre y Apellido" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
+              <>
+                <input type="text" placeholder="Nombre y Apellido" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
+                <input type="email" placeholder="Correo Electrónico" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
+              </>
             )}
             <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
             <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
