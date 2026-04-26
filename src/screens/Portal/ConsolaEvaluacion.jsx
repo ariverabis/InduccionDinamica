@@ -21,7 +21,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [motivoReinicio, setMotivoReinicio] = useState('');
   const [esReintento, setEsReintento] = useState(false);
   
-  const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '' });
+  const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '', horas: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -58,7 +58,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         
         // Si es evaluador, solo ve asesores de SU empresa
         if (user.rol === 'evaluador' && user.empresa) {
-          queryAsesores = queryAsesores.eq('empresa', user.empresa);
+          queryAsesores = queryAsesores.ilike('empresa', user.empresa.trim());
         }
         
         const { data: listaAsesores } = await queryAsesores;
@@ -77,6 +77,11 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         setNotasAutomaticas(autoData || []);
       }
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
+  };
+
+  const fetchNotasAsesor = async (asesorId) => {
+    const { data } = await supabase.schema('portal_afv').from('notas_por_submodulo').select('*').eq('id_asesor', asesorId);
+    setNotasGuardadas(data || []);
   };
 
   const fetchItinerarioAsesor = async (asesorId) => {
@@ -103,19 +108,79 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const handleSaveNota = async (submoduloId, nota, comentario) => {
     if (!selectedAsesor || itinerarioActual.length === 0) return;
     setIsSaving(true);
+    const payload = {
+      id_asesor: selectedAsesor.id,
+      id_submodulo: submoduloId,
+      email_evaluador: user.usuario,
+      nota: parseFloat(nota) || 0,
+      comentario: comentario || '',
+      intento: itinerarioActual[0].intento
+    };
+
+    console.log('📤 Enviando nota a Supabase:', payload);
+
     try {
-      await supabase.schema('portal_afv').from('notas_por_submodulo').upsert([{
-        id_asesor: selectedAsesor.id,
-        id_submodulo: submoduloId,
-        email_evaluador: user.usuario,
-        nota: parseFloat(nota),
-        comentario: comentario,
-        intento: itinerarioActual[0].intento
-      }], { onConflict: 'id_asesor,id_submodulo,intento' });
-      setMessage('Evaluación registrada.');
-      fetchNotasAsesor(selectedAsesor.id); // Refrescar para ver el cambio
+      const { error } = await supabase.schema('portal_afv').from('notas_por_submodulo').upsert([payload], { onConflict: 'id_asesor,id_submodulo,intento' });
+
+      if (error) {
+          console.error("Error al guardar nota:", error);
+          setMessage('Error: ' + (error.message || 'No se pudo guardar'));
+      } else {
+          setMessage('Evaluación registrada.');
+          fetchNotasAsesor(selectedAsesor.id); 
+      }
       setTimeout(() => setMessage(''), 3000);
-    } catch (err) { setMessage('Error al guardar.'); } finally { setIsSaving(false); }
+    } catch (err) { 
+      setMessage('Error de conexión.'); 
+    } finally { 
+      setIsSaving(false); 
+    }
+  };
+
+  const handleSaveAllNotas = async () => {
+    if (!selectedAsesor || itinerarioActual.length === 0) return;
+    
+    // Validamos que ninguna nota pase de 99
+    const notasInvalidas = Object.values(evaluaciones).some(e => parseFloat(e.nota) > 99);
+    if (notasInvalidas) {
+      setMessage('⚠️ Hay notas mayores a 99. Por favor rertifíquelas.');
+      setTimeout(() => setMessage(''), 4000);
+      return;
+    }
+
+    // Filtramos solo los que tienen nota
+    const payloads = Object.keys(evaluaciones)
+      .filter(id => evaluaciones[id].nota !== undefined && evaluaciones[id].nota !== '')
+      .map(id => ({
+        id_asesor: selectedAsesor.id,
+        id_submodulo: id,
+        email_evaluador: user.usuario,
+        nota: parseFloat(evaluaciones[id].nota) || 0,
+        comentario: evaluaciones[id].obs || '',
+        intento: itinerarioActual[0].intento
+      }));
+
+    if (payloads.length === 0) {
+      setMessage('No hay notas nuevas para guardar.');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.schema('portal_afv').from('notas_por_submodulo').upsert(payloads, { onConflict: 'id_asesor,id_submodulo,intento' });
+      
+      if (error) throw error;
+
+      setMessage(`¡Éxito! Se guardaron ${payloads.length} evaluaciones.`);
+      fetchNotasAsesor(selectedAsesor.id);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setMessage('Error al guardar las notas.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteInduccion = async () => {
@@ -146,6 +211,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       const { error } = await supabase.schema('portal_afv').from('submodulos_finales').insert([{
         nombre_tarea: newSubmodulo.nombre,
         descripcion: newSubmodulo.descripcion,
+        duracion_horas: newSubmodulo.horas,
         id_departamento: departamento.id
       }]);
       if (error) throw error;
@@ -162,9 +228,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   };
 
   const procesarAlta = async () => {
+    if (!candidatoAlta) return;
     setIsSaving(true);
     try {
-      const { data: newUser } = await supabase.schema('portal_afv').from('usuarios').upsert({
+      const { data: newUser, error: upsertError } = await supabase.schema('portal_afv').from('usuarios').upsert({
           usuario: candidatoAlta.email_contacto,
           correo: candidatoAlta.email_contacto,
           nombre: candidatoAlta.nombre_apellido,
@@ -174,24 +241,41 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
           foto_url: candidatoAlta.foto_url
       }, { onConflict: 'usuario' }).select().single();
 
+      if (upsertError || !newUser) {
+          console.error("Error al crear/actualizar usuario:", upsertError);
+          setMessage('Error de permisos en Base de Datos (406). Ejecute los comandos GRANT.');
+          setTimeout(() => setMessage(''), 5000);
+          return;
+      }
+
       const lastIntento = await checkExistenciaCandidato(candidatoAlta.email_contacto);
-      const nuevoIntentoNum = lastIntento + 1;
+      const nuevoIntentoNum = (typeof lastIntento === 'number' ? lastIntento : 0) + 1;
 
       const itins = itinerarioConfig.map((it, idx) => ({
         id_asesor: newUser.id,
         id_departamento: it.id_depto,
-        duracion_dias: parseInt(it.dias),
+        duracion_dias: parseInt(it.dias) || 1,
         orden: idx + 1,
         intento: nuevoIntentoNum,
         motivo_reinicio: esReintento ? motivoReinicio : 'Primer ingreso'
       }));
 
-      await supabase.schema('portal_afv').from('itinerarios_induccion').insert(itins);
+      const { error: itinError } = await supabase.schema('portal_afv').from('itinerarios_induccion').insert(itins);
+      
+      if (itinError) throw itinError;
+
       setMessage(esReintento ? 'Proceso reiniciado con éxito.' : 'Asesor activado exitosamente.');
       setShowAltaModal(false);
       setMotivoReinicio('');
+      setItinerarioConfig([]);
       fetchInitialData();
-    } catch (err) { console.error(err); } finally { setIsSaving(false); }
+    } catch (err) { 
+      console.error(err);
+      setMessage('Error crítico al procesar el alta.');
+    } finally { 
+      setIsSaving(false); 
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   if (isLoading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold text-[10px]">Cargando Sistema...</div>;
@@ -317,6 +401,23 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                   )}
 
                   {/* TEMAS POR DEPARTAMENTO */}
+                  {itinerarioActual.length > 0 && (
+                     <div className="flex justify-end mb-6">
+                        <button 
+                           onClick={handleSaveAllNotas} 
+                           disabled={isSaving}
+                           className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3 active:scale-95"
+                        >
+                           {isSaving ? (
+                              <>
+                                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                 Guardando Todo...
+                              </>
+                           ) : '✅ Guardar Evaluación Completa'}
+                        </button>
+                     </div>
+                  )}
+
                   {itinerarioActual.map(it => {
                     const temasDepto = submodulos.filter(sm => sm.id_departamento === it.id_departamento);
                     return (
@@ -339,8 +440,16 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                       type="number" 
                                       className="w-16 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
                                       placeholder="Nota" 
+                                      max="99"
                                       defaultValue={notaExistente?.nota || ''}
-                                      onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: e.target.value}})}
+                                      onBlur={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (val > 99) {
+                                            alert("La nota no puede ser mayor a 99.");
+                                            e.target.value = 99;
+                                        }
+                                        setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: e.target.value}})
+                                      }}
                                     />
                                     <input 
                                       type="text" 
@@ -439,6 +548,11 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 {submodulos.length > 0 ? (
                   submodulos.map((sub) => (
                     <div key={sub.id} className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                       <div className="absolute top-4 right-4 flex gap-2">
+                           {sub.duracion_horas && (
+                             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter">⏱️ {sub.duracion_horas} Horas</span>
+                           )}
+                        </div>
                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl mb-6 group-hover:scale-110 transition-transform">📘</div>
                        <h4 className="text-xs font-black text-slate-900 mb-2 uppercase tracking-tight leading-tight">{sub.nombre_tarea}</h4>
                        <p className="text-[10px] text-slate-500 font-medium leading-relaxed mb-4">{sub.descripcion || 'Sin descripción detallada.'}</p>
@@ -466,6 +580,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                  )}
                  <input type="text" className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold" placeholder="Nombre de la Tarea..." value={newSubmodulo.nombre} onChange={(e) => setNewSubmodulo({...newSubmodulo, nombre: e.target.value})}/>
                  <input type="text" className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold" placeholder="Descripción corta..." value={newSubmodulo.descripcion} onChange={(e) => setNewSubmodulo({...newSubmodulo, descripcion: e.target.value})}/>
+                 <input type="number" className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold" placeholder="Cantidad de Horas..." value={newSubmodulo.horas} onChange={(e) => setNewSubmodulo({...newSubmodulo, horas: e.target.value})}/>
                  <button onClick={handleAddSubmodulo} className="w-full h-14 bg-blue-600 text-white font-black uppercase rounded-2xl shadow-xl">Guardar Tema en Biblioteca Global</button>
               </div>
            </div>

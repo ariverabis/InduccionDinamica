@@ -20,6 +20,41 @@ const ConfiguracionSds = () => {
 
   const currentColor = selectedCompany ? brandColors[selectedCompany] : '#374151';
 
+  const companyResources = {
+    'Febeca': {
+      sds: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartdatasynchronizer.febeca&hl=es_VE',
+      afv: 'https://play.google.com/store/apps/details?id=com.febeca.tm.jafv.afvparaandroid.febeca&hl=es_VE',
+      catalogo: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartsales.ecommerce.febeca&hl=es_VE',
+      web: 'https://www.febeca.com'
+    },
+    'Beval': {
+      sds: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartdatasynchronizer.beval&hl=es_VE',
+      afv: 'https://play.google.com/store/apps/details?id=com.febeca.tm.jafv.afvparaandroid.beval&hl=es_VE',
+      catalogo: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartsales.ecommerce.beval&hl=es_VE',
+      web: 'https://beval.com.ve/'
+    },
+    'Sillaca': {
+      sds: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartdatasynchronizer.sillaca&hl=es_VE',
+      afv: 'https://play.google.com/store/apps/details?id=com.febeca.tm.jafv.afvparaandroid.sillaca&hl=es_VE',
+      catalogo: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartsales.ecommerce.sillaca&hl=es_VE',
+      web: 'https://www.sillaca.com'
+    },
+    'Cofersa': {
+      sds: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartdatasynchronizer.febeca&hl=es_VE',
+      afv: 'https://play.google.com/store/apps/details?id=com.febeca.tm.jafv.afvparaandroid.febeca&hl=es_VE',
+      catalogo: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartsales.ecommerce.febeca&hl=es_VE',
+      web: 'https://www.cofersa.cr/'
+    },
+    'Mundial de Partes': {
+      sds: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartdatasynchronizer.beval&hl=es_VE',
+      afv: 'https://play.google.com/store/apps/details?id=com.febeca.tm.jafv.afvparaandroid.beval&hl=es_VE',
+      catalogo: 'https://play.google.com/store/apps/details?id=com.smartbuilders.smartsales.ecommerce.beval&hl=es_VE',
+      web: 'https://mundipartes.com/'
+    }
+  };
+
+  const res = selectedCompany ? companyResources[selectedCompany] : null;
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-20">
       <header className="bg-white border-b border-gray-200 px-8 py-12 text-center relative">
@@ -129,16 +164,16 @@ const ConfiguracionSds = () => {
                <p className="text-gray-500 mb-8">Descargue las versiones oficiales certificadas para su dispositivo Android:</p>
                
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-                  <a href="#" className="flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold transition-all hover:opacity-90 shadow-md" style={{ background: currentColor }}>
+                  <a href={res?.sds} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold transition-all hover:opacity-90 shadow-md" style={{ background: currentColor }}>
                      📲 Descargar SDS
                   </a>
-                  <a href="#" className="flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold transition-all hover:opacity-90 shadow-md" style={{ background: currentColor }}>
+                  <a href={res?.afv} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold transition-all hover:opacity-90 shadow-md" style={{ background: currentColor }}>
                      📲 Descargar AFV
                   </a>
-                  <a href="#" className="flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold transition-all hover:opacity-90 shadow-md" style={{ background: currentColor }}>
+                  <a href={res?.catalogo} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold transition-all hover:opacity-90 shadow-md" style={{ background: currentColor }}>
                      📲 Descargar Catálogo
                   </a>
-                  <a href="#" className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-gray-800 text-white font-bold transition-all hover:bg-gray-900 shadow-md">
+                  <a href={res?.web} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-gray-800 text-white font-bold transition-all hover:bg-gray-900 shadow-md">
                      🌐 Visitar Web
                   </a>
                </div>
