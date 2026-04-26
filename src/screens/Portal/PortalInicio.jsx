@@ -111,7 +111,10 @@ const PortalInicio = () => {
   };
 
   const handleRegister = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!username || !password || !fullName || !email) return setLoginError('Complete todos los campos');
+    if (!emailRegex.test(email)) return setLoginError('Formato de correo inválido');
+    
     setIsLoading(true);
     setLoginError('');
 
