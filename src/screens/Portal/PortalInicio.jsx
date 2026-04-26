@@ -285,7 +285,19 @@ const PortalInicio = () => {
                 <span className="text-2xl">📝</span>
                 <div className="flex-1">
                    <h3 className="text-xs font-bold font-black text-slate-800">Censo Curricular</h3>
-                   <a href="https://docs.google.com/forms/d/e/1FAIpQLSfZv8PrDzzlCpq7fsqkBYlAOSkAzsRBmUEDz4A-901r3cpJOg/viewform" target="_blank" className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Registrar Datos →</a>
+                   <button 
+                    onClick={() => {
+                      const baseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZv8PrDzzlCpq7fsqkBYlAOSkAzsRBmUEDz4A-901r3cpJOg/viewform?usp=pp_url";
+                      const params = `&entry.1319823054=${encodeURIComponent(userSession.nombre || '')}` +
+                                     `&entry.1185854057=${encodeURIComponent(userSession.correo || '')}` +
+                                     `&entry.553997044=${encodeURIComponent(userSession.clave || '')}` +
+                                     `&entry.523342047=${encodeURIComponent(selectedCompany || '')}`;
+                      window.open(baseUrl + params, '_blank');
+                    }}
+                    className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+                   >
+                     Registrar Datos →
+                   </button>
                 </div>
              </div>
              <div onClick={() => navigate('/sds')} className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer text-left">
