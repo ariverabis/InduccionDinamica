@@ -256,7 +256,7 @@ const ReporteNotas = ({ onBack }) => {
                  </div>
                  <div className="flex items-center gap-2">
                     <span className="w-3 h-3 bg-orange-100 rounded-full"></span>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Refuerzo (< 15)</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Refuerzo (&lt; 15)</span>
                  </div>
               </div>
            </div>
