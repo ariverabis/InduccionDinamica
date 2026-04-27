@@ -108,27 +108,27 @@ const ReporteNotas = ({ onBack }) => {
 
         <header className="flex justify-between items-center mb-8 print:hidden">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Centro de Reportes Ejecutivos</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Análisis de rendimiento por criterios</p>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Centro de Reportes Ejecutivos</h2>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Análisis de rendimiento por criterios</p>
           </div>
-          <div className="flex gap-3">
-             <button onClick={handlePrint} className="px-6 py-3 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2">
+          <div className="flex gap-4">
+             <button onClick={handlePrint} className="px-8 py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg">
                 🖨️ Imprimir / PDF
              </button>
-             <button onClick={onBack} className="px-6 py-3 bg-white border border-slate-200 text-slate-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-all">
+             <button onClick={onBack} className="px-8 py-4 bg-white border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-all">
                 ← Volver
              </button>
           </div>
         </header>
 
         {/* BARRA DE FILTROS */}
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-8 grid grid-cols-1 md:grid-cols-5 gap-6 print:hidden">
+        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 mb-8 grid grid-cols-1 md:grid-cols-5 gap-6 print:hidden">
            <div>
-              <label className="text-[8px] font-black text-slate-400 uppercase mb-2 block">Empresa / Marca</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Empresa / Marca</label>
               <select 
                 value={filterEmpresa} 
                 onChange={(e) => setFilterEmpresa(e.target.value)}
-                className="w-full h-10 px-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-indigo-400"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
               >
                  <option>Todas</option>
                  <option>Febeca</option>
@@ -139,38 +139,38 @@ const ReporteNotas = ({ onBack }) => {
               </select>
            </div>
            <div>
-              <label className="text-[8px] font-black text-slate-400 uppercase mb-2 block">Nota Mínima</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Nota Mínima</label>
               <input 
                 type="number" 
                 value={filterNotaMin} 
                 onChange={(e) => setFilterNotaMin(e.target.value)}
-                className="w-full h-10 px-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-indigo-400"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
               />
            </div>
            <div>
-              <label className="text-[8px] font-black text-slate-400 uppercase mb-2 block">Desde</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Desde</label>
               <input 
                 type="date" 
                 value={filterFechaDesde} 
                 onChange={(e) => setFilterFechaDesde(e.target.value)}
-                className="w-full h-10 px-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-indigo-400"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
               />
            </div>
            <div>
-              <label className="text-[8px] font-black text-slate-400 uppercase mb-2 block">Hasta</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Hasta</label>
               <input 
                 type="date" 
                 value={filterFechaHasta} 
                 onChange={(e) => setFilterFechaHasta(e.target.value)}
-                className="w-full h-10 px-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-indigo-400"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
               />
            </div>
            <div>
-              <label className="text-[8px] font-black text-slate-400 uppercase mb-2 block">Ordenar por</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Ordenar por</label>
               <select 
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full h-10 px-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-indigo-400"
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
               >
                  <option value="fecha_desc">Más recientes primero</option>
                  <option value="nota_desc">Mejores notas primero</option>
@@ -182,46 +182,46 @@ const ReporteNotas = ({ onBack }) => {
         {/* TABLA DE RESULTADOS */}
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden print:shadow-none print:border-none">
            <table className="w-full text-left">
-              <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+              <thead className="bg-slate-50 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                  <tr>
-                    <th className="px-8 py-5">Asesor de Ventas</th>
-                    <th className="px-8 py-5">Empresa</th>
-                    <th className="px-8 py-5">Desafío / Escenario</th>
-                    <th className="px-8 py-5">Fecha</th>
-                    <th className="px-8 py-5 text-center">Nota</th>
-                    <th className="px-8 py-5 print:hidden">Acción</th>
+                    <th className="px-8 py-6">Asesor de Ventas</th>
+                    <th className="px-8 py-6">Empresa</th>
+                    <th className="px-8 py-6">Desafío / Escenario</th>
+                    <th className="px-8 py-6">Fecha</th>
+                    <th className="px-8 py-6 text-center">Nota</th>
+                    <th className="px-8 py-6 print:hidden">Acción</th>
                  </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                  {filteredData.length === 0 ? (
                    <tr>
-                      <td colSpan="6" className="px-8 py-20 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">No se encontraron resultados con los filtros aplicados</td>
+                      <td colSpan="6" className="px-8 py-24 text-center text-slate-300 font-bold uppercase text-xs tracking-widest">No se encontraron resultados con los filtros aplicados</td>
                    </tr>
                  ) : (
                    filteredData.map((item) => (
                      <tr key={item.id} className="hover:bg-slate-50/50 transition-all">
-                        <td className="px-8 py-5">
+                        <td className="px-8 py-6">
                            <div className="flex flex-col">
-                              <span className="text-xs font-black text-slate-900">{item.usuarios?.nombre || 'Desconocido'}</span>
-                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Asesor Comercial</span>
+                              <span className="text-sm font-black text-slate-900">{item.usuarios?.nombre || 'Desconocido'}</span>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Asesor Comercial</span>
                            </div>
                         </td>
-                        <td className="px-8 py-5">
-                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">{item.usuarios?.empresa || '-'}</span>
+                        <td className="px-8 py-6">
+                           <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{item.usuarios?.empresa || '-'}</span>
                         </td>
-                        <td className="px-8 py-5">
+                        <td className="px-8 py-6">
                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-700">#{item.maestro_escenarios?.numero_escenario} — {item.maestro_escenarios?.titulo_escenario || 'Roleplay'}</span>
-                              <span className="text-[9px] text-slate-400 italic line-clamp-1">{item.feedback_evaluador || 'Sin feedback'}</span>
+                              <span className="text-xs font-black text-slate-700">#{item.maestro_escenarios?.numero_escenario} — {item.maestro_escenarios?.titulo_escenario || 'Roleplay'}</span>
+                              <span className="text-[11px] text-slate-400 font-medium italic line-clamp-1 mt-1">{item.feedback_evaluador || 'Sin feedback registrado'}</span>
                            </div>
                         </td>
-                        <td className="px-8 py-5">
-                           <span className="text-[10px] text-slate-500 font-bold">
+                        <td className="px-8 py-6">
+                           <span className="text-xs text-slate-500 font-bold">
                               {new Date(item.fecha_entrega).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                            </span>
                         </td>
-                        <td className="px-8 py-5 text-center">
-                           <span className={`px-4 py-1.5 rounded-full text-xs font-black ${
+                        <td className="px-8 py-6 text-center">
+                           <span className={`px-6 py-2 rounded-full text-sm font-black ${
                               (item.nota_ejercicio || 0) >= 18 ? 'bg-green-100 text-green-700' :
                               (item.nota_ejercicio || 0) >= 15 ? 'bg-blue-100 text-blue-700' :
                               'bg-orange-100 text-orange-700'
@@ -229,10 +229,10 @@ const ReporteNotas = ({ onBack }) => {
                               {item.nota_ejercicio || 'N/A'}
                            </span>
                         </td>
-                        <td className="px-8 py-5 print:hidden">
+                        <td className="px-8 py-6 print:hidden">
                            <button 
                              onClick={() => alert(`Feedback: ${item.feedback_evaluador || 'Sin comentarios'}`)}
-                             className="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center hover:bg-slate-950 hover:text-white transition-all"
+                             className="w-10 h-10 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-950 hover:text-white transition-all shadow-sm"
                            >👁️</button>
                         </td>
                      </tr>
@@ -241,22 +241,22 @@ const ReporteNotas = ({ onBack }) => {
               </tbody>
            </table>
            
-           <div className="p-8 bg-slate-50 flex justify-between items-center border-t border-slate-100">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+           <div className="p-10 bg-slate-50 flex justify-between items-center border-t border-slate-100">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                  Mostrando {filteredData.length} registros de {data.length} totales
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-green-100 rounded-full"></span>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Excelente (18-20)</span>
+                    <span className="w-4 h-4 bg-green-100 rounded-full"></span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Excelente (18-20)</span>
                  </div>
                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-blue-100 rounded-full"></span>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Aprobado (15-17)</span>
+                    <span className="w-4 h-4 bg-blue-100 rounded-full"></span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aprobado (15-17)</span>
                  </div>
                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-orange-100 rounded-full"></span>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Refuerzo (&lt; 15)</span>
+                    <span className="w-4 h-4 bg-orange-100 rounded-full"></span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Refuerzo (&lt; 15)</span>
                  </div>
               </div>
            </div>
