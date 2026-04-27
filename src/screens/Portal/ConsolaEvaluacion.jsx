@@ -1,8 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
+// Sub-componente para mostrar y calificar una entrega de Roleplay
+const EvidenciaCard = ({ evidencia, onSave, isSaving }) => {
+  const [nota, setNota] = useState(evidencia.nota_ejercicio ?? '');
+  const [feedback, setFeedback] = useState(evidencia.feedback_evaluador ?? '');
+  const escNum = evidencia.maestro_escenarios?.numero_escenario;
+  const fechaStr = new Date(evidencia.fecha_entrega).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+
+  return (
+    <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-sm">#{escNum || '?'}</span>
+          <div>
+            <h4 className="text-[10px] font-black uppercase tracking-tight text-slate-800">Escenario {escNum} — {evidencia.maestro_escenarios?.empresa || 'Sin empresa'}</h4>
+            <p className="text-[9px] text-slate-400 font-medium">{fechaStr}</p>
+          </div>
+        </div>
+        {evidencia.nota_ejercicio !== null && (
+          <span className="bg-green-100 text-green-700 px-4 py-1 rounded-full text-[9px] font-black">Nota: {evidencia.nota_ejercicio}</span>
+        )}
+      </div>
+
+      {/* Speech de ventas */}
+      {evidencia.speech_ventas && (
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 mb-4">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Speech de Ventas</p>
+          <p className="text-xs text-slate-700 leading-relaxed italic">"{evidencia.speech_ventas}"</p>
+        </div>
+      )}
+
+      {/* Botones de evidencias */}
+      <div className="flex gap-3 mb-4">
+        {evidencia.pdf_catalogo_url && (
+          <button onClick={() => window.open(evidencia.pdf_catalogo_url, '_blank')}
+            className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-2xl text-[8px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all">
+            📒 PDF Catálogo
+          </button>
+        )}
+        {evidencia.pdf_afv_url && (
+          <button onClick={() => window.open(evidencia.pdf_afv_url, '_blank')}
+            className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-2xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
+            📱 PDF AFV
+          </button>
+        )}
+      </div>
+
+      {/* Calificar */}
+      <div className="flex gap-3 items-end">
+        <div className="w-24">
+          <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Nota (0-100)</label>
+          <input
+            type="number" min="0" max="100" value={nota}
+            onChange={(e) => setNota(Math.min(100, Math.max(0, e.target.value)))}
+            className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-center outline-none focus:ring-1 focus:ring-indigo-400"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Feedback</label>
+          <input
+            type="text" value={feedback} placeholder="Comentario para el asesor..."
+            onChange={(e) => setFeedback(e.target.value)}
+            className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-400"
+          />
+        </div>
+        <button
+          onClick={() => onSave(evidencia.id, nota, feedback)}
+          disabled={isSaving || nota === ''}
+          className="h-10 px-5 bg-indigo-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-40 transition-all whitespace-nowrap"
+        >
+          ✅ Guardar
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ConsolaEvaluacion = ({ user, onBack }) => {
-  const [viewMode, setViewMode] = useState('manual');
+  const [viewMode, setViewMode] = useState('manual'); // 'manual' | 'automatico' | 'escenarios'
   const [asesores, setAsesores] = useState([]);
   const [departamento, setDepartamento] = useState(null);
   const [todosLosDepartamentos, setTodosLosDepartamentos] = useState([]);
@@ -21,11 +97,70 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [motivoReinicio, setMotivoReinicio] = useState('');
   const [esReintento, setEsReintento] = useState(false);
   
+  const [masterEscenarios, setMasterEscenarios] = useState({});
+  const [activeCompanyEscenarios, setActiveCompanyEscenarios] = useState('Febeca');
   const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '', horas: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [notasGuardadas, setNotasGuardadas] = useState([]);
+  const [evidenciasAsesor, setEvidenciasAsesor] = useState([]);
+
+  useEffect(() => {
+    if (viewMode === 'escenarios') fetchEscenarios();
+  }, [viewMode, activeCompanyEscenarios]);
+
+  const fetchEscenarios = async () => {
+    const { data } = await supabase.schema('portal_afv').from('maestro_escenarios').select('*').eq('empresa', activeCompanyEscenarios);
+    const map = {};
+    data?.forEach(e => map[e.numero_escenario] = e.pdf_url);
+    setMasterEscenarios(map);
+  };
+
+  const handleUploadEscenario = async (num, file) => {
+    if (!file) return;
+    setIsSaving(true);
+    setMessage('Subiendo archivo...');
+    try {
+      const filePath = `${activeCompanyEscenarios}/escenario_${num}.pdf`;
+      console.log('[UPLOAD] Subiendo a:', filePath);
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('escenarios_maestros')
+        .upload(filePath, file, { upsert: true, contentType: 'application/pdf' });
+
+      if (uploadError) {
+        console.error('[UPLOAD ERROR]', uploadError);
+        setMessage(`Error Storage: ${uploadError.message}`);
+        return;
+      }
+
+      console.log('[UPLOAD OK]', uploadData);
+      const { data: { publicUrl } } = supabase.storage.from('escenarios_maestros').getPublicUrl(filePath);
+      console.log('[PUBLIC URL]', publicUrl);
+
+      const { error: dbError } = await supabase.schema('portal_afv').from('maestro_escenarios').upsert({
+        empresa: activeCompanyEscenarios,
+        numero_escenario: num,
+        pdf_url: publicUrl
+      }, { onConflict: 'empresa,numero_escenario' });
+
+      if (dbError) {
+        console.error('[DB ERROR]', dbError);
+        setMessage(`Error BD: ${dbError.message}`);
+        return;
+      }
+
+      setMessage(`✅ Escenario ${num} de ${activeCompanyEscenarios} guardado.`);
+      fetchEscenarios();
+    } catch (err) {
+      console.error('[CATCH ERROR]', err);
+      setMessage(`Error inesperado: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 5000);
+    }
+  };
 
   useEffect(() => {
     fetchInitialData();
@@ -35,8 +170,78 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     if (selectedAsesor) {
       fetchItinerarioAsesor(selectedAsesor.id);
       fetchNotasAsesor(selectedAsesor.id);
+      fetchEvidenciasAsesor(selectedAsesor.id);
     }
   }, [selectedAsesor]);
+
+  const fetchEvidenciasAsesor = async (id) => {
+    console.log('🔍 [DEBUG-EVIDENCIAS] Iniciando búsqueda...');
+    console.log('   -> Para Asesor ID:', id);
+    console.log('   -> Usuario actual:', user.usuario, 'Rol:', user.rol);
+
+    const { data, error } = await supabase
+      .schema('portal_afv')
+      .from('ejercicios_evidencias')
+      .select('*')
+      .eq('id_asesor', id)
+      .order('fecha_entrega', { ascending: false });
+
+    if (error) {
+      console.error('❌ [DEBUG-EVIDENCIAS] Error en consulta:', error);
+      setEvidenciasAsesor([]);
+      return;
+    }
+
+    console.log('📊 [DEBUG-EVIDENCIAS] Datos recibidos de la DB:', data);
+
+    if (!data || data.length === 0) {
+      console.warn('⚠️ [DEBUG-EVIDENCIAS] No se encontraron registros en ejercicios_evidencias para este ID.');
+      setEvidenciasAsesor([]);
+      return;
+    }
+
+    // Enriquecer con datos del escenario
+    try {
+      console.log('🛠️ [DEBUG-EVIDENCIAS] Enriqueciendo datos con maestro_escenarios...');
+      const enriched = await Promise.all(data.map(async (ev) => {
+        if (!ev.id_escenario) {
+          console.log(`   - Evidencia ${ev.id} no tiene id_escenario`);
+          return { ...ev, maestro_escenarios: null };
+        }
+        
+        const { data: esc, error: escError } = await supabase
+          .schema('portal_afv')
+          .from('maestro_escenarios')
+          .select('*')
+          .eq('id', ev.id_escenario)
+          .single();
+        
+        if (escError) console.error(`   - Error cargando escenario ${ev.id_escenario}:`, escError);
+        
+        return { ...ev, maestro_escenarios: esc };
+      }));
+
+      console.log('✅ [DEBUG-EVIDENCIAS] Proceso completado. Evidencias enriquecidas:', enriched.length);
+      setEvidenciasAsesor(enriched);
+    } catch (err) {
+      console.error('💥 [DEBUG-EVIDENCIAS] Error crítico en el mapeo/enriquecimiento:', err);
+      setEvidenciasAsesor(data); // Al menos mostramos los datos crudos si el enriquecimiento falla
+    }
+  };
+
+  const handleSaveNotaRoleplay = async (evidenciaId, nota, feedback) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.schema('portal_afv').from('ejercicios_evidencias').update({
+        nota_ejercicio: parseFloat(nota),
+        feedback_evaluador: feedback
+      }).eq('id', evidenciaId);
+      if (error) throw error;
+      setMessage('Evaluación de Roleplay guardada.');
+      fetchEvidenciasAsesor(selectedAsesor.id);
+    } catch (err) { console.error(err); setMessage('Error al guardar nota.'); }
+    finally { setIsSaving(false); setTimeout(() => setMessage(''), 3000); }
+  };
 
   const fetchInitialData = async () => {
     try {
@@ -297,9 +502,14 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 📥 Aspirantes Excel
              </button>
              {user.rol === 'admin' && (
-               <button onClick={() => setViewMode('configuracion')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'configuracion' ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                  ⚙️ Biblioteca Temas
-               </button>
+               <>
+                <button onClick={() => setViewMode('configuracion')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'configuracion' ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                    ⚙️ Biblioteca Temas
+                </button>
+                <button onClick={() => setViewMode('escenarios')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'escenarios' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                    🎭 Gestionar Escenarios
+                </button>
+               </>
              )}
             </div>
           </div>
@@ -468,6 +678,36 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                       </div>
                     );
                   })}
+
+                  {/* ===== SECCIÓN ROLEPLAY DIGITAL ===== */}
+                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-6 border-b pb-4">
+                      <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
+                        🎭 Entregas de Roleplay Digital
+                        {evidenciasAsesor.length > 0 && (
+                          <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-[8px] font-black">{evidenciasAsesor.length}</span>
+                        )}
+                      </h3>
+                    </div>
+
+                    {evidenciasAsesor.length === 0 ? (
+                      <div className="py-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sin entregas de Roleplay aún</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {evidenciasAsesor.map((ev) => (
+                          <EvidenciaCard
+                            key={ev.id}
+                            evidencia={ev}
+                            onSave={handleSaveNotaRoleplay}
+                            isSaving={isSaving}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
@@ -566,6 +806,57 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 )}
              </div>
           </div>
+        )}
+
+        {viewMode === 'escenarios' && (
+           <div className="animate-in fade-in duration-500">
+              <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-200 mb-10">
+                 <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div>
+                       <h3 className="text-xl font-black text-slate-900 leading-tight">Matriz de Escenarios por Casa</h3>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión centralizada de desafíos situacionales</p>
+                    </div>
+                    <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
+                       {['Febeca', 'Beval', 'Sillaca', 'Cofersa', 'Mundial de Partes'].map(casa => (
+                         <button 
+                           key={casa} 
+                           onClick={() => setActiveCompanyEscenarios(casa)}
+                           className={`px-6 py-2.5 rounded-[1.2rem] text-[9px] font-black uppercase tracking-tighter transition-all ${activeCompanyEscenarios === casa ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                         >
+                            {casa}
+                         </button>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                 {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                   <div key={num} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col items-center group">
+                      <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-[1.8rem] flex items-center justify-center text-2xl font-black mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                        {num}
+                      </div>
+                      <h4 className="text-[10px] font-black uppercase text-slate-900 mb-2">Escenario {num}</h4>
+                      <p className="text-[9px] text-slate-400 font-bold mb-6 italic">{activeCompanyEscenarios}</p>
+                      
+                      <div className="w-full flex flex-col gap-2">
+                         <label className={`w-full h-10 rounded-xl flex items-center justify-center text-[8px] font-black uppercase tracking-widest cursor-pointer transition-all ${masterEscenarios[num] ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                             {masterEscenarios[num] ? '✅ ACTUALIZAR PDF' : '📁 CARGAR PDF'}
+                             <input type="file" accept=".pdf" className="hidden" onChange={(e) => handleUploadEscenario(num, e.target.files[0])} />
+                         </label>
+                         {masterEscenarios[num] && (
+                            <button 
+                              onClick={() => window.open(masterEscenarios[num], '_blank')}
+                              className="w-full h-10 bg-white border border-green-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-green-600 hover:bg-green-50 transition-all"
+                            >
+                               👁️ VER ACTUAL
+                            </button>
+                         )}
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
         )}
 
         {viewMode === 'configuracion' && (
