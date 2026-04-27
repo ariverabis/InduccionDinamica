@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import ReporteNotas from './ReporteNotas';
 
 // Sub-componente para mostrar y calificar una entrega de Roleplay
 const EvidenciaCard = ({ evidencia, onSave, isSaving }) => {
@@ -78,7 +79,7 @@ const EvidenciaCard = ({ evidencia, onSave, isSaving }) => {
 };
 
 const ConsolaEvaluacion = ({ user, onBack }) => {
-  const [viewMode, setViewMode] = useState('manual'); // 'manual' | 'automatico' | 'escenarios'
+  const [viewMode, setViewMode] = useState('manual'); // 'manual' | 'automatico' | 'escenarios' | 'reportes'
   const [asesores, setAsesores] = useState([]);
   const [departamento, setDepartamento] = useState(null);
   const [todosLosDepartamentos, setTodosLosDepartamentos] = useState([]);
@@ -509,6 +510,9 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 <button onClick={() => setViewMode('escenarios')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'escenarios' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
                     🎭 Gestionar Escenarios
                 </button>
+                <button onClick={() => setViewMode('reportes')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'reportes' ? 'bg-slate-950 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                    📈 Reporte de Notas
+                </button>
                </>
              )}
             </div>
@@ -764,7 +768,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                   ))}
                 </tbody>
              </table>
-          </div>
+           </div>
         )}
 
         {viewMode === 'mi-academia' && (
@@ -806,6 +810,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 )}
              </div>
           </div>
+        )}
+
+        {viewMode === 'reportes' && (
+          <ReporteNotas onBack={() => setViewMode('manual')} />
         )}
 
         {viewMode === 'escenarios' && (
