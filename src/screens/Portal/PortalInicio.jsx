@@ -98,14 +98,8 @@ const PortalInicio = () => {
   const [opMessage, setOpMessage] = useState('');
 
   const handleSubmitRoleplay = async () => {
-    alert('Intentando enviar evidencia...'); // <-- Esto DEBE aparecer en tu pantalla
     console.log('🔘 [DEBUG-CLICK] Botón de enviar presionado');
-    console.log('   - Escenario:', selectedEscenario?.id);
-    console.log('   - Speech:', speechVentas ? 'OK' : 'VACÍO');
-    console.log('   - File Catálogo:', fileCatalogo ? 'OK' : 'VACÍO');
-
     if (!selectedEscenario || !speechVentas || !fileCatalogo) {
-      console.warn('⚠️ [DEBUG] Validación fallida: faltan campos obligatorios');
       setOpMessage('⚠️ El escenario, el speech y el PDF del catálogo son obligatorios.');
       return;
     }
@@ -114,10 +108,6 @@ const PortalInicio = () => {
     setOpMessage('Procesando envío...');
 
     try {
-      // Verificar sesión y obtener ID real del asesor
-      console.log('[ROLEPLAY] userSession:', userSession);
-      
-      // Buscar el id real en usuarios para asegurar UUID correcto
       const { data: asesorData, error: asesorError } = await supabase
         .schema('portal_afv')
         .from('usuarios')
@@ -126,33 +116,25 @@ const PortalInicio = () => {
         .single();
 
       if (asesorError || !asesorData) {
-        console.error('[ROLEPLAY] Error buscando asesor:', asesorError);
         setOpMessage('❌ Error: no se pudo identificar al asesor.');
         return;
       }
 
-      console.log('[ROLEPLAY] ID asesor resuelto:', asesorData.id);
-      console.log('[ROLEPLAY] Escenario seleccionado:', selectedEscenario);
-
-      // 1. Subir PDF Catálogo
       const catPath = `${userSession.usuario}/escenario_${selectedEscenario.numero_escenario}_catalogo.pdf`;
       const { error: catError } = await supabase.storage.from('evidencias_asesores').upload(catPath, fileCatalogo, { upsert: true });
-      if (catError) { console.error('[ROLEPLAY] Error catálogo:', catError); throw catError; }
+      if (catError) throw catError;
       const { data: { publicUrl: catUrl } } = supabase.storage.from('evidencias_asesores').getPublicUrl(catPath);
 
-      // 2. Subir PDF AFV (Opcional)
       let afvUrl = null;
       if (fileAfv) {
         const afvPath = `${userSession.usuario}/escenario_${selectedEscenario.numero_escenario}_afv.pdf`;
         const { error: afvError } = await supabase.storage.from('evidencias_asesores').upload(afvPath, fileAfv, { upsert: true });
-        if (afvError) { console.error('[ROLEPLAY] Error AFV:', afvError); }
-        else {
+        if (!afvError) {
           const { data: { publicUrl: aUrl } } = supabase.storage.from('evidencias_asesores').getPublicUrl(afvPath);
           afvUrl = aUrl;
         }
       }
 
-      // 3. Guardar en BD con el UUID real del asesor
       const payload = {
         id_asesor: asesorData.id,
         id_escenario: selectedEscenario.id,
@@ -160,16 +142,10 @@ const PortalInicio = () => {
         pdf_afv_url: afvUrl,
         speech_ventas: speechVentas
       };
-      console.log('🚀 [DEBUG-SUBMIT] Intentando insertar en portal_afv.ejercicios_evidencias:', payload);
 
-      const { data, error } = await supabase.schema('portal_afv').from('ejercicios_evidencias').insert([payload]).select();
+      const { error } = await supabase.schema('portal_afv').from('ejercicios_evidencias').insert([payload]);
+      if (error) throw error;
 
-      if (error) {
-        console.error('❌ [DEBUG-SUBMIT] Error de Base de Datos:', error);
-        throw error;
-      }
-
-      console.log('✅ [DEBUG-SUBMIT] Inserción exitosa. Registro creado:', data);
       setOpMessage('✅ ¡Desafío enviado con éxito!');
       setTimeout(() => {
         setShowRoleplayModal(false);
@@ -180,7 +156,6 @@ const PortalInicio = () => {
         setOpMessage('');
       }, 2000);
     } catch (err) {
-      console.error('[ROLEPLAY] Error general:', err);
       setOpMessage(`❌ Error: ${err.message}`);
     } finally {
       setIsUploading(false);
@@ -204,7 +179,6 @@ const PortalInicio = () => {
       if (error || !data) {
         setLoginError('Usuario o clave incorrectos');
       } else {
-        // Verificar si es evaluador por correo
         const { data: evalData } = await supabase
           .schema('portal_afv')
           .from('evaluadores_autorizados')
@@ -212,8 +186,6 @@ const PortalInicio = () => {
           .ilike('email', data.usuario.trim())
           .maybeSingle();
 
-        // 🛡️ SEGURIDAD: El rol 'admin' siempre tiene prioridad.
-        // Solo se reclasifica como evaluador si NO es admin.
         const isAuthorizedEval = evalData !== null;
         const finalRole = data.rol === 'admin' ? 'admin' : (isAuthorizedEval ? 'evaluador' : data.rol);
 
@@ -222,8 +194,6 @@ const PortalInicio = () => {
           loginDate: new Date().toISOString(),
           rol: finalRole 
         };
-        
-        console.log("Login exitoso. Rol detectado:", finalRole);
         
         setUserSession(userData);
         localStorage.setItem('portalUser', JSON.stringify(userData));
@@ -374,9 +344,6 @@ const PortalInicio = () => {
                 Gestionar Evaluaciones
               </button>
            )}
-           {userSession.rol === 'admin' && (
-              <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">Administrador</span>
-           )}
         </div>
         <button onClick={handleLogout} className="text-[9px] font-bold text-slate-400 hover:text-red-500 tracking-[0.2em]">CERRAR SESIÓN</button>
       </nav>
@@ -385,22 +352,8 @@ const PortalInicio = () => {
         <header className="text-center mb-16 max-w-3xl">
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight leading-tight">Itinerario Formativo <span style={{ color: currentBrand.primary }}>{selectedCompany}</span></h1>
           <p className="text-sm text-slate-500 font-medium leading-relaxed">Siga los módulos establecidos para la validación de sus competencias técnicas en el sistema AFV.</p>
-          
-          {userSession.rol === 'admin' && (
-            <div className="mt-8 p-6 bg-white border border-slate-200 rounded-3xl flex flex-col items-center gap-4 shadow-sm">
-               <div className="text-center">
-                  <h4 className="text-xs font-bold text-slate-900">Consola de Administración</h4>
-                  <p className="text-[10px] text-slate-400">Supervisión de calificaciones y métricas de desempeño.</p>
-               </div>
-               <div className="flex gap-4">
-                  <button onClick={() => setShowEvaluatorConsole(true)} className="px-6 py-3 bg-blue-600 text-white font-bold text-[9px] uppercase tracking-widest rounded-full shadow-lg hover:bg-blue-700 transition-all">Panel de Evaluadores →</button>
-                  <button onClick={() => window.open('https://www.appsheet.com/start/63ddb171-3026-47af-aa20-36fde3921198', '_blank')} className="px-6 py-3 bg-red-600 text-white font-bold text-[9px] uppercase tracking-widest rounded-full shadow-lg hover:bg-red-700 transition-all">Reporte Global Antiguo →</button>
-                </div>
-            </div>
-          )}
         </header>
 
-        {/* --- PASO 1: REGISTRO Y CONFIGURACION --- */}
         <section className="w-full mb-16">
           <div className="flex items-center gap-4 mb-8">
              <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">01</span>
@@ -433,23 +386,9 @@ const PortalInicio = () => {
                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inducción de Aplicaciones</span>
                 </div>
              </div>
-             {/* CONSOLA DE EVALUACIÓN (Admin y Evaluadores) */}
-                {(userSession.rol === 'admin' || userSession.rol === 'evaluador') && (
-                    <div 
-                        onClick={() => setShowEvaluatorConsole(true)}
-                        className="group relative bg-slate-900 p-8 rounded-2xl border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800 transition-all cursor-pointer shadow-lg"
-                    >
-                        <div className="text-2xl mb-2">🏛️</div>
-                        <h3 className="text-xs font-black text-white mb-1 uppercase tracking-widest">Consola Académica</h3>
-                        <p className="text-[9px] text-slate-400 font-medium uppercase tracking-widest">
-                            Módulo de evaluación y seguimiento de asesores.
-                        </p>
-                    </div>
-                )}
           </div>
         </section>
 
-        {/* --- PASO 2: SIMULACIONES --- */}
         <section className="w-full mb-16">
           <div className="flex items-center gap-4 mb-8">
              <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">02</span>
@@ -469,49 +408,24 @@ const PortalInicio = () => {
           </div>
         </section>
 
-        {/* --- PASO 3: RECURSOS --- */}
         <section className="w-full mb-16">
           <div className="flex items-center gap-4 mb-8">
              <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">03</span>
              <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Prácticas Situacionales y Roleplay</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {/* BOTÓN PRINCIPAL DEL ROLEPLAY */}
              <div 
                onClick={() => setShowRoleplayModal(true)}
                className="bg-white p-8 rounded-[2.5rem] border-2 border-dashed border-blue-100 shadow-xl shadow-blue-50/50 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all col-span-1 md:col-span-2"
              >
                 <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-xl shadow-blue-200 group-hover:scale-110 transition-transform">🎭</div>
                 <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Módulo de Roleplay Digital</h3>
-                <p className="text-sm text-slate-500 max-w-sm mb-6">Seleccione uno de los 10 escenarios situacionales, realice su tarea en las apps comerciales y suba sus evidencias aquí.</p>
+                <p className="text-sm text-slate-500 max-w-sm mb-6">Seleccione uno de los escenarios situacionales y suba sus evidencias aquí.</p>
                 <span className="bg-blue-600 text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest">Iniciar Desafío →</span>
-             </div>
-
-             {/* OTROS RECURSOS */}
-             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group cursor-pointer" onClick={() => window.open(GLOSARIO_LINK, '_blank')}>
-                <div className="flex items-center gap-4 text-left">
-                   <span className="text-2xl">📖</span>
-                   <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest">Glosario Técnico</h4>
-                      <p className="text-[9px] text-slate-400">Terminología AFV</p>
-                   </div>
-                </div>
-                <span className="text-xs opacity-20 group-hover:opacity-100 transition-opacity">➔</span>
-             </div>
-             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group cursor-pointer" onClick={() => currentBrand.manualLink && window.open(currentBrand.manualLink, '_blank')}>
-                <div className="flex items-center gap-4 text-left">
-                   <span className="text-2xl">📄</span>
-                   <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest">Manual Codex</h4>
-                      <p className="text-[9px] text-slate-400">Guía de usuario</p>
-                   </div>
-                </div>
-                <span className="text-xs opacity-20 group-hover:opacity-100 transition-opacity">➔</span>
              </div>
           </div>
         </section>
 
-        {/* --- PASO 4: EVALUACION --- */}
         <section id="evaluaciones" className="w-full mb-16">
           <div className="flex items-center gap-4 mb-8">
              <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">04</span>
@@ -520,7 +434,7 @@ const PortalInicio = () => {
           <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 text-center shadow-md">
              <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 block">Fase de Validación Sumativa</span>
              <p className="text-sm text-slate-500 mb-8 max-w-2xl mx-auto font-medium">
-               Tras completar los módulos formativos, por favor proceda con la validación de sus competencias académicas para la obtención de su certificación oficial.
+               Tras completar los módulos formativos, por favor proceda con la validación de sus competencias académicas.
              </p>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-10 text-left">
                 {[
@@ -546,120 +460,92 @@ const PortalInicio = () => {
 
       <footer className="py-12 text-[8px] font-black text-slate-300 uppercase tracking-[0.4em]">Dirección de Aprendizaje Corporativo — v2.0</footer>
 
-      {/* MODAL DE ROLEPLAY DIGITAL */}
+      {/* MODAL DE ROLEPLAY DIGITAL REDISEÑADO */}
       {showRoleplayModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-5xl h-full max-h-[85vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden relative border border-white/20">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-5xl h-full max-h-[92vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden relative">
               <button 
                 onClick={() => setShowRoleplayModal(false)}
-                className="absolute top-8 right-8 w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
+                className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
               >✕</button>
 
-              <div className="p-10 md:p-16 flex flex-col h-full">
-                 <header className="mb-10 text-center md:text-left">
-                    <h2 className="text-3xl font-black text-slate-900 flex items-center gap-4">
-                       <span className="text-4xl">🎭</span> Módulo de Roleplay Digital
+              <div className="p-6 md:p-8 flex flex-col h-full">
+                 <header className="mb-6 text-center md:text-left border-b pb-4">
+                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4">
+                       <span className="text-3xl">🎭</span> Módulo de Roleplay Digital
                     </h2>
-                    <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2 px-1">Seleccione su desafío situacional para iniciar la práctica</p>
+                    <p className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mt-1">Seleccione su desafío para iniciar la práctica</p>
                  </header>
 
                  {!selectedEscenario ? (
-                   <div className="flex-1 overflow-y-auto pr-2">
-                     {loadingScenarios ? (
-                       <div className="flex items-center justify-center h-48 text-slate-300 font-black text-[10px] uppercase tracking-widest animate-pulse">Cargando escenarios disponibles...</div>
-                     ) : scenariosList.length === 0 ? (
-                       <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-slate-100 rounded-3xl text-center p-10">
-                         <span className="text-4xl mb-4">⏳</span>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tu evaluador aún no ha cargado los escenarios disponibles.</p>
-                         <p className="text-[9px] text-slate-300 mt-2">Consulta con tu supervisor para más información.</p>
-                       </div>
-                     ) : (
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
-                         {scenariosList.map(esc => (
-                           <div
-                             key={esc.id}
-                             onClick={() => setSelectedEscenario(esc)}
-                             className="bg-slate-50 p-6 rounded-3xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all group relative overflow-hidden"
-                           >
-                             <div className="absolute -right-4 -bottom-4 text-7xl font-black text-slate-200/50 opacity-10 group-hover:opacity-20 transition-opacity">#{esc.numero_escenario}</div>
-                             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block mb-3">Caso #{esc.numero_escenario}</span>
-                             <h4 className="text-xs font-black text-slate-800 uppercase mb-1">{esc.titulo_escenario || `Escenario Situacional #${esc.numero_escenario}`}</h4>
-                             <p className="text-[10px] text-slate-400 font-medium">{esc.descripcion_tarea || 'Haga clic para ver los detalles de este caso.'}</p>
-                           </div>
-                         ))}
-                       </div>
-                     )}
-                   </div>
+                    <div className="flex-1 overflow-y-auto pr-2">
+                      {loadingScenarios ? (
+                        <div className="flex items-center justify-center h-48 text-slate-300 font-black text-[9px] uppercase tracking-widest animate-pulse">Cargando escenarios...</div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
+                          {scenariosList.map(esc => (
+                            <div key={esc.id} onClick={() => setSelectedEscenario(esc)} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all group relative overflow-hidden">
+                              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block mb-2">Caso #{esc.numero_escenario}</span>
+                              <h4 className="text-xs font-black text-slate-800 uppercase mb-1">{esc.titulo_escenario}</h4>
+                              <p className="text-[10px] text-slate-400 font-medium line-clamp-2">{esc.descripcion_tarea}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                  ) : (
-                   <div className="flex-1 flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
-                      <button 
-                        onClick={() => setSelectedEscenario(null)}
-                        className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-6 flex items-center gap-2"
-                      >← Volver a la Lista</button>
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                       <button onClick={() => setSelectedEscenario(null)} className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-4 flex items-center gap-2">← Volver a la Lista</button>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 h-full overflow-hidden">
-                         <div className="md:col-span-1 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                            <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-[9px] font-black uppercase inline-block mb-4">Caso Seleccionado</span>
-                            <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tighter leading-tight">
-                               #{selectedEscenario.numero_escenario}: {selectedEscenario.titulo_escenario || 'Escenario Situacional'}
-                            </h3>
-                            <div className="space-y-6">
-                               <div>
-                                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Instrucción:</h4>
-                                  <p className="text-xs text-slate-600 leading-relaxed font-medium italic">
-                                    {selectedEscenario.descripcion_tarea || '"Realice la simulación completa de este caso utilizando el Catálogo Digital para la preventa y el AFV para el cierre del pedido."'}
-                                  </p>
-                               </div>
-                               {selectedEscenario.pdf_url && (
-                                  <button 
-                                    onClick={() => window.open(selectedEscenario.pdf_url, '_blank')}
-                                    className="w-full py-4 bg-white border border-slate-200 text-slate-900 rounded-2xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
-                                  >
-                                     📄 Abrir Escenario Específico
-                                  </button>
-                               )}
-                            </div>
-                         </div>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
+                          <div className="md:col-span-1 bg-slate-50 p-6 rounded-2xl border border-slate-100 overflow-y-auto">
+                             <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block mb-3">Caso Seleccionado</span>
+                             <h3 className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tighter leading-tight">#{selectedEscenario.numero_escenario}: {selectedEscenario.titulo_escenario}</h3>
+                             <div className="space-y-4">
+                                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Instrucción:</h4>
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium italic">{selectedEscenario.descripcion_tarea}</p>
+                                {selectedEscenario.pdf_url && (
+                                  <button onClick={() => window.open(selectedEscenario.pdf_url, '_blank')} className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-xl text-[8px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2">📄 Abrir Guía PDF</button>
+                                )}
+                             </div>
+                          </div>
 
-                         <div className="md:col-span-2 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
-                            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-                               <h4 className="text-xs font-black text-slate-900 uppercase mb-4">1. Mi Speech de Ventas ✨</h4>
-                               <textarea 
-                                 value={speechVentas}
-                                 onChange={(e) => setSpeechVentas(e.target.value)}
-                                 placeholder="Escriba aquí el mensaje o guion que le diría al cliente para cerrar esta venta..." 
-                                 className="w-full h-32 p-5 bg-slate-50 border border-slate-100 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"
-                               ></textarea>
-                            </div>
+                          <div className="md:col-span-2 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas ✨</h4>
+                                <textarea value={speechVentas} onChange={(e) => setSpeechVentas(e.target.value)} placeholder="Escriba su guion aquí..." className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"></textarea>
+                             </div>
 
-                            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm border-dashed border-2">
-                               <h4 className="text-xs font-black text-slate-900 uppercase mb-4">2. Evidencias Digitales 📂</h4>
-                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  <label className={`p-6 rounded-2xl border flex flex-col items-center text-center group cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                    <span className="text-2xl mb-2">{fileCatalogo ? '✅' : '📒'}</span>
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
-                                    <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
-                                  </label>
-                                  <label className={`p-6 rounded-2xl border flex flex-col items-center text-center group cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                    <span className="text-2xl mb-2">{fileAfv ? '✅' : '📱'}</span>
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
-                                    <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
-                                  </label>
-                               </div>
-                            </div>
+                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-dashed border-2">
+                                <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales 📂</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                   <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                                     <span className="text-xl mb-1">{fileCatalogo ? '✅' : '📒'}</span>
+                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
+                                     <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
+                                   </label>
+                                   <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                                     <span className="text-xl mb-1">{fileAfv ? '✅' : '📱'}</span>
+                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
+                                     <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
+                                   </label>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
 
-                            {opMessage && <p className="text-center text-[10px] font-bold text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
-
-                            <button 
-                              onClick={handleSubmitRoleplay}
-                              disabled={isUploading}
-                              className="w-full py-5 bg-slate-950 text-white rounded-3xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
-                            >
-                               {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
-                            </button>
-                         </div>
-                      </div>
-                   </div>
+                       {/* BOTÓN FIJO EN EL PIE DEL MODAL */}
+                       <div className="mt-6 pt-4 border-t flex flex-col gap-3">
+                          {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
+                          <button 
+                            onClick={handleSubmitRoleplay}
+                            disabled={isUploading}
+                            className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+                          >
+                             {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
+                          </button>
+                       </div>
+                    </div>
                  )}
               </div>
            </div>
