@@ -106,6 +106,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [message, setMessage] = useState('');
   const [notasGuardadas, setNotasGuardadas] = useState([]);
   const [evidenciasAsesor, setEvidenciasAsesor] = useState([]);
+  const [deptoSeleccionado, setDeptoSeleccionado] = useState('');
+  const [responsables, setResponsables] = useState([]);
+  const [todosLosEvaluadores, setTodosLosEvaluadores] = useState([]);
+  const [evalSeleccionado, setEvalSeleccionado] = useState('');
+  const [deptoParaAsignar, setDeptoParaAsignar] = useState('');
+  const [asesorParaPromover, setAsesorParaPromover] = useState('');
 
   useEffect(() => {
     if (viewMode === 'escenarios') fetchEscenarios();
@@ -247,16 +253,18 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const fetchInitialData = async () => {
     try {
       setIsLoading(true);
-      const { data: evalAuth } = await supabase
+      const { data: evalAuthList, error: evalAuthError } = await supabase
         .schema('portal_afv')
         .from('evaluadores_autorizados')
         .select('*, departamentos(*)')
-        .ilike('email', user.usuario.trim())
-        .maybeSingle();
+        .ilike('email', user.usuario.trim());
+
+      if (evalAuthError) console.warn('Error fetching evaluador auth:', evalAuthError);
+      const evalAuth = evalAuthList && evalAuthList.length > 0 ? evalAuthList[0] : null;
 
       const deptoParaCarga = evalAuth?.departamentos || (user.rol === 'admin' ? { id: null, nombre: 'Admin Global' } : null);
       setDepartamento(deptoParaCarga);
-      const { data: deptos } = await supabase.schema('portal_afv').from('departamentos').select('*');
+      const { data: deptos } = await supabase.schema('portal_afv').from('departamentos').select('*').order('nombre', { ascending: true });
       setTodosLosDepartamentos(deptos || []);
 
       if (viewMode === 'manual' || viewMode === 'configuracion') {
@@ -389,6 +397,22 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
   };
 
+  const handleDesactivarAsesor = async () => {
+    if (!selectedAsesor) return;
+    if (!window.confirm('¿Estás seguro de que deseas desactivar a este asesor? Ya no aparecerá en la lista de activos.')) return;
+    setIsSaving(true);
+    const { error } = await supabase.schema('portal_afv').from('usuarios').update({ rol: 'inactivo' }).eq('id', selectedAsesor.id);
+    if (!error) {
+        setMessage('Asesor desactivado.');
+        setSelectedAsesor(null);
+        fetchInitialData();
+    } else {
+        setMessage('Error al desactivar asesor.');
+    }
+    setIsSaving(false);
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   const handleDeleteInduccion = async () => {
     if (!selectedAsesor) return;
     if (!window.confirm(`¿ESTÁ SEGURO? Se borrará TODO el historial (notas e itinerarios) de ${selectedAsesor.nombre}. Esta acción no se puede deshacer.`)) return;
@@ -422,8 +446,8 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       }]);
       if (error) throw error;
       setMessage('Tema guardado con éxito.');
-      setNewSubmodulo({ nombre: '', descripcion: '' });
-      fetchInitialData(); // Para refrescar la biblioteca
+      setNewSubmodulo({ nombre: '', descripcion: '', horas: '' });
+      fetchInitialData();
     } catch (err) {
       console.error(err);
       setMessage('Error al guardar tema.');
@@ -431,6 +455,63 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       setIsSaving(false);
       setTimeout(() => setMessage(''), 3000);
     }
+  };
+
+  const handleDeleteSubmodulo = async (id) => {
+    if (!window.confirm('Eliminar este tema? Esta accion no se puede deshacer.')) return;
+    const { error } = await supabase.schema('portal_afv').from('submodulos_finales').delete().eq('id', id);
+    if (!error) { fetchInitialData(); setMessage('Tema eliminado.'); setTimeout(() => setMessage(''), 3000); }
+    else { setMessage('Error al eliminar.'); setTimeout(() => setMessage(''), 3000); }
+  };
+
+  const fetchResponsables = async () => {
+    const { data: evData } = await supabase.schema('portal_afv').from('evaluadores_autorizados').select('*, departamentos(nombre)');
+    const { data: evUsers } = await supabase.schema('portal_afv').from('usuarios').select('id, nombre, usuario, empresa').eq('rol', 'evaluador').order('nombre', { ascending: true });
+    const { data: asUsers } = await supabase.schema('portal_afv').from('usuarios').select('id, nombre, usuario, empresa').eq('rol', 'asesor').order('nombre', { ascending: true });
+    setResponsables(evData || []);
+    setTodosLosEvaluadores(evUsers || []);
+    setAsesores(asUsers || []);
+  };
+
+  const handlePromoverEvaluador = async () => {
+    if (!asesorParaPromover) return;
+    if (!window.confirm('¿Estás seguro de promover este asesor a evaluador? Ya no podrá acceder al portal de inducción como participante.')) return;
+    setIsSaving(true);
+    const { error } = await supabase.schema('portal_afv').from('usuarios').update({ rol: 'evaluador' }).eq('id', asesorParaPromover);
+    if (!error) {
+      setMessage('Usuario promovido a evaluador.');
+      setAsesorParaPromover('');
+      fetchResponsables();
+    } else {
+      setMessage('Error al promover usuario.');
+    }
+    setIsSaving(false);
+    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleAsignarResponsable = async () => {
+    if (!evalSeleccionado || !deptoParaAsignar) return;
+    setIsSaving(true);
+    const evaluador = todosLosEvaluadores.find(e => e.id === evalSeleccionado);
+    if (!evaluador) { setIsSaving(false); return; }
+    const { error } = await supabase.schema('portal_afv').from('evaluadores_autorizados').upsert(
+      { email: evaluador.usuario, id_departamento: deptoParaAsignar, nombre_completo: evaluador.nombre },
+      { onConflict: 'email,id_departamento' }
+    );
+    if (!error) {
+      setMessage('Responsable asignado.');
+      setEvalSeleccionado('');
+      setDeptoParaAsignar('');
+      fetchResponsables();
+    } else { setMessage('Error al asignar.'); }
+    setIsSaving(false);
+    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleRemoverResponsable = async (email, id_departamento) => {
+    if (!window.confirm('Remover este responsable del departamento?')) return;
+    const { error } = await supabase.schema('portal_afv').from('evaluadores_autorizados').delete().eq('email', email).eq('id_departamento', id_departamento);
+    if (!error) { fetchResponsables(); setMessage('Responsable removido.'); setTimeout(() => setMessage(''), 3000); }
   };
 
   const procesarAlta = async () => {
@@ -444,7 +525,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
           clave: candidatoAlta.cedula,
           rol: 'asesor',
           empresa: candidatoAlta.empresa_excel,
-          foto_url: candidatoAlta.foto_url
+          foto_url: candidatoAlta.foto_url,
+          ramo: candidatoAlta.ramo,
+          estado: candidatoAlta.estado,
+          zona: candidatoAlta.zona,
+          telefono: candidatoAlta.telefono,
+          fecha_ingreso: candidatoAlta.fecha_ingreso
       }, { onConflict: 'usuario' }).select().single();
 
       if (upsertError || !newUser) {
@@ -513,6 +599,9 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 <button onClick={() => setViewMode('reportes')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'reportes' ? 'bg-slate-950 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
                     📈 Reporte de Notas
                 </button>
+                <button onClick={() => { setViewMode('responsables'); fetchResponsables(); }} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'responsables' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                    👨‍💼 Responsables
+                </button>
                </>
              )}
             </div>
@@ -565,6 +654,14 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                         >
                             ⚙️ Configurar Itinerario Oficial
                         </button>
+                        {user.rol === 'admin' && (
+                            <button 
+                                onClick={handleDesactivarAsesor}
+                                className="mt-4 bg-orange-100 text-orange-600 border border-orange-200 px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-200 shadow-sm transition-all"
+                            >
+                                ⛔ Desactivar Asesor
+                            </button>
+                        )}
                     </div>
                   ) : (
                     <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
@@ -590,12 +687,20 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                     <div className="flex items-center gap-4">
                                         <h2 className="text-2xl font-black">{selectedAsesor.nombre}</h2>
                                         {user.rol === 'admin' && (
-                                            <button 
-                                                onClick={handleDeleteInduccion}
-                                                className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
-                                            >
-                                                🗑️ Borrar Historial
-                                            </button>
+                                            <>
+                                              <button 
+                                                  onClick={handleDesactivarAsesor}
+                                                  className="bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
+                                              >
+                                                  ⛔ Desactivar Asesor
+                                              </button>
+                                              <button 
+                                                  onClick={handleDeleteInduccion}
+                                                  className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
+                                              >
+                                                  🗑️ Borrar Historial
+                                              </button>
+                                            </>
                                         )}
                                     </div>
                                     <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">
@@ -727,7 +832,8 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
              <table className="w-full text-left">
                 <thead className="bg-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest"><tr>
                    <th className="px-8 py-4">Aspirante</th>
-                   <th className="px-8 py-4">Empresa</th>
+                   <th className="px-8 py-4">Empresa / Ramo</th>
+                   <th className="px-8 py-4">Ubicación</th>
                    <th className="px-8 py-4 text-center">Acciones</th>
                 </tr></thead>
                 <tbody>
@@ -751,11 +857,18 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                              </div>
                              <div>
                                 <p className="text-xs font-bold text-slate-800">{nota.nombre_apellido}</p>
-                                <p className="text-[9px] text-slate-400 font-medium">Ced: {nota.cedula}</p>
+                                <p className="text-[9px] text-slate-400 font-medium">Ced: {nota.cedula} • Tel: {nota.telefono || '-'}</p>
                              </div>
                           </div>
                        </td>
-                       <td className="px-8 py-4 text-[10px] font-bold text-slate-600">{nota.empresa_excel}</td>
+                       <td className="px-8 py-4 text-[10px] text-slate-600">
+                          <p className="font-bold">{nota.empresa_excel}</p>
+                          <p className="text-[9px] text-slate-400 uppercase">{nota.ramo || '-'}</p>
+                       </td>
+                       <td className="px-8 py-4 text-[10px] text-slate-600">
+                          <p className="font-bold">{nota.estado || '-'}</p>
+                          <p className="text-[9px] text-slate-400 uppercase">{nota.zona || '-'}</p>
+                       </td>
                        <td className="px-8 py-4 text-center">
                           <button onClick={async () => {
                               setCandidatoAlta(nota);
@@ -868,24 +981,251 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         )}
 
         {viewMode === 'configuracion' && (
-           <div className="max-w-4xl mx-auto bg-white rounded-[3rem] p-12 shadow-xl border border-slate-200">
-              <h3 className="text-xl font-black mb-8">Administración Académica</h3>
-              <div className="space-y-6">
-                 {user.rol === 'admin' && (
-                   <select className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold appearance-none" onChange={(e) => setDepartamento(todosLosDepartamentos.find(d => d.id === e.target.value))}>
-                      <option value="">Seleccione Departamento destino...</option>
+          <div className="grid grid-cols-12 gap-8">
+            {/* PANEL IZQUIERDO: FORM */}
+            <div className="col-span-4">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 sticky top-6">
+                <h3 className="text-lg font-black text-slate-900 mb-1">Agregar Tema</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">Biblioteca Global</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Departamento</label>
+                    <select
+                      className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                      value={deptoSeleccionado}
+                      onChange={(e) => { setDeptoSeleccionado(e.target.value); setDepartamento(todosLosDepartamentos.find(d => d.id === e.target.value)); }}
+                    >
+                      <option value="">Seleccione departamento...</option>
                       {todosLosDepartamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
-                   </select>
-                 )}
-                 <input type="text" className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold" placeholder="Nombre de la Tarea..." value={newSubmodulo.nombre} onChange={(e) => setNewSubmodulo({...newSubmodulo, nombre: e.target.value})}/>
-                 <input type="text" className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold" placeholder="Descripción corta..." value={newSubmodulo.descripcion} onChange={(e) => setNewSubmodulo({...newSubmodulo, descripcion: e.target.value})}/>
-                 <input type="number" className="w-full h-14 px-6 bg-slate-50 rounded-2xl font-bold" placeholder="Cantidad de Horas..." value={newSubmodulo.horas} onChange={(e) => setNewSubmodulo({...newSubmodulo, horas: e.target.value})}/>
-                 <button onClick={handleAddSubmodulo} className="w-full h-14 bg-blue-600 text-white font-black uppercase rounded-2xl shadow-xl">Guardar Tema en Biblioteca Global</button>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nombre del Tema</label>
+                    <input type="text" className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Ej: Manejo del AFV..." value={newSubmodulo.nombre} onChange={(e) => setNewSubmodulo({...newSubmodulo, nombre: e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Descripción</label>
+                    <textarea className="w-full h-20 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-400 transition-all resize-none" placeholder="Descripción corta..." value={newSubmodulo.descripcion} onChange={(e) => setNewSubmodulo({...newSubmodulo, descripcion: e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Horas</label>
+                    <input type="number" className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Ej: 2" value={newSubmodulo.horas} onChange={(e) => setNewSubmodulo({...newSubmodulo, horas: e.target.value})}/>
+                  </div>
+                  <button onClick={handleAddSubmodulo} disabled={isSaving || !deptoSeleccionado || !newSubmodulo.nombre} className="w-full h-14 bg-blue-600 text-white font-black uppercase text-sm rounded-2xl shadow-xl hover:bg-blue-700 transition-all disabled:opacity-40">
+                    {isSaving ? 'Guardando...' : 'Guardar Tema'}
+                  </button>
+                </div>
               </div>
-           </div>
+            </div>
+
+            {/* PANEL DERECHO: LISTA */}
+            <div className="col-span-8">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-6 border-b pb-6">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">{deptoSeleccionado ? todosLosDepartamentos.find(d => d.id === deptoSeleccionado)?.nombre : 'Todos los Temas'}</h3>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{(deptoSeleccionado ? submodulos.filter(s => s.id_departamento === deptoSeleccionado) : submodulos).length} temas</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap mb-6">
+                  <button onClick={() => setDeptoSeleccionado('')} className={`px-4 py-2 rounded-full text-xs font-black uppercase transition-all ${!deptoSeleccionado ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>Todos</button>
+                  {todosLosDepartamentos.map(d => (
+                    <button key={d.id} onClick={() => { setDeptoSeleccionado(d.id); setDepartamento(d); }} className={`px-4 py-2 rounded-full text-xs font-black uppercase transition-all ${deptoSeleccionado === d.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{d.nombre}</button>
+                  ))}
+                </div>
+                <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-2">
+                  {(deptoSeleccionado ? submodulos.filter(s => s.id_departamento === deptoSeleccionado) : submodulos).length === 0 ? (
+                    <div className="py-20 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                      <p className="text-sm text-slate-300 font-black uppercase tracking-widest">Sin temas registrados</p>
+                      <p className="text-xs text-slate-300 mt-2">Agrega uno desde el formulario</p>
+                    </div>
+                  ) : (
+                    (deptoSeleccionado ? submodulos.filter(s => s.id_departamento === deptoSeleccionado) : submodulos).map(sub => (
+                      <div key={sub.id} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all group">
+                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 text-base">📘</div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-black text-slate-800">{sub.nombre_tarea}</h4>
+                          <div className="flex items-center gap-3 mt-1">
+                            {sub.duracion_horas && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{sub.duracion_horas}h</span>}
+                            <span className="text-[10px] text-slate-400 truncate">{sub.descripcion || 'Sin descripcion'}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteSubmodulo(sub.id)} className="w-9 h-9 bg-white border border-slate-200 text-slate-300 rounded-xl flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0">🗑️</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* MODAL ALTA VERSIÓN MEJORADA */}
+        {viewMode === 'responsables' && (
+          <div className="grid grid-cols-12 gap-8">
+            {/* PANEL IZQUIERDO: ASIGNAR */}
+            <div className="col-span-4">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 sticky top-6">
+                <h3 className="text-lg font-black text-slate-900 mb-1">Asignar Responsable</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">Evaluador por Departamento</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Evaluador</label>
+                    <select
+                      className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-400 transition-all"
+                      value={evalSeleccionado}
+                      onChange={(e) => setEvalSeleccionado(e.target.value)}
+                    >
+                      <option value="">Seleccione evaluador...</option>
+                      {todosLosEvaluadores.map(e => (
+                        <option key={e.id} value={e.id}>{e.nombre} — {e.empresa}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Departamento</label>
+                    <select
+                      className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-400 transition-all"
+                      value={deptoParaAsignar}
+                      onChange={(e) => setDeptoParaAsignar(e.target.value)}
+                    >
+                      <option value="">Seleccione departamento...</option>
+                      {todosLosDepartamentos.map(d => (
+                        <option key={d.id} value={d.id}>{d.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleAsignarResponsable}
+                    disabled={isSaving || !evalSeleccionado || !deptoParaAsignar}
+                    className="w-full h-14 bg-emerald-600 text-white font-black uppercase text-sm rounded-2xl shadow-xl hover:bg-emerald-700 transition-all disabled:opacity-40"
+                  >
+                    {isSaving ? 'Guardando...' : 'Asignar Responsable'}
+                  </button>
+                </div>
+
+                {/* RESUMEN */}
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Estado actual</p>
+                  <div className="flex justify-between">
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-emerald-600">{responsables.length}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase">Asignaciones</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-orange-500">{todosLosDepartamentos.filter(d => !responsables.find(r => r.id_departamento === d.id)).length}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase">Sin Responsable</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-blue-600">{todosLosEvaluadores.length}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase">Evaluadores</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE PROMOVER A EVALUADOR */}
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mt-6 sticky top-[480px]">
+                <h3 className="text-lg font-black text-slate-900 mb-1">Promover Usuario</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">Convertir asesor a evaluador</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Asesor (Participante)</label>
+                    <select
+                      className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-slate-900 transition-all"
+                      value={asesorParaPromover}
+                      onChange={(e) => setAsesorParaPromover(e.target.value)}
+                    >
+                      <option value="">Seleccione asesor...</option>
+                      {asesores.map(a => (
+                        <option key={a.id} value={a.id}>{a.nombre} — {a.empresa}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handlePromoverEvaluador}
+                    disabled={isSaving || !asesorParaPromover}
+                    className="w-full h-14 bg-slate-900 text-white font-black uppercase text-sm rounded-2xl shadow-xl hover:bg-slate-800 transition-all disabled:opacity-40"
+                  >
+                    {isSaving ? 'Guardando...' : 'Promover a Evaluador'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL DERECHO: TABLA */}
+            <div className="col-span-8">
+              <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+                <div className="p-8 border-b border-slate-100">
+                  <h3 className="text-lg font-black text-slate-900">Mapa de Responsables</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Quien da la induccion la evalua</p>
+                </div>
+
+                {/* DEPARTAMENTOS SIN RESPONSABLE */}
+                {todosLosDepartamentos.filter(d => !responsables.find(r => r.id_departamento === d.id)).length > 0 && (
+                  <div className="px-8 py-4 bg-orange-50 border-b border-orange-100">
+                    <p className="text-xs font-black text-orange-600 uppercase tracking-widest mb-2">Sin responsable asignado:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {todosLosDepartamentos
+                        .filter(d => !responsables.find(r => r.id_departamento === d.id))
+                        .map(d => (
+                          <span key={d.id} className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">{d.nombre}</span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <tr>
+                      <th className="px-8 py-5">Departamento</th>
+                      <th className="px-8 py-5">Responsable</th>
+                      <th className="px-8 py-5">Empresa</th>
+                      <th className="px-8 py-5 text-center">Accion</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {responsables.length === 0 ? (
+                      <tr><td colSpan="4" className="px-8 py-20 text-center text-slate-300 text-sm font-black uppercase tracking-widest">Sin asignaciones registradas</td></tr>
+                    ) : (
+                      responsables.map((r, i) => {
+                        const evaluador = todosLosEvaluadores.find(e => e.usuario === r.email);
+                        return (
+                          <tr key={i} className="hover:bg-slate-50/50 transition-all">
+                            <td className="px-8 py-5">
+                              <span className="text-sm font-black text-slate-800">{r.departamentos?.nombre || 'Sin depto'}</span>
+                            </td>
+                            <td className="px-8 py-5">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0">
+                                  {(evaluador?.nombre || r.email).substring(0, 1).toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-slate-800">{evaluador?.nombre || r.nombre_completo || r.email}</p>
+                                  <p className="text-[10px] text-slate-400 font-medium">{r.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-8 py-5">
+                              <span className="text-xs font-bold text-slate-500 uppercase">{evaluador?.empresa || '-'}</span>
+                            </td>
+                            <td className="px-8 py-5 text-center">
+                              <button
+                                onClick={() => handleRemoverResponsable(r.email, r.id_departamento)}
+                                className="w-9 h-9 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 hover:border-red-200 border border-transparent transition-all mx-auto"
+                              >🗑️</button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL ALTA VERSION MEJORADA */}
         {showAltaModal && (
           <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-6">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
