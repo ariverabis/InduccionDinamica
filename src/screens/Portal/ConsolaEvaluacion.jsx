@@ -133,6 +133,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [editData, setEditData] = useState({});
   const [isEditingSub, setIsEditingSub] = useState(null); // ID del submodulo en edición
 
+  // Estados para Mantenimiento de Departamentos
+  const [todosDeptos, setTodosDeptos] = useState([]);
+  const [newDeptoNombre, setNewDeptoNombre] = useState('');
+  const [editDeptoId, setEditDeptoId] = useState(null);
+  const [editDeptoNombre, setEditDeptoNombre] = useState('');
+
   useEffect(() => {
     if (viewMode === 'escenarios') fetchEscenarios();
   }, [viewMode, activeCompanyEscenarios]);
@@ -510,6 +516,74 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     else { setMessage('Error al eliminar.'); setTimeout(() => setMessage(''), 3000); }
   };
 
+  // ===== CRUD DEPARTAMENTOS =====
+  const fetchDepartamentos = async () => {
+    const { data } = await supabase.schema('portal_afv').from('departamentos').select('*').order('nombre', { ascending: true });
+    setTodosDeptos(data || []);
+  };
+
+  const handleCreateDepto = async () => {
+    if (!newDeptoNombre.trim()) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.schema('portal_afv').from('departamentos').insert([{ nombre: newDeptoNombre.trim() }]);
+      if (error) throw error;
+      setMessage('✅ Departamento creado.');
+      setNewDeptoNombre('');
+      fetchDepartamentos();
+      // Refrescar la lista global también
+      const { data: deptos } = await supabase.schema('portal_afv').from('departamentos').select('*').order('nombre', { ascending: true });
+      setTodosLosDepartamentos(deptos || []);
+    } catch (err) {
+      setMessage('❌ Error: ' + err.message);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleUpdateDepto = async (id) => {
+    if (!editDeptoNombre.trim()) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.schema('portal_afv').from('departamentos').update({ nombre: editDeptoNombre.trim() }).eq('id', id);
+      if (error) throw error;
+      setMessage('✅ Departamento actualizado.');
+      setEditDeptoId(null);
+      setEditDeptoNombre('');
+      fetchDepartamentos();
+      const { data: deptos } = await supabase.schema('portal_afv').from('departamentos').select('*').order('nombre', { ascending: true });
+      setTodosLosDepartamentos(deptos || []);
+    } catch (err) {
+      setMessage('❌ Error: ' + err.message);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleDeleteDepto = async (id, nombre) => {
+    if (!window.confirm(`¿Eliminar el departamento "${nombre}"?\n\nEsto también eliminará todos los temas (submodulos) asociados a este departamento. Esta acción no se puede deshacer.`)) return;
+    setIsSaving(true);
+    try {
+      // Primero eliminamos los submodulos asociados
+      await supabase.schema('portal_afv').from('submodulos_finales').delete().eq('id_departamento', id);
+      // Luego el departamento
+      const { error } = await supabase.schema('portal_afv').from('departamentos').delete().eq('id', id);
+      if (error) throw error;
+      setMessage('✅ Departamento eliminado.');
+      fetchDepartamentos();
+      const { data: deptos } = await supabase.schema('portal_afv').from('departamentos').select('*').order('nombre', { ascending: true });
+      setTodosLosDepartamentos(deptos || []);
+    } catch (err) {
+      setMessage('❌ Error: ' + err.message);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+  // ===== FIN CRUD DEPARTAMENTOS =====
+
   const fetchResponsables = async () => {
     const { data: evData } = await supabase.schema('portal_afv').from('evaluadores_autorizados').select('*, departamentos(nombre)');
     const { data: evUsers } = await supabase.schema('portal_afv').from('usuarios').select('id, nombre, usuario, empresa').eq('rol', 'evaluador').order('nombre', { ascending: true });
@@ -702,6 +776,9 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 </button>
                 <button onClick={() => { setViewMode('responsables'); fetchResponsables(); }} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'responsables' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
                     👨‍💼 Responsables
+                </button>
+                <button onClick={() => { setViewMode('departamentos'); fetchDepartamentos(); }} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'departamentos' ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
+                    🏢 Departamentos
                 </button>
                </>
              )}
@@ -1079,6 +1156,116 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
         {viewMode === 'reportes' && (
           <ReporteNotas onBack={() => setViewMode('manual')} />
+        )}
+
+        {viewMode === 'departamentos' && (
+          <div className="animate-in fade-in duration-500 space-y-8">
+            {/* HEADER */}
+            <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">Mantenimiento de Departamentos</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Crear, renombrar y eliminar departamentos del itinerario</p>
+              </div>
+              <span className="text-4xl font-black text-teal-600">{todosDeptos.length}</span>
+            </div>
+
+            <div className="grid grid-cols-12 gap-8">
+              {/* FORMULARIO CREAR */}
+              <div className="col-span-4">
+                <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Nuevo Departamento</h4>
+                  <input
+                    type="text"
+                    value={newDeptoNombre}
+                    onChange={(e) => setNewDeptoNombre(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreateDepto()}
+                    placeholder="Nombre del departamento..."
+                    className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-teal-400 transition-all mb-4"
+                  />
+                  <button
+                    onClick={handleCreateDepto}
+                    disabled={isSaving || !newDeptoNombre.trim()}
+                    className="w-full py-3 bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-teal-700 disabled:opacity-40 transition-all"
+                  >
+                    + Crear Departamento
+                  </button>
+                  {message && (
+                    <p className="mt-4 text-[10px] font-black text-center text-teal-600 uppercase tracking-widest">{message}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* LISTA */}
+              <div className="col-span-8">
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-6 bg-slate-50 border-b flex items-center justify-between">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Departamentos Activos</h4>
+                    <button onClick={fetchDepartamentos} className="text-[9px] font-black text-slate-400 hover:text-slate-700 uppercase tracking-widest transition-all">↺ Actualizar</button>
+                  </div>
+                  {todosDeptos.length === 0 ? (
+                    <div className="py-20 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">
+                      No hay departamentos registrados
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-50">
+                      {todosDeptos.map(d => (
+                        <div key={d.id} className="flex items-center justify-between px-8 py-5 hover:bg-slate-50 transition-all group">
+                          {editDeptoId === d.id ? (
+                            // MODO EDICIÓN
+                            <div className="flex gap-3 flex-1 mr-4">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editDeptoNombre}
+                                onChange={(e) => setEditDeptoNombre(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleUpdateDepto(d.id);
+                                  if (e.key === 'Escape') { setEditDeptoId(null); setEditDeptoNombre(''); }
+                                }}
+                                className="flex-1 h-10 px-4 bg-white border-2 border-teal-400 rounded-xl text-sm font-bold outline-none"
+                              />
+                              <button
+                                onClick={() => handleUpdateDepto(d.id)}
+                                className="px-4 h-10 bg-teal-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all"
+                              >✓ Guardar</button>
+                              <button
+                                onClick={() => { setEditDeptoId(null); setEditDeptoNombre(''); }}
+                                className="px-4 h-10 bg-slate-100 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                              >✕</button>
+                            </div>
+                          ) : (
+                            // MODO VISTA
+                            <>
+                              <div>
+                                <p className="text-sm font-black text-slate-900">{d.nombre}</p>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ID: {d.id}</p>
+                              </div>
+                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                <button
+                                  onClick={() => { setEditDeptoId(d.id); setEditDeptoNombre(d.nombre); }}
+                                  className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-50 hover:text-teal-700 transition-all"
+                                >✏️ Editar</button>
+                                <button
+                                  onClick={() => handleDeleteDepto(d.id, d.nombre)}
+                                  className="px-4 py-2 bg-slate-100 text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all"
+                                >🗑️ Eliminar</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ADVERTENCIA */}
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+              <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">⚠️ Precaución</p>
+              <p className="text-xs text-amber-600 font-medium mt-1">Eliminar un departamento eliminará también todos los temas asociados y podría afectar los itinerarios de inducción activos. Use con cuidado.</p>
+            </div>
+          </div>
         )}
 
         {viewMode === 'escenarios' && (
