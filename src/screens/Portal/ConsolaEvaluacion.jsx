@@ -3,6 +3,20 @@ import { supabase } from '../../lib/supabase';
 import ReporteNotas from './ReporteNotas';
 
 // Sub-componente para mostrar y calificar una entrega de Roleplay
+const getGoogleDriveThumbnail = (url) => {
+  if (!url) return null;
+  if (!url.includes('drive.google.com')) return url;
+  
+  let id = '';
+  if (url.includes('id=')) {
+    id = url.split('id=')[1].split('&')[0];
+  } else if (url.includes('/file/d/')) {
+    id = url.split('/file/d/')[1].split('/')[0];
+  }
+  
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w500` : url;
+};
+
 const EvidenciaCard = ({ evidencia, onSave, isSaving }) => {
   const [nota, setNota] = useState(evidencia.nota_ejercicio ?? '');
   const [feedback, setFeedback] = useState(evidencia.feedback_evaluador ?? '');
@@ -100,7 +114,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   
   const [masterEscenarios, setMasterEscenarios] = useState({});
   const [activeCompanyEscenarios, setActiveCompanyEscenarios] = useState('Febeca');
-  const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '', horas: '' });
+  const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '', horas: '', es_interno: false });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -112,6 +126,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [evalSeleccionado, setEvalSeleccionado] = useState('');
   const [deptoParaAsignar, setDeptoParaAsignar] = useState('');
   const [asesorParaPromover, setAsesorParaPromover] = useState('');
+
+  // Estados para Edición de Datos
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editType, setEditType] = useState(null); // 'usuario' | 'candidato'
+  const [editData, setEditData] = useState({});
+  const [isEditingSub, setIsEditingSub] = useState(null); // ID del submodulo en edición
 
   useEffect(() => {
     if (viewMode === 'escenarios') fetchEscenarios();
@@ -442,15 +462,41 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         nombre_tarea: newSubmodulo.nombre,
         descripcion: newSubmodulo.descripcion,
         duracion_horas: newSubmodulo.horas,
-        id_departamento: departamento.id
+        id_departamento: departamento.id,
+        es_interno: newSubmodulo.es_interno
       }]);
       if (error) throw error;
       setMessage('Tema guardado con éxito.');
-      setNewSubmodulo({ nombre: '', descripcion: '', horas: '' });
+      setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false });
       fetchInitialData();
     } catch (err) {
       console.error(err);
       setMessage('Error al guardar tema.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleUpdateSubmodulo = async () => {
+    if (!newSubmodulo.nombre) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.schema('portal_afv').from('submodulos_finales').update({
+        nombre_tarea: newSubmodulo.nombre,
+        descripcion: newSubmodulo.descripcion,
+        duracion_horas: newSubmodulo.horas,
+        es_interno: newSubmodulo.es_interno
+      }).eq('id', isEditingSub);
+      
+      if (error) throw error;
+      setMessage('Tema actualizado con éxito.');
+      setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false });
+      setIsEditingSub(null);
+      fetchInitialData();
+    } catch (err) {
+      console.error(err);
+      setMessage('Error al actualizar tema.');
     } finally {
       setIsSaving(false);
       setTimeout(() => setMessage(''), 3000);
@@ -570,6 +616,61 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
   };
 
+  const handleOpenEdit = (data, type) => {
+    setEditType(type);
+    setEditData({ ...data });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setIsSaving(true);
+    try {
+      if (editType === 'usuario') {
+        const { error } = await supabase.schema('portal_afv').from('usuarios').update({
+          nombre: editData.nombre,
+          correo: editData.correo,
+          empresa: editData.empresa,
+          ramo: editData.ramo,
+          estado: editData.estado,
+          zona: editData.zona,
+          telefono: editData.telefono,
+          fecha_ingreso: editData.fecha_ingreso
+        }).eq('id', editData.id);
+
+        if (error) throw error;
+        setMessage('✅ Datos del asesor actualizados.');
+        if (selectedAsesor?.id === editData.id) {
+          setSelectedAsesor({ ...selectedAsesor, ...editData });
+        }
+        fetchInitialData();
+      } else {
+        const { error } = await supabase.schema('portal_afv').from('import_respuestas_excel').update({
+          nombre_apellido: editData.nombre_apellido,
+          email_contacto: editData.email_contacto,
+          empresa_excel: editData.empresa_excel,
+          ramo: editData.ramo,
+          estado: editData.estado,
+          zona: editData.zona,
+          telefono: editData.telefono,
+          fecha_ingreso: editData.fecha_ingreso,
+          cedula: editData.cedula
+        }).eq('id', editData.id);
+
+        if (error) throw error;
+        setMessage('✅ Datos del aspirante actualizados.');
+        const { data: autoData } = await supabase.schema('portal_afv').from('import_respuestas_excel').select('*').order('fecha_sincronizacion', { ascending: false });
+        setNotasAutomaticas(autoData || []);
+      }
+      setShowEditModal(false);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al actualizar los datos.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
   if (isLoading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold text-[10px]">Cargando Sistema...</div>;
 
   return (
@@ -672,9 +773,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                 <div className="w-20 h-20 rounded-[2rem] bg-slate-800 border-2 border-slate-700 overflow-hidden shadow-2xl flex items-center justify-center">
                                     {selectedAsesor.foto_url ? (
                                         <img 
-                                          src={selectedAsesor.foto_url.includes('drive.google.com') 
-                                            ? selectedAsesor.foto_url.replace('/file/d/', '/thumbnail?id=').replace('/view?usp=sharing', '').replace('/view?usp=drive_link', '').replace('/view', '') 
-                                            : selectedAsesor.foto_url} 
+                                          src={getGoogleDriveThumbnail(selectedAsesor.foto_url)} 
                                           alt="Perfil" 
                                           className="w-full h-full object-cover" 
                                           onError={(e) => e.target.style.display = 'none'}
@@ -688,6 +787,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                         <h2 className="text-2xl font-black">{selectedAsesor.nombre}</h2>
                                         {user.rol === 'admin' && (
                                             <>
+                                              <button 
+                                                  onClick={() => handleOpenEdit(selectedAsesor, 'usuario')}
+                                                  className="bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
+                                              >
+                                                  ✏️ Editar Datos
+                                              </button>
                                               <button 
                                                   onClick={handleDesactivarAsesor}
                                                   className="bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
@@ -703,9 +808,15 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                             </>
                                         )}
                                     </div>
-                                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">
+                                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest block mb-1">
                                         Inducción en Curso - Intento #{itinerarioActual[0]?.intento}
                                     </span>
+                                    <div className="flex gap-4 text-[9px] text-slate-400 font-medium uppercase tracking-widest">
+                                       <span>📧 {selectedAsesor.correo || selectedAsesor.usuario}</span>
+                                       <span>📍 {selectedAsesor.zona || 'Zona no definida'}</span>
+                                       <span>📱 {selectedAsesor.telefono || 'Sin teléfono'}</span>
+                                       <span>📅 Ingreso: {selectedAsesor.fecha_ingreso || 'N/A'}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -751,9 +862,49 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {temasDepto.map(sm => {
                               const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
+                              let submission = null;
+                              if (notaExistente?.comentario?.startsWith('{')) {
+                                try {
+                                  const parsed = JSON.parse(notaExistente.comentario);
+                                  if (parsed.type === 'exercise_submission') submission = parsed;
+                                } catch (e) {}
+                              }
+
                               return (
                                 <div key={sm.id} className="bg-slate-50 rounded-2xl p-5 border border-slate-50 hover:border-blue-200 transition-all">
-                                  <h4 className="text-[10px] font-black uppercase text-slate-700 mb-4">{sm.nombre_tarea}</h4>
+                                  <div className="flex justify-between items-start mb-2">
+                                    <h4 className="text-[10px] font-black uppercase text-slate-700">{sm.nombre_tarea}</h4>
+                                    {sm.area_tecnica && (
+                                      <span className={`text-[6px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                                        sm.area_tecnica.includes('VENTAS') ? 'bg-blue-100 text-blue-700' :
+                                        sm.area_tecnica.includes('COBRANZA') ? 'bg-green-100 text-green-700' :
+                                        sm.area_tecnica.includes('CATÁLOGO') ? 'bg-purple-100 text-purple-700' :
+                                        sm.area_tecnica.includes('SKU') ? 'bg-orange-100 text-orange-700' :
+                                        'bg-slate-100 text-slate-600'
+                                      }`}>
+                                        {sm.area_tecnica}
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {submission && (
+                                    <div className="mb-4 space-y-2">
+                                      <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                        <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1">Propuesta del Asesor:</p>
+                                        <p className="text-[10px] text-slate-600 italic leading-relaxed">"{submission.speech}"</p>
+                                      </div>
+                                      {submission.files && submission.files.length > 0 && (
+                                        <div className="flex gap-2">
+                                          {submission.files.map((f, i) => (
+                                            <button key={i} onClick={() => window.open(f.url, '_blank')} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2">
+                                              📄 Ver Soporte
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
                                   <div className="flex gap-2">
                                     <input 
                                       type="number" 
@@ -773,11 +924,11 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                     <input 
                                       type="text" 
                                       className="flex-1 px-4 bg-white border border-slate-200 rounded-xl text-[9px] outline-none" 
-                                      placeholder="Comentarios..." 
-                                      defaultValue={notaExistente?.comentario || ''}
+                                      placeholder="Feedback del evaluador..." 
+                                      defaultValue={submission ? '' : (notaExistente?.comentario || '')}
                                       onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], obs: e.target.value}})}
                                     />
-                                    <button onClick={() => handleSaveNota(sm.id, evaluaciones[sm.id]?.nota || notaExistente?.nota, evaluaciones[sm.id]?.obs || notaExistente?.comentario)} className="px-5 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
+                                    <button onClick={() => handleSaveNota(sm.id, evaluaciones[sm.id]?.nota || notaExistente?.nota, evaluaciones[sm.id]?.obs || (submission ? '' : notaExistente?.comentario))} className="px-5 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
                                   </div>
                                 </div>
                               );
@@ -844,9 +995,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                              <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
                                 {nota.foto_url ? (
                                     <img 
-                                      src={nota.foto_url.includes('drive.google.com') 
-                                        ? nota.foto_url.replace('/file/d/', '/thumbnail?id=').replace('/view?usp=sharing', '').replace('/view?usp=drive_link', '').replace('/view', '') 
-                                        : nota.foto_url} 
+                                      src={getGoogleDriveThumbnail(nota.foto_url)} 
                                       alt="Foto" 
                                       className="w-full h-full object-cover" 
                                       onError={(e) => e.target.style.display = 'none'}
@@ -870,12 +1019,15 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           <p className="text-[9px] text-slate-400 uppercase">{nota.zona || '-'}</p>
                        </td>
                        <td className="px-8 py-4 text-center">
-                          <button onClick={async () => {
-                              setCandidatoAlta(nota);
-                              await checkExistenciaCandidato(nota.email_contacto);
-                              setShowAltaModal(true);
-                              setItinerarioConfig([]);
-                          }} className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[9px] font-black uppercase hover:bg-blue-700">Configurar Itinerario</button>
+                          <div className="flex justify-center gap-2">
+                            <button onClick={() => handleOpenEdit(nota, 'candidato')} className="bg-white border border-slate-200 text-slate-600 px-3 py-2.5 rounded-full text-[9px] font-black uppercase hover:bg-slate-50 transition-all">✏️</button>
+                            <button onClick={async () => {
+                                setCandidatoAlta(nota);
+                                await checkExistenciaCandidato(nota.email_contacto);
+                                setShowAltaModal(true);
+                                setItinerarioConfig([]);
+                            }} className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[9px] font-black uppercase hover:bg-blue-700 transition-all">Configurar Itinerario</button>
+                          </div>
                        </td>
                     </tr>
                   ))}
@@ -1011,9 +1163,33 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Horas</label>
                     <input type="number" className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Ej: 2" value={newSubmodulo.horas} onChange={(e) => setNewSubmodulo({...newSubmodulo, horas: e.target.value})}/>
                   </div>
-                  <button onClick={handleAddSubmodulo} disabled={isSaving || !deptoSeleccionado || !newSubmodulo.nombre} className="w-full h-14 bg-blue-600 text-white font-black uppercase text-sm rounded-2xl shadow-xl hover:bg-blue-700 transition-all disabled:opacity-40">
-                    {isSaving ? 'Guardando...' : 'Guardar Tema'}
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <input 
+                      type="checkbox" 
+                      id="es_interno"
+                      checked={newSubmodulo.es_interno || false} 
+                      onChange={(e) => setNewSubmodulo({...newSubmodulo, es_interno: e.target.checked})}
+                      className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="es_interno" className="text-[10px] font-black text-blue-900 uppercase tracking-tight cursor-pointer">
+                      Actividad Interna (Solo Tutor)
+                    </label>
+                  </div>
+                  <button 
+                    onClick={isEditingSub ? handleUpdateSubmodulo : handleAddSubmodulo} 
+                    disabled={isSaving || !deptoSeleccionado || !newSubmodulo.nombre} 
+                    className={`w-full h-14 ${isEditingSub ? 'bg-amber-600' : 'bg-blue-600'} text-white font-black uppercase text-sm rounded-2xl shadow-xl hover:opacity-90 transition-all disabled:opacity-40`}
+                  >
+                    {isSaving ? 'Procesando...' : (isEditingSub ? 'Actualizar Tema' : 'Guardar Tema')}
                   </button>
+                  {isEditingSub && (
+                    <button 
+                      onClick={() => { setIsEditingSub(null); setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false }); }} 
+                      className="w-full h-10 text-slate-400 font-bold uppercase text-[10px] hover:text-slate-600"
+                    >
+                      Cancelar Edición
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1044,12 +1220,31 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                       <div key={sub.id} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all group">
                         <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 text-base">📘</div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-black text-slate-800">{sub.nombre_tarea}</h4>
+                          <h4 className="text-sm font-black text-slate-800">
+                            {sub.nombre_tarea}
+                            {sub.es_interno && <span className="ml-2 text-[8px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase tracking-tighter">Interno</span>}
+                          </h4>
                           <div className="flex items-center gap-3 mt-1">
                             {sub.duracion_horas && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{sub.duracion_horas}h</span>}
                             <span className="text-[10px] text-slate-400 truncate">{sub.descripcion || 'Sin descripcion'}</span>
                           </div>
                         </div>
+                        <button 
+                          onClick={() => {
+                            setIsEditingSub(sub.id);
+                            setNewSubmodulo({
+                              nombre: sub.nombre_tarea,
+                              descripcion: sub.descripcion || '',
+                              horas: sub.duracion_horas || '',
+                              es_interno: sub.es_interno || false
+                            });
+                            // Asegurar que el departamento esté seleccionado
+                            setDeptoSeleccionado(sub.id_departamento);
+                          }} 
+                          className="w-9 h-9 bg-white border border-slate-200 text-slate-300 rounded-xl flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 hover:text-blue-500 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                        >
+                          ✏️
+                        </button>
                         <button onClick={() => handleDeleteSubmodulo(sub.id)} className="w-9 h-9 bg-white border border-slate-200 text-slate-300 rounded-xl flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0">🗑️</button>
                       </div>
                     ))
@@ -1261,6 +1456,122 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 <div className="flex gap-4">
                     <button onClick={() => setShowAltaModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black uppercase text-[10px] rounded-2xl">Cerrar</button>
                     <button onClick={procesarAlta} disabled={esReintento && !motivoReinicio} className="flex-[2] py-4 bg-blue-600 text-white font-black uppercase text-[10px] rounded-2xl shadow-xl hover:bg-blue-700 disabled:opacity-50">Confirmar e Iniciar Etapa →</button>
+                </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL EDICION DE DATOS */}
+        {showEditModal && (
+          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[101] p-6">
+            <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
+                <div className="mb-8 flex justify-between items-start">
+                    <div>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                          {editType === 'usuario' ? 'Editar Datos del Asesor' : 'Editar Datos del Aspirante'}
+                        </h3>
+                        <p className="text-xs font-bold text-blue-600 uppercase mt-1">Corrección de Información Sincronizada</p>
+                    </div>
+                    <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="col-span-2">
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Nombre Completo</label>
+                        <input 
+                          type="text" 
+                          value={editType === 'usuario' ? editData.nombre : editData.nombre_apellido} 
+                          onChange={(e) => setEditData(editType === 'usuario' ? { ...editData, nombre: e.target.value } : { ...editData, nombre_apellido: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div className="col-span-2">
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Correo Electrónico</label>
+                        <input 
+                          type="email" 
+                          value={editType === 'usuario' ? editData.correo : editData.email_contacto} 
+                          onChange={(e) => setEditData(editType === 'usuario' ? { ...editData, correo: e.target.value } : { ...editData, email_contacto: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    {editType === 'candidato' && (
+                      <div>
+                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Cédula / ID</label>
+                          <input 
+                            type="text" 
+                            value={editData.cedula} 
+                            onChange={(e) => setEditData({ ...editData, cedula: e.target.value })}
+                            className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                      </div>
+                    )}
+                    <div className={editType === 'usuario' ? 'col-span-2' : ''}>
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Empresa</label>
+                        <select 
+                          value={editType === 'usuario' ? editData.empresa : editData.empresa_excel} 
+                          onChange={(e) => setEditData(editType === 'usuario' ? { ...editData, empresa: e.target.value } : { ...editData, empresa_excel: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        >
+                          <option value="Febeca">Febeca</option>
+                          <option value="Beval">Beval</option>
+                          <option value="Sillaca">Sillaca</option>
+                          <option value="Cofersa">Cofersa</option>
+                          <option value="Mundial de Partes">Mundial de Partes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Ramo</label>
+                        <input 
+                          type="text" 
+                          value={editData.ramo || ''} 
+                          onChange={(e) => setEditData({ ...editData, ramo: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Teléfono</label>
+                        <input 
+                          type="text" 
+                          value={editData.telefono || ''} 
+                          onChange={(e) => setEditData({ ...editData, telefono: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Estado / Ubicación</label>
+                        <input 
+                          type="text" 
+                          value={editData.estado || ''} 
+                          onChange={(e) => setEditData({ ...editData, estado: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Zona</label>
+                        <input 
+                          type="text" 
+                          value={editData.zona || ''} 
+                          onChange={(e) => setEditData({ ...editData, zona: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div className="col-span-2">
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha de Ingreso</label>
+                        <input 
+                          type="text" 
+                          value={editData.fecha_ingreso || ''} 
+                          placeholder="Ej: 01/01/2024"
+                          onChange={(e) => setEditData({ ...editData, fecha_ingreso: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <button onClick={() => setShowEditModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 font-black uppercase text-[10px] rounded-2xl">Cancelar</button>
+                    <button onClick={handleSaveEdit} disabled={isSaving} className="flex-[2] py-4 bg-blue-600 text-white font-black uppercase text-[10px] rounded-2xl shadow-xl hover:bg-blue-700 disabled:opacity-50">
+                      {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                    </button>
                 </div>
             </div>
           </div>

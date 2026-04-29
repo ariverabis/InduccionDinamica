@@ -50,53 +50,6 @@ const PortalInicio = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedEscenario, setSelectedEscenario] = useState(null);
   
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const savedCompany = localStorage.getItem('selectedCompany');
-    const savedUser = localStorage.getItem('portalUser');
-    
-    if (savedCompany) setSelectedCompany(savedCompany);
-    if (savedUser) setUserSession(JSON.parse(savedUser));
-  }, []);
-
-  const handleSelectCompany = (company) => {
-    localStorage.setItem('selectedCompany', company);
-    setSelectedCompany(company);
-    if (!userSession) setShowLogin(true);
-  };
-
-  const [scenariosList, setScenariosList] = useState([]);
-  const [loadingScenarios, setLoadingScenarios] = useState(false);
-
-  useEffect(() => {
-    if (selectedCompany) fetchScenarios();
-  }, [selectedCompany]);
-
-  const fetchScenarios = async () => {
-    console.log('🎭 [DEBUG] Buscando escenarios para:', selectedCompany);
-    setLoadingScenarios(true);
-    const { data, error } = await supabase.schema('portal_afv').from('maestro_escenarios')
-      .select('*').eq('empresa', selectedCompany).order('numero_escenario', { ascending: true });
-    
-    if (error) console.error('❌ [DEBUG] Error cargando escenarios:', error);
-    console.log('✅ [DEBUG] Escenarios cargados:', data?.length);
-    
-    setScenariosList(data || []);
-    setLoadingScenarios(false);
-  };
-
-  const [speechVentas, setSpeechVentas] = useState('');
-  const [fileCatalogo, setFileCatalogo] = useState(null);
-  const [fileAfv, setFileAfv] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [opMessage, setOpMessage] = useState('');
-
   const handleSubmitRoleplay = async () => {
     console.log('🔘 [DEBUG-CLICK] Botón de enviar presionado');
     if (!selectedEscenario || !speechVentas || !fileCatalogo) {
@@ -162,6 +115,175 @@ const PortalInicio = () => {
     }
   };
 
+  const [opMessage, setOpMessage] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const savedCompany = localStorage.getItem('selectedCompany');
+    const savedUser = localStorage.getItem('portalUser');
+    
+    if (savedCompany) setSelectedCompany(savedCompany);
+    if (savedUser) setUserSession(JSON.parse(savedUser));
+  }, []);
+
+  const handleSelectCompany = (company) => {
+    localStorage.setItem('selectedCompany', company);
+    setSelectedCompany(company);
+    if (!userSession) setShowLogin(true);
+  };
+
+  const [scenariosList, setScenariosList] = useState([]);
+  const [loadingScenarios, setLoadingScenarios] = useState(false);
+
+  useEffect(() => {
+    if (selectedCompany) fetchScenarios();
+  }, [selectedCompany]);
+
+  const fetchScenarios = async () => {
+    console.log('🎭 [DEBUG] Buscando escenarios para:', selectedCompany);
+    setLoadingScenarios(true);
+    const { data, error } = await supabase.schema('portal_afv').from('maestro_escenarios')
+      .select('*').eq('empresa', selectedCompany).order('numero_escenario', { ascending: true });
+    
+    if (error) console.error('❌ [DEBUG] Error cargando escenarios:', error);
+    console.log('✅ [DEBUG] Escenarios cargados:', data?.length);
+    
+    setScenariosList(data || []);
+    setLoadingScenarios(false);
+  };
+
+  const [speechVentas, setSpeechVentas] = useState('');
+  const [fileCatalogo, setFileCatalogo] = useState(null);
+  const [fileAfv, setFileAfv] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [submodulesList, setSubmodulesList] = useState([]);
+  const [loadingSubmodules, setLoadingSubmodules] = useState(false);
+  const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [selectedSubmodule, setSelectedSubmodule] = useState(null);
+  const [exerciseSpeech, setExerciseSpeech] = useState('');
+  const [exerciseFile, setExerciseFile] = useState(null);
+
+  useEffect(() => {
+    if (userSession && userSession.rol === 'asesor') {
+      fetchAdvisorSubmodules();
+    }
+  }, [userSession]);
+
+  const fetchAdvisorSubmodules = async () => {
+    setLoadingSubmodules(true);
+    try {
+      // 1. Obtener los departamentos del itinerario del asesor
+      const { data: itinData, error: itinError } = await supabase
+        .schema('portal_afv')
+        .from('itinerarios_induccion')
+        .select('id_departamento')
+        .eq('id_asesor', userSession.id)
+        .order('orden', { ascending: true });
+
+      if (itinError) throw itinError;
+      if (!itinData || itinData.length === 0) {
+        setSubmodulesList([]);
+        return;
+      }
+
+      const deptoIds = itinData.map(i => i.id_departamento);
+
+      // 2. Obtener los submódulos de esos departamentos
+      const { data: subData, error: subError } = await supabase
+        .schema('portal_afv')
+        .from('submodulos_finales')
+        .select('*, departamentos(nombre)')
+        .in('id_departamento', deptoIds)
+        .or('es_interno.is.null,es_interno.eq.false');
+
+      if (subError) throw subError;
+      setSubmodulesList(subData || []);
+    } catch (err) {
+      console.error('Error fetching submodules:', err);
+    } finally {
+      setLoadingSubmodules(false);
+    }
+  };
+
+  const handleSubmitExercise = async () => {
+    if (!selectedSubmodule || !exerciseSpeech) {
+      setOpMessage('⚠️ El speech es obligatorio.');
+      return;
+    }
+
+    setIsUploading(true);
+    setOpMessage('Procesando envío...');
+
+    try {
+      let fileUrl = null;
+      if (exerciseFile) {
+        const fileExt = exerciseFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${userSession.usuario}/ejercicio_${selectedSubmodule.id}_${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('evidencias_asesores')
+          .upload(filePath, exerciseFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('evidencias_asesores').getPublicUrl(filePath);
+        fileUrl = publicUrl;
+      }
+
+      // Preparamos el payload JSON para el comentario
+      const payload = {
+        type: 'exercise_submission',
+        speech: exerciseSpeech,
+        files: fileUrl ? [{ name: exerciseFile.name, url: fileUrl }] : [],
+        submitted_at: new Date().toISOString()
+      };
+
+      // Buscamos si ya tiene un itinerario activo para saber el intento
+      const { data: itins } = await supabase
+        .schema('portal_afv')
+        .from('itinerarios_induccion')
+        .select('intento')
+        .eq('id_asesor', userSession.id)
+        .order('intento', { ascending: false })
+        .limit(1);
+      
+      const currentIntento = itins && itins.length > 0 ? itins[0].intento : 1;
+
+      // Guardamos en notas_por_submodulo
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('notas_por_submodulo')
+        .upsert({
+          id_asesor: userSession.id,
+          id_submodulo: selectedSubmodule.id,
+          email_evaluador: 'pending', // Indica que aún no ha sido evaluado
+          nota: 0,
+          comentario: JSON.stringify(payload),
+          intento: currentIntento
+        }, { onConflict: 'id_asesor,id_submodulo,intento' });
+
+      if (error) throw error;
+
+      setOpMessage('✅ Ejercicio registrado con éxito.');
+      setTimeout(() => {
+        setShowExerciseModal(false);
+        setSelectedSubmodule(null);
+        setExerciseSpeech('');
+        setExerciseFile(null);
+        setOpMessage('');
+      }, 2000);
+    } catch (err) {
+      setOpMessage(`❌ Error: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleLogin = async () => {
     if (!username || !password) return setLoginError('Ingrese sus credenciales');
     setIsLoading(true);
@@ -198,6 +320,8 @@ const PortalInicio = () => {
         setUserSession(userData);
         localStorage.setItem('portalUser', JSON.stringify(userData));
         setShowLogin(false);
+        setUsername('');
+        setPassword('');
       }
     } catch (err) {
       setLoginError('Error de conexión');
@@ -240,6 +364,10 @@ const PortalInicio = () => {
         localStorage.setItem('portalUser', JSON.stringify(userData));
         setShowLogin(false);
         setIsRegistering(false);
+        setUsername('');
+        setPassword('');
+        setFullName('');
+        setEmail('');
       }
     } catch (err) {
       setLoginError('Error de servidor');
@@ -254,6 +382,10 @@ const PortalInicio = () => {
     setUserSession(null);
     setSelectedCompany(null);
     setShowLogin(false);
+    setUsername('');
+    setPassword('');
+    setFullName('');
+    setEmail('');
   };
 
   const currentBrand = selectedCompany ? BRAND_COLORS[selectedCompany] : { primary: '#374151' };
@@ -386,6 +518,13 @@ const PortalInicio = () => {
                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inducción de Aplicaciones</span>
                 </div>
              </div>
+             <div onClick={() => window.open(currentBrand.manualLink, '_blank')} className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer text-left">
+                <span className="text-2xl">📖</span>
+                <div className="flex-1">
+                   <h3 className="text-xs font-bold font-black text-slate-800">Manual Codex SKU</h3>
+                   <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Guía de Usuario →</span>
+                </div>
+             </div>
           </div>
         </section>
 
@@ -411,6 +550,44 @@ const PortalInicio = () => {
         <section className="w-full mb-16">
           <div className="flex items-center gap-4 mb-8">
              <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">03</span>
+             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Módulos de Formación Técnica</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loadingSubmodules ? (
+              <div className="col-span-full py-10 text-center animate-pulse text-slate-400 font-bold text-[10px] uppercase tracking-widest">Cargando temas...</div>
+            ) : submodulesList.length === 0 ? (
+              <div className="col-span-full py-10 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No hay temas técnicos asignados aún.</p>
+              </div>
+            ) : (
+              submodulesList.map((sub) => (
+                <div key={sub.id} onClick={() => { setSelectedSubmodule(sub); setShowExerciseModal(true); }} className="bg-white p-6 rounded-3xl border border-slate-100 hover:shadow-lg transition-all cursor-pointer group text-left relative overflow-hidden">
+                   <div className="flex justify-between items-start mb-4">
+                     <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all">📘</div>
+                     {sub.area_tecnica && (
+                       <span className={`text-[7px] font-black px-2 py-1 rounded-full uppercase tracking-widest ${
+                         sub.area_tecnica.includes('VENTAS') ? 'bg-blue-100 text-blue-700' :
+                         sub.area_tecnica.includes('COBRANZA') ? 'bg-green-100 text-green-700' :
+                         sub.area_tecnica.includes('CATÁLOGO') ? 'bg-purple-100 text-purple-700' :
+                         sub.area_tecnica.includes('SKU') ? 'bg-orange-100 text-orange-700' :
+                         'bg-slate-100 text-slate-600'
+                       }`}>
+                         {sub.area_tecnica}
+                       </span>
+                     )}
+                   </div>
+                   <h3 className="text-xs font-black text-slate-800 uppercase mb-1">{sub.nombre_tarea}</h3>
+                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mb-4">{sub.departamentos?.nombre}</p>
+                   <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">Registrar Avance →</span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="w-full mb-16">
+          <div className="flex items-center gap-4 mb-8">
+             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">04</span>
              <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Prácticas Situacionales y Roleplay</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -428,7 +605,7 @@ const PortalInicio = () => {
 
         <section id="evaluaciones" className="w-full mb-16">
           <div className="flex items-center gap-4 mb-8">
-             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">04</span>
+             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">05</span>
              <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Evaluación de Competencias y Certificación</h2>
           </div>
           <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 text-center shadow-md">
@@ -547,6 +724,58 @@ const PortalInicio = () => {
                        </div>
                     </div>
                  )}
+              </div>
+           </div>
+        </div>
+      )}
+      {/* MODAL DE REGISTRO DE EJERCICIO */}
+      {showExerciseModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden relative">
+              <button 
+                onClick={() => setShowExerciseModal(false)}
+                className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
+              >✕</button>
+
+              <div className="p-8">
+                 <header className="mb-8 border-b pb-4">
+                    <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                       <span className="text-2xl">📘</span> Registro de Ejercicio
+                    </h2>
+                    <p className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mt-1">{selectedSubmodule?.nombre_tarea}</p>
+                 </header>
+
+                 <div className="space-y-6">
+                    <div>
+                       <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Propuesta / Speech ✨</h4>
+                       <textarea 
+                        value={exerciseSpeech} 
+                        onChange={(e) => setExerciseSpeech(e.target.value)} 
+                        placeholder="Escriba aquí su respuesta o propuesta para el cliente..." 
+                        className="w-full h-32 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"
+                       ></textarea>
+                    </div>
+
+                    <div>
+                       <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Soporte (Documento o Foto) 📂</h4>
+                       <label className={`p-6 rounded-2xl border-2 border-dashed flex flex-col items-center text-center cursor-pointer transition-all ${exerciseFile ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                          <span className="text-3xl mb-2">{exerciseFile ? '✅' : '📤'}</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{exerciseFile ? exerciseFile.name : 'Subir PDF o Imagen'}</span>
+                          <input type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setExerciseFile(e.target.files[0])} />
+                       </label>
+                    </div>
+
+                    <div className="pt-4 flex flex-col gap-3">
+                       {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
+                       <button 
+                        onClick={handleSubmitExercise}
+                        disabled={isUploading}
+                        className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+                       >
+                          {isUploading ? '🚀 ENVIANDO...' : '🚀 Guardar Constancia de Ejercicio'}
+                       </button>
+                    </div>
+                 </div>
               </div>
            </div>
         </div>
