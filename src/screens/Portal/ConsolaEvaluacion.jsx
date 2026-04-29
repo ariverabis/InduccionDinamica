@@ -17,7 +17,7 @@ const getGoogleDriveThumbnail = (url) => {
   return id ? `https://drive.google.com/uc?export=view&id=${id}` : url;
 };
 
-const EvidenciaCard = ({ evidencia, onSave, isSaving }) => {
+const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
   const [nota, setNota] = useState(evidencia.nota_ejercicio ?? '');
   const [feedback, setFeedback] = useState(evidencia.feedback_evaluador ?? '');
   const escNum = evidencia.maestro_escenarios?.numero_escenario;
@@ -86,6 +86,14 @@ const EvidenciaCard = ({ evidencia, onSave, isSaving }) => {
           className="h-10 px-5 bg-indigo-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-40 transition-all whitespace-nowrap"
         >
           ✅ Guardar
+        </button>
+        <button
+          onClick={() => onDelete(evidencia.id)}
+          disabled={isSaving}
+          className="h-10 px-4 bg-red-50 text-red-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-red-100 disabled:opacity-40 transition-all whitespace-nowrap border border-red-100"
+          title="Eliminar evidencia enviada"
+        >
+          🗑️ Eliminar
         </button>
       </div>
     </div>
@@ -273,6 +281,18 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       setMessage('Evaluación de Roleplay guardada.');
       fetchEvidenciasAsesor(selectedAsesor.id);
     } catch (err) { console.error(err); setMessage('Error al guardar nota.'); }
+    finally { setIsSaving(false); setTimeout(() => setMessage(''), 3000); }
+  };
+
+  const handleDeleteRoleplay = async (evidenciaId) => {
+    if (!window.confirm('¿Estás seguro de eliminar este escenario enviado? Esta acción no se puede deshacer.')) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.schema('portal_afv').from('ejercicios_evidencias').delete().eq('id', evidenciaId);
+      if (error) throw error;
+      setMessage('✅ Escenario eliminado correctamente.');
+      fetchEvidenciasAsesor(selectedAsesor.id);
+    } catch (err) { console.error(err); setMessage('❌ Error al eliminar escenario.'); }
     finally { setIsSaving(false); setTimeout(() => setMessage(''), 3000); }
   };
 
@@ -1038,6 +1058,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                             key={ev.id}
                             evidencia={ev}
                             onSave={handleSaveNotaRoleplay}
+                            onDelete={handleDeleteRoleplay}
                             isSaving={isSaving}
                           />
                         ))}
