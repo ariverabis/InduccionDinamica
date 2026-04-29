@@ -10,9 +10,7 @@ const ReporteNotas = ({ onBack }) => {
   // Filtros
   const [filterEmpresa, setFilterEmpresa] = useState('Todas');
   const [filterNotaMin, setFilterNotaMin] = useState(0);
-  const [filterFechaDesde, setFilterFechaDesde] = useState('');
-  const [filterFechaHasta, setFilterFechaHasta] = useState('');
-  const [sortBy, setSortBy] = useState('fecha_desc');
+  const [sortBy, setSortBy] = useState('recientes');
 
   useEffect(() => {
     fetchData();
@@ -31,12 +29,11 @@ const ReporteNotas = ({ onBack }) => {
           nota,
           comentario,
           intento,
-          created_at,
           email_evaluador,
           usuarios!id_asesor(nombre, empresa),
           submodulos_finales!id_submodulo(nombre_tarea, area_tecnica, departamentos(nombre))
         `)
-        .order('created_at', { ascending: false });
+        .order('id', { ascending: false });
 
       if (err) throw err;
 
@@ -45,7 +42,6 @@ const ReporteNotas = ({ onBack }) => {
         nota: r.nota,
         comentario: r.comentario,
         intento: r.intento,
-        fecha: r.created_at,
         email_evaluador: r.email_evaluador,
         nombre_asesor: r.usuarios?.nombre || 'Desconocido',
         empresa: r.usuarios?.empresa || '-',
@@ -66,7 +62,7 @@ const ReporteNotas = ({ onBack }) => {
 
   useEffect(() => {
     applyFilters();
-  }, [filterEmpresa, filterNotaMin, filterFechaDesde, filterFechaHasta, sortBy, data]);
+  }, [filterEmpresa, filterNotaMin, sortBy, data]);
 
   const applyFilters = () => {
     let result = [...data];
@@ -79,17 +75,8 @@ const ReporteNotas = ({ onBack }) => {
       result = result.filter(item => (item.nota || 0) >= filterNotaMin);
     }
 
-    if (filterFechaDesde) {
-      result = result.filter(item => new Date(item.fecha) >= new Date(filterFechaDesde));
-    }
-    if (filterFechaHasta) {
-      const hasta = new Date(filterFechaHasta);
-      hasta.setHours(23, 59, 59);
-      result = result.filter(item => new Date(item.fecha) <= hasta);
-    }
-
     if (sortBy === 'fecha_desc') {
-      result.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      result.sort((a, b) => b.id - a.id);
     } else if (sortBy === 'nota_desc') {
       result.sort((a, b) => (b.nota || 0) - (a.nota || 0));
     } else if (sortBy === 'nombre_asc') {
@@ -226,22 +213,13 @@ const ReporteNotas = ({ onBack }) => {
               className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
             />
           </div>
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Desde</label>
+          <div className="col-span-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Evaluador</label>
             <input
-              type="date"
-              value={filterFechaDesde}
-              onChange={(e) => setFilterFechaDesde(e.target.value)}
+              type="text"
+              placeholder="Filtrar por evaluador..."
               className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Hasta</label>
-            <input
-              type="date"
-              value={filterFechaHasta}
-              onChange={(e) => setFilterFechaHasta(e.target.value)}
-              className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
+              disabled
             />
           </div>
           <div>
@@ -267,7 +245,6 @@ const ReporteNotas = ({ onBack }) => {
                 <th className="px-8 py-6">Empresa</th>
                 <th className="px-8 py-6">Módulo / Tema</th>
                 <th className="px-8 py-6">Dpto.</th>
-                <th className="px-8 py-6">Fecha</th>
                 <th className="px-8 py-6 text-center">Nota</th>
                 <th className="px-8 py-6 print:hidden">Comentario</th>
               </tr>
@@ -299,11 +276,6 @@ const ReporteNotas = ({ onBack }) => {
                     </td>
                     <td className="px-8 py-5">
                       <span className="text-[10px] font-bold text-slate-500">{item.departamento}</span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className="text-xs text-slate-500 font-bold">
-                        {new Date(item.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
                     </td>
                     <td className="px-8 py-5 text-center">
                       {getNotaBadge(item.nota)}
