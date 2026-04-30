@@ -9,30 +9,35 @@ const BRAND_COLORS = {
     primary: '#005596', secondary: '#003d6b', shadow: 'rgba(0, 85, 150, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1bmXEwn5RYCtweAnkaElork_ORQKS--Ai/view?usp=drive_link',
+    examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/febeca.png'
   },
   'Beval': { 
     primary: '#6a9d2d', secondary: '#4d7320', shadow: 'rgba(106, 157, 45, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1uksY-240gWs2UVVLQGQ_b9Km-QdL4i6b/view?usp=drive_link',
+    examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/beval.png'
   },
   'Sillaca': { 
     primary: '#c40062', secondary: '#94004a', shadow: 'rgba(196, 0, 98, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1uSRtt0xtMxRyvcMWONYxKr4fY8Oaba3U/view?usp=sharing',
+    examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/sillaca.png'
   },
   'Cofersa': { 
     primary: '#0078ae', secondary: '#005a83', shadow: 'rgba(0, 120, 174, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link', 
     escenarioLink: 'https://drive.google.com/file/d/11UjAtuypjiA5hcUM7Er-pctDKFnvDNX5/view?usp=sharing',
+    examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScN1ud6O_gCqbJJWbLcBkf25twr_4g3WGgiGsIffnsP-ELdMQ/viewform',
     logo: '/img/Cofersa.png'
   },
   'Mundial de Partes': { 
     primary: '#74a431', secondary: '#567a24', shadow: 'rgba(116, 164, 49, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link', 
     escenarioLink: 'https://drive.google.com/file/d/1EtfklDhUbHA1kvU_Xxf-GBxLBDI9a1-c/view?usp=sharing',
+    examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/Mundial.png'
   }
 };
@@ -623,7 +628,7 @@ const PortalInicio = () => {
              </p>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-10 text-left">
                 {[
-                  { t: 'Evaluación AFV Profesional', l: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform' },
+                  { t: 'Evaluación AFV Profesional', l: currentBrand.examenAfvLink || 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform' },
                   { t: 'Validación de Catálogo Digital', l: 'https://docs.google.com/forms/d/e/1FAIpQLSf-T62I4aMMmt0zcxn5VRaSg8ita_o-XxOa2GK4H4q4qxP8XQ/viewform' },
                   { t: 'Examen Teórico de Terminología', l: 'https://docs.google.com/forms/d/e/1FAIpQLSf33_fV9jqCXODZSyS5af_Rpcv8S4_SThAUK6tACcP7c5OagA/viewform' },
                   { t: 'Valoración de Prácticas Situacionales', l: currentBrand.escenarioLink }
