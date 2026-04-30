@@ -269,7 +269,7 @@ const PortalInicio = () => {
         .upsert({
           id_asesor: userSession.id,
           id_submodulo: selectedSubmodule.id,
-          email_evaluador: 'pending', // Indica que aún no ha sido evaluado
+          email_evaluador: null, // Guardamos como null para no violar la FK, indica que no ha sido evaluado
           nota: 0,
           comentario: JSON.stringify(payload),
           intento: currentIntento
