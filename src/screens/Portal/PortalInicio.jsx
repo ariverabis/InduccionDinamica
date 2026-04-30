@@ -100,9 +100,10 @@ const PortalInicio = () => {
       if (error) throw error;
 
       setOpMessage('✅ ¡Desafío enviado con éxito!');
+      fetchScenarios(); // Recargar la lista para que se muestre como enviado
       setTimeout(() => {
-        setShowRoleplayModal(false);
-        setSelectedEscenario(null);
+        // No cerramos el modal, solo limpiamos el estado del formulario porque ahora se mostrará como "Solo lectura"
+        // setShowRoleplayModal(false);
         setSpeechVentas('');
         setFileCatalogo(null);
         setFileAfv(null);
@@ -138,22 +139,29 @@ const PortalInicio = () => {
   };
 
   const [scenariosList, setScenariosList] = useState([]);
+  const [misEvidencias, setMisEvidencias] = useState([]);
   const [loadingScenarios, setLoadingScenarios] = useState(false);
 
   useEffect(() => {
-    if (selectedCompany) fetchScenarios();
-  }, [selectedCompany]);
+    if (selectedCompany && userSession) fetchScenarios();
+  }, [selectedCompany, userSession]);
 
   const fetchScenarios = async () => {
-    console.log('🎭 [DEBUG] Buscando escenarios para:', selectedCompany);
     setLoadingScenarios(true);
     const { data, error } = await supabase.schema('portal_afv').from('maestro_escenarios')
       .select('*').eq('empresa', selectedCompany).order('numero_escenario', { ascending: true });
     
+    let evidenciasData = [];
+    if (userSession && userSession.rol === 'asesor') {
+      const { data: ev } = await supabase.schema('portal_afv').from('ejercicios_evidencias')
+        .select('*').eq('id_asesor', userSession.id);
+      evidenciasData = ev || [];
+    }
+    
     if (error) console.error('❌ [DEBUG] Error cargando escenarios:', error);
-    console.log('✅ [DEBUG] Escenarios cargados:', data?.length);
     
     setScenariosList(data || []);
+    setMisEvidencias(evidenciasData);
     setLoadingScenarios(false);
   };
 
@@ -660,13 +668,23 @@ const PortalInicio = () => {
                         <div className="flex items-center justify-center h-48 text-slate-300 font-black text-[9px] uppercase tracking-widest animate-pulse">Cargando escenarios...</div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
-                          {scenariosList.map(esc => (
-                            <div key={esc.id} onClick={() => setSelectedEscenario(esc)} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all group relative overflow-hidden">
-                              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block mb-2">Caso #{esc.numero_escenario}</span>
-                              <h4 className="text-xs font-black text-slate-800 uppercase mb-1">{esc.titulo_escenario}</h4>
-                              <p className="text-[10px] text-slate-400 font-medium line-clamp-2">{esc.descripcion_tarea}</p>
-                            </div>
-                          ))}
+                          {scenariosList.map(esc => {
+                            const enviada = misEvidencias.find(e => e.id_escenario === esc.id);
+                            return (
+                              <div key={esc.id} onClick={() => setSelectedEscenario(esc)} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all group relative overflow-hidden flex flex-col">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block">Caso #{esc.numero_escenario}</span>
+                                  {enviada && (
+                                    <span className={`px-2 py-1 rounded-full text-[7px] font-black uppercase ${enviada.nota_ejercicio !== null ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                      {enviada.nota_ejercicio !== null ? `Evaluado: ${enviada.nota_ejercicio}` : 'Enviado'}
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-xs font-black text-slate-800 uppercase mb-1 flex-1">{esc.titulo_escenario}</h4>
+                                <p className="text-[10px] text-slate-400 font-medium line-clamp-2 mt-auto">{esc.descripcion_tarea}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -688,40 +706,98 @@ const PortalInicio = () => {
                           </div>
 
                           <div className="md:col-span-2 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
-                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                                <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas ✨</h4>
-                                <textarea value={speechVentas} onChange={(e) => setSpeechVentas(e.target.value)} placeholder="Escriba su guion aquí..." className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"></textarea>
-                             </div>
+                             {(() => {
+                               const enviada = misEvidencias.find(e => e.id_escenario === selectedEscenario.id);
+                               
+                               if (enviada) {
+                                 return (
+                                   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+                                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-slate-50 rounded-full opacity-50 pointer-events-none"></div>
+                                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 border-b border-slate-100 pb-2">Evidencia Registrada</h4>
+                                     
+                                     <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                                       <h4 className="text-[9px] font-black text-blue-900 uppercase mb-2 opacity-60 tracking-widest">Mi Speech de Ventas Enviado</h4>
+                                       <p className="text-xs text-blue-900 leading-relaxed italic">"{enviada.speech_ventas}"</p>
+                                     </div>
+                                     
+                                     <div className="grid grid-cols-2 gap-3">
+                                       {enviada.pdf_catalogo_url && (
+                                         <button onClick={() => window.open(enviada.pdf_catalogo_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📒 Ver Catálogo</button>
+                                       )}
+                                       {enviada.pdf_afv_url && (
+                                         <button onClick={() => window.open(enviada.pdf_afv_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📱 Ver AFV</button>
+                                       )}
+                                     </div>
+                                     
+                                     {enviada.nota_ejercicio !== null ? (
+                                       <div className="mt-2 p-5 bg-green-50 border border-green-200 rounded-xl relative overflow-hidden">
+                                         <div className="absolute right-0 bottom-0 text-6xl opacity-10 translate-x-4 translate-y-4">🏆</div>
+                                         <div className="flex items-center gap-3 mb-2">
+                                           <span className="bg-green-500 text-white w-10 h-10 flex items-center justify-center rounded-xl font-black text-lg shadow-sm">{enviada.nota_ejercicio}</span>
+                                           <div>
+                                             <h4 className="text-[9px] font-black text-green-900 uppercase tracking-widest">Calificación Final</h4>
+                                             <p className="text-xs font-bold text-green-700">Módulo Completado</p>
+                                           </div>
+                                         </div>
+                                         {enviada.feedback_evaluador && (
+                                           <p className="text-[10px] text-green-800 mt-4 font-medium p-3 bg-green-100/50 rounded-lg">💬 {enviada.feedback_evaluador}</p>
+                                         )}
+                                       </div>
+                                     ) : (
+                                       <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+                                         <span className="text-2xl animate-pulse">⏳</span>
+                                         <div>
+                                           <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">En Revisión</h4>
+                                           <p className="text-[10px] text-amber-700 font-medium">Su escenario ha sido enviado y está esperando evaluación por parte del equipo académico.</p>
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+                                 );
+                               }
 
-                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-dashed border-2">
-                                <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales 📂</h4>
-                                <div className="grid grid-cols-2 gap-3">
-                                   <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                     <span className="text-xl mb-1">{fileCatalogo ? '✅' : '📒'}</span>
-                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
-                                     <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
-                                   </label>
-                                   <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                     <span className="text-xl mb-1">{fileAfv ? '✅' : '📱'}</span>
-                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
-                                     <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
-                                   </label>
-                                </div>
-                             </div>
+                               // Formulario de envío si no se ha enviado nada
+                               return (
+                                 <>
+                                   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                      <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas ✨</h4>
+                                      <textarea value={speechVentas} onChange={(e) => setSpeechVentas(e.target.value)} placeholder="Escriba su guion aquí..." className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"></textarea>
+                                   </div>
+
+                                   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-dashed border-2">
+                                      <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales 📂</h4>
+                                      <div className="grid grid-cols-2 gap-3">
+                                         <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                                           <span className="text-xl mb-1">{fileCatalogo ? '✅' : '📒'}</span>
+                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
+                                           <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
+                                         </label>
+                                         <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                                           <span className="text-xl mb-1">{fileAfv ? '✅' : '📱'}</span>
+                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
+                                           <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
+                                         </label>
+                                      </div>
+                                   </div>
+                                 </>
+                               );
+                             })()}
                           </div>
                        </div>
 
-                       {/* BOTÓN FIJO EN EL PIE DEL MODAL */}
-                       <div className="mt-6 pt-4 border-t flex flex-col gap-3">
-                          {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
-                          <button 
-                            onClick={handleSubmitRoleplay}
-                            disabled={isUploading}
-                            className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
-                          >
-                             {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
-                          </button>
-                       </div>
+                       {/* BOTÓN FIJO EN EL PIE DEL MODAL (Solo si no está enviado) */}
+                       {!misEvidencias.find(e => e.id_escenario === selectedEscenario?.id) && (
+                         <div className="mt-6 pt-4 border-t flex flex-col gap-3">
+                            {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
+                            <button 
+                              onClick={handleSubmitRoleplay}
+                              disabled={isUploading}
+                              className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+                            >
+                               {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
+                            </button>
+                         </div>
+                       )}
                     </div>
                  )}
               </div>
