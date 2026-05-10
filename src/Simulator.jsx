@@ -12,6 +12,8 @@ import { AfvOrders } from './components/Simulator/AfvOrders';
 import { AfvSales } from './components/Simulator/AfvSales';
 import { AfvCollections } from './components/Simulator/AfvCollections';
 import { AfvTax } from './components/Simulator/AfvTax';
+import CatalogApp from './components/Simulator/CatalogApp';
+import SdsApp from './components/Simulator/SdsApp';
 
 function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
