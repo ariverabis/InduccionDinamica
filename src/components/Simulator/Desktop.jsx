@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Desktop = ({ setPantalla, empresaSeleccionada, setEmpresaSeleccionada, setloginUsername, setloginPassword, setloginError, setSubPantallaCatalog }) => {
+const Desktop = ({ setPantalla, empresaSeleccionada, setEmpresaSeleccionada, setloginUsername, setloginPassword, setloginError, setSubPantallaCatalog, setProcesoActivo }) => {
   const allApps = [
     { id: 'febeca', name: 'Febeca', logo: 'logoafv.jpeg', catalogLogo: 'logocatalogofebeca.png', sdsLogo: 'logo sds febeca.jpg', user: 'admin', pass: '1111' },
     { id: 'sillaca', name: 'Sillaca', logo: 'logoafv.jpeg', catalogLogo: 'logocatalogosillaca.png', sdsLogo: 'logo sds sillaca.jpg', user: 'admin', pass: '2222' },
@@ -14,24 +14,49 @@ const Desktop = ({ setPantalla, empresaSeleccionada, setEmpresaSeleccionada, set
     ? allApps.filter(app => app.name.toLowerCase().includes(empresaSeleccionada.toLowerCase()))
     : allApps;
 
+  // 🚀 Determinar qué accesos mostrar según el modo (.env)
+  const appMode = import.meta.env.VITE_APP_MODE || 'todos';
+  const showVentas = appMode === 'todos' || appMode === 'ventas';
+  const showCobranza = appMode === 'todos' || appMode === 'cobranza';
+
   return (
     <div className="flex-1 bg-blue-800 mt-8 rounded-t-2xl p-4 relative overflow-y-auto">
       <div className="relative z-10 grid grid-cols-3 gap-6 mt-6 px-4">
         {apps.map(app => (
           <React.Fragment key={app.id}>
-            {/* AFV Icon */}
-            <div onClick={() => {
-              setEmpresaSeleccionada(app.name);
-              setloginUsername(app.user);
-              setloginPassword(app.pass);
-              setloginError('');
-              setPantalla('config'); // Saltamos el login redundante
-            }} className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
-              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
-                <img src={app.logo} alt={`AFV ${app.name}`} className="w-full h-full object-contain rounded-xl" />
+            {/* AFV VENTAS Icon */}
+            {showVentas && (
+              <div onClick={() => {
+                setEmpresaSeleccionada(app.name);
+                setloginUsername(app.user);
+                setloginPassword(app.pass);
+                setloginError('');
+                setProcesoActivo('ventas');
+                setPantalla('config');
+              }} className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src={app.logo} alt={`AFV Ventas ${app.name}`} className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Ventas</span>
               </div>
-              <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />{app.name}</span>
-            </div>
+            )}
+
+            {/* AFV COBRANZA Icon */}
+            {showCobranza && (
+              <div onClick={() => {
+                setEmpresaSeleccionada(app.name);
+                setloginUsername(app.user);
+                setloginPassword(app.pass);
+                setloginError('');
+                setProcesoActivo('cobranza');
+                setPantalla('config');
+              }} className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg mb-1.5 border border-gray-200">
+                  <img src={app.logo} alt={`AFV Cobranza ${app.name}`} className="w-full h-full object-contain rounded-xl" />
+                </div>
+                <span className="text-[10px] text-white font-bold text-center leading-tight drop-shadow-md">AFV<br />Cobranza</span>
+              </div>
+            )}
 
             {/* Catalog Icon */}
             <div onClick={() => {

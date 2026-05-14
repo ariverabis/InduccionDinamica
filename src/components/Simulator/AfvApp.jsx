@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const AfvConfig = ({ theme, empresaSeleccionada, setPantalla, nivelSeleccionado, setNivelSeleccionado, mostrarComboNivel, setMostrarComboNivel, nombreVendedor }) => {
+export const AfvConfig = ({ theme, empresaSeleccionada, setPantalla, nivelSeleccionado, setNivelSeleccionado, mostrarComboNivel, setMostrarComboNivel, nombreVendedor, procesoActivo, setProcesoActivo }) => {
   return (
     <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col overflow-hidden">
       <div className="p-3 flex items-center justify-between shadow-md border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
@@ -12,6 +12,24 @@ export const AfvConfig = ({ theme, empresaSeleccionada, setPantalla, nivelSelecc
         <div className="border-b-2 border-[#009bba] pb-1">
           <label className="text-[10px] font-bold text-[#009bba]">Nombre del Vendedor</label>
           <p className="text-xs font-semibold text-gray-700 mt-1">{nombreVendedor || 'Alberto Gonzalez'}</p>
+        </div>
+
+        <div className="border-b-2 border-[#009bba] pb-1">
+          <label className="text-[10px] font-bold text-[#009bba]">Proceso Seleccionado</label>
+          <div className="flex gap-2 mt-2">
+            <button 
+              onClick={() => setProcesoActivo('ventas')}
+              className={`flex-1 py-1.5 rounded text-[9px] font-bold transition-colors ${procesoActivo === 'ventas' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+            >
+              VENTAS
+            </button>
+            <button 
+              onClick={() => setProcesoActivo('cobranza')}
+              className={`flex-1 py-1.5 rounded text-[9px] font-bold transition-colors ${procesoActivo === 'cobranza' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+            >
+              COBRANZA
+            </button>
+          </div>
         </div>
 
         <div className="border-b-2 border-gray-300 pb-1 relative">
@@ -53,14 +71,29 @@ export const AfvMenu = ({
     runDemoCobranzaBs,
     runDemoCobranza,
     runDemoRetencion,
-    wrapDemo
+    wrapDemo,
+    procesoActivo
 }) => {
+  const todasLasOpciones = [
+    { label: 'PEDIDOS DEL CATÁLOGO', action: () => setPantalla('pedidos_catalogo'), demoFn: runDemoCatalogo, tipo: 'ventas' },
+    { label: 'GESTIÓN DE VENTAS', action: () => setPantalla('clientes'), demoFn: runDemoGestionVentas, tipo: 'ventas' },
+    { label: 'COBRANZA EN BS', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs, tipo: 'cobranza' },
+    { label: 'COBRANZA EN DÓLARES', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza, tipo: 'cobranza' },
+    { label: 'RETENCIONES DE IVA', action: () => setPantalla('retencion_list'), demoFn: runDemoRetencion, tipo: 'cobranza' }
+  ];
+
+  const opcionesFiltradas = procesoActivo === 'todos' 
+    ? todasLasOpciones 
+    : todasLasOpciones.filter(op => op.tipo === procesoActivo);
+
+  const tituloMenu = procesoActivo === 'cobranza' ? '073 - Cobranza menú' : '073 - Ventas menú';
+
   return (
     <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
       <div className="p-3 flex items-center justify-between shadow-md border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
         <div className="flex items-center gap-2">
           <button onClick={() => setPantalla('config')} className="text-lg leading-none">← </button>
-          <span className="font-bold text-[11px] uppercase tracking-wider">073 - Ventas menú - {empresaSeleccionada}</span>
+          <span className="font-bold text-[11px] uppercase tracking-wider">{tituloMenu} - {empresaSeleccionada}</span>
         </div>
         <span onClick={() => setMostrarSubmenu(!mostrarSubmenu)} className="text-xl leading-none cursor-pointer">⋮</span>
       </div>
@@ -73,13 +106,7 @@ export const AfvMenu = ({
       )}
 
       <div className="p-5 flex flex-col gap-3 flex-1 overflow-y-auto bg-gray-50">
-        {[
-          { label: 'PEDIDOS DEL CATÁLOGO', action: () => setPantalla('pedidos_catalogo'), demoFn: runDemoCatalogo },
-          { label: 'GESTIÓN DE VENTAS', action: () => setPantalla('clientes'), demoFn: runDemoGestionVentas },
-          { label: 'COBRANZA EN BS', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranzaBs },
-          { label: 'COBRANZA EN DÓLARES', action: () => setPantalla('recibo_cliente'), demoFn: runDemoCobranza },
-          { label: 'RETENCIONES DE IVA', action: () => setPantalla('retencion_list'), demoFn: runDemoRetencion }
-        ].map(opcion => (
+        {opcionesFiltradas.map(opcion => (
           <div key={opcion.label} className="flex gap-2 w-full">
             <button
               onClick={opcion.action}

@@ -18,6 +18,8 @@ import SdsApp from './components/Simulator/SdsApp';
 function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
   const [pantalla, setPantalla] = useState('inicio');
+  // 🚀 Modo de aplicación: 'ventas', 'cobranza' o 'todos'
+  const [procesoActivo, setProcesoActivo] = useState(import.meta.env.VITE_APP_MODE || 'todos');
   
   // 🏠 REQUISITO: Cargar la empresa seleccionada desde el Portal
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState(() => {
@@ -241,6 +243,7 @@ function App() {
             setloginPassword={setloginPassword}
             setloginError={setloginError}
             setSubPantallaCatalog={setSubPantallaCatalog}
+            setProcesoActivo={setProcesoActivo}
           />
         )}
 
@@ -290,6 +293,8 @@ function App() {
               const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
               return user.full_name || user.username;
             })()}
+            procesoActivo={procesoActivo}
+            setProcesoActivo={setProcesoActivo}
           />
         )}
 
@@ -307,6 +312,7 @@ function App() {
             runDemoCobranza={runDemoCobranza}
             runDemoRetencion={runDemoRetencion}
             wrapDemo={wrapDemo}
+            procesoActivo={procesoActivo}
           />
         )}
         {/* PROCESO DE PEDIDOS (Modularizado) */}
