@@ -508,6 +508,504 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
   };
 
+  const handleGeneratePDF = () => {
+    if (!selectedAsesor) return;
+
+    const today = new Date().toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Calcular promedio académico y avance de itinerario
+    let sumGrades = 0;
+    let countedSubmodules = 0;
+
+    const gradesTableRows = itinerarioActual.map((it) => {
+      const temasDepto = submodulos.filter(sm => sm.id_departamento === it.id_departamento);
+      return temasDepto.map(sm => {
+        const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
+        const nota = notaExistente?.nota || 0;
+        if (notaExistente) {
+          sumGrades += nota;
+          countedSubmodules++;
+        }
+
+        let detalleTexto = '';
+        if (notaExistente?.comentario?.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(notaExistente.comentario);
+            if (parsed.detalle_evaluacion) {
+              detalleTexto = Object.entries(parsed.detalle_evaluacion)
+                .map(([act, d]) => `${act}: ${d.nota}%`)
+                .join(', ');
+            } else if (parsed.texto) {
+              detalleTexto = parsed.texto;
+            }
+          } catch (e) {
+            detalleTexto = notaExistente.comentario;
+          }
+        } else {
+          detalleTexto = notaExistente?.comentario || 'Sin observaciones.';
+        }
+
+        return `
+          <tr>
+            <td><strong>${it.departamentos?.nombre || 'Depto'}</strong></td>
+            <td>${sm.nombre_tarea}</td>
+            <td class="text-center font-bold">${notaExistente ? `${nota}%` : 'N/A'}</td>
+            <td>${detalleTexto || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }).join('');
+
+    const generalAverage = countedSubmodules > 0 ? (sumGrades / countedSubmodules).toFixed(1) : 'N/A';
+
+    const followupsRows = seguimientos.map(seg => `
+      <tr>
+        <td class="font-mono">${seg.fecha_programada}</td>
+        <td><strong>${seg.actividad}</strong></td>
+        <td class="text-center">
+          <span class="badge ${seg.estado === 'realizado' ? 'badge-success' : 'badge-warning'}">
+            ${seg.estado === 'realizado' ? 'Realizado' : 'Pendiente'}
+          </span>
+        </td>
+        <td>${seg.observacion || 'Sin comentarios cargados.'}</td>
+      </tr>
+    `).join('');
+
+    const incidencesRows = incidencias.map(inc => `
+      <tr>
+        <td class="font-mono">${inc.fecha_reporte}</td>
+        <td class="text-danger font-bold">${inc.descripcion}</td>
+        <td>${inc.observacion || '-'}</td>
+        <td>${inc.recomendaciones || '-'}</td>
+        <td class="text-center">
+          <span class="badge ${inc.estado_seguimiento === 'resuelto' ? 'badge-success' : 'badge-danger'}">
+            ${inc.estado_seguimiento === 'resuelto' ? 'Resuelto' : inc.estado_seguimiento === 'pendiente' ? 'Pendiente' : 'No Aplica'}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
+    if (!printWindow) {
+      alert('Por favor permite las ventanas emergentes (popups) para poder emitir el reporte PDF.');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte Consolidado Onboarding - ${selectedAsesor.nombre}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+          
+          body {
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 40px;
+            font-size: 11px;
+            line-height: 1.5;
+          }
+
+          .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+          }
+          .header-table td {
+            border: none;
+            padding: 0;
+          }
+          .company-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #0f172a;
+            margin: 0;
+          }
+          .report-subtitle {
+            font-size: 10px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 5px;
+            margin-bottom: 0;
+          }
+          .meta-info {
+            text-align: right;
+            font-size: 9px;
+            color: #64748b;
+            font-weight: 500;
+          }
+          .meta-info strong {
+            color: #0f172a;
+          }
+
+          .section-title {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #ffffff;
+            background-color: #0f172a;
+            padding: 8px 12px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+          }
+
+          .grid-profile {
+            display: grid;
+            grid-template-cols: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+          }
+          .profile-item {
+            display: flex;
+            flex-direction: column;
+          }
+          .profile-label {
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+          }
+          .profile-value {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+          }
+
+          table.report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10px;
+          }
+          table.report-table th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 8px;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+          }
+          table.report-table td {
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+          }
+          table.report-table tr:nth-child(even) {
+            background-color: #f8fafc;
+          }
+
+          .text-center { text-align: center !important; }
+          .text-danger { color: #e11d48 !important; }
+          .font-bold { font-weight: 700; }
+          .font-mono { font-family: monospace; font-size: 9px; }
+
+          .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+          }
+          .badge-success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+          .badge-warning { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+          .badge-danger { background-color: #ffe4e6; color: #991b1b; border: 1px solid #fecdd3; }
+
+          .grid-feedback {
+            display: grid;
+            grid-template-cols: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+          }
+          .feedback-card {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+          }
+          .feedback-title {
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #0f172a;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+          }
+          .feedback-content {
+            font-size: 10px;
+            color: #475569;
+            font-style: italic;
+            white-space: pre-line;
+          }
+
+          .summary-box {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+          }
+          .summary-card {
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-align: center;
+          }
+          .summary-label {
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+          }
+          .summary-val {
+            font-size: 20px;
+            font-weight: 900;
+            margin-top: 2px;
+          }
+
+          .signatures-section {
+            margin-top: 60px;
+            display: grid;
+            grid-template-cols: repeat(3, 1fr);
+            gap: 40px;
+            page-break-inside: avoid;
+          }
+          .signature-box {
+            text-align: center;
+            border-top: 1px solid #94a3b8;
+            padding-top: 10px;
+          }
+          .signature-title {
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #64748b;
+          }
+          .signature-name {
+            font-size: 10px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 4px;
+          }
+
+          @media print {
+            body {
+              padding: 0;
+            }
+            .section-title {
+              background-color: #0f172a !important;
+              color: #ffffff !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .summary-card {
+              background-color: #0f172a !important;
+              color: #ffffff !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .badge-success {
+              background-color: #dcfce7 !important;
+              color: #166534 !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .badge-warning {
+              background-color: #fef9c3 !important;
+              color: #854d0e !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .badge-danger {
+              background-color: #ffe4e6 !important;
+              color: #991b1b !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .grid-profile, .feedback-card {
+              background-color: #f8fafc !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        
+        <table class="header-table">
+          <tr>
+            <td>
+              <div style="display: inline-block; font-size: 20px; font-weight: 900; background-color: #0f172a; color: #ffffff; padding: 8px 18px; border-radius: 6px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">
+                ${selectedAsesor.empresa || 'AFV SALES'}
+              </div>
+              <p class="report-subtitle">Informe Consolidado de Onboarding y Seguimiento</p>
+            </td>
+            <td class="meta-info">
+              Fecha de Emisión: <strong>${today}</strong><br>
+              Generado por: <strong>${user.nombre || user.usuario || 'Evaluador Oficial'}</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div class="section-title">1. Ficha del Asesor de Ventas</div>
+        <div class="grid-profile">
+          <div class="profile-item">
+            <span class="profile-label">Asesor Evaluado</span>
+            <span class="profile-value">${selectedAsesor.nombre}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Correo Personal</span>
+            <span class="profile-value">${selectedAsesor.correo || selectedAsesor.usuario}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Correo Corporativo</span>
+            <span class="profile-value">${selectedAsesor.correo_corporativo || 'Sin asignar'}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Empresa / Ramo</span>
+            <span class="profile-value">${selectedAsesor.empresa || 'Febeca'} / ${selectedAsesor.ramo || 'Sin ramo'}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Zona / Ubicación</span>
+            <span class="profile-value">${selectedAsesor.zona || 'N/A'} - ${selectedAsesor.estado || ''}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Teléfono</span>
+            <span class="profile-value">${selectedAsesor.telefono || 'Sin teléfono'}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Fecha de Ingreso</span>
+            <span class="profile-value">${selectedAsesor.fecha_ingreso || 'N/A'}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Estatus General</span>
+            <span class="profile-value">${getAsesorStatus(selectedAsesor).label}</span>
+          </div>
+        </div>
+
+        <div class="section-title">2. Rendimiento Académico y Avance de Itinerario</div>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Departamento</th>
+              <th style="width: 30%;">Tema / Evaluación</th>
+              <th style="width: 15%;" class="text-center">Calificación</th>
+              <th style="width: 30%;">Detalle / Feedback</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${gradesTableRows || '<tr><td colspan="4" class="text-center">No hay registros de calificaciones guardadas.</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="summary-box">
+          <div class="summary-card">
+            <div class="summary-label">Promedio de Inducción</div>
+            <div class="summary-val">${generalAverage}%</div>
+          </div>
+        </div>
+
+        <div class="section-title">3. Plan de Acompañamiento y Seguimiento Comercial en Calle</div>
+        ${seguimientos.length === 0 ? `<p style="font-style: italic; color: #64748b; margin-left: 10px;">No se han programado actividades de acompañamiento comercial en calle o llamadas de seguimiento para este asesor.</p>` : `
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th style="width: 15%;">Fecha</th>
+                <th style="width: 35%;">Actividad / Objetivo</th>
+                <th style="width: 15%;" class="text-center">Estatus</th>
+                <th style="width: 35%;">Observación y Resultado Comercial</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${followupsRows}
+            </tbody>
+          </table>
+        `}
+
+        <div class="section-title">4. Bitácora de Eventualidades e Inconvenientes Reportados</div>
+        ${incidencias.length === 0 ? `<p style="font-style: italic; color: #64748b; margin-left: 10px;">El asesor no registra ningún reporte de eventualidades, incidentes o malas prácticas comerciales.</p>` : `
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th style="width: 12%;">Fecha</th>
+                <th style="width: 25%;">Descripción del Inconveniente</th>
+                <th style="width: 25%;">Análisis del Evaluador</th>
+                <th style="width: 23%;">Medidas Correctivas / Recomendaciones</th>
+                <th style="width: 15%;" class="text-center">Seguimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${incidencesRows}
+            </tbody>
+          </table>
+        `}
+
+        <div class="section-title">5. Conclusión y Recomendaciones Finales</div>
+        <div class="grid-feedback">
+          <div class="feedback-card">
+            <div class="feedback-title">Observación Cualitativa Global</div>
+            <div class="feedback-content">${observacionGlobal || 'Sin observaciones globales registradas.'}</div>
+          </div>
+          <div class="feedback-card">
+            <div class="feedback-title">Recomendaciones del Evaluador</div>
+            <div class="feedback-content">${recomendaciones || 'Sin recomendaciones generales registradas.'}</div>
+          </div>
+        </div>
+
+        <div class="signatures-section">
+          <div class="signature-box">
+            <div class="signature-name">${user.nombre || user.usuario || 'Evaluador Oficial'}</div>
+            <div class="signature-title">Firma del Evaluador</div>
+          </div>
+          <div class="signature-box">
+            <div style="height: 12px;"></div>
+            <div class="signature-title">Firma de Supervisión Comercial</div>
+          </div>
+          <div class="signature-box">
+            <div class="signature-name">${selectedAsesor.nombre}</div>
+            <div class="signature-title">Firma de Conformidad del Asesor</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const fetchInitialData = async () => {
     try {
       setIsLoading(true);
@@ -1240,6 +1738,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                 <div>
                                     <div className="flex items-center gap-4">
                                         <h2 className="text-2xl font-black">{selectedAsesor.nombre}</h2>
+                                        <button 
+                                            onClick={handleGeneratePDF}
+                                            className="bg-white/10 hover:bg-white text-white hover:text-slate-950 border border-white/20 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer"
+                                        >
+                                            📄 Emitir Reporte PDF
+                                        </button>
                                         {user.rol === 'admin' && (
                                             <>
                                               <button 
