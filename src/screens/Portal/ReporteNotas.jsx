@@ -10,6 +10,7 @@ const ReporteNotas = ({ onBack }) => {
   // Filtros
   const [filterEmpresa, setFilterEmpresa] = useState('Todas');
   const [filterNotaMin, setFilterNotaMin] = useState(0);
+  const [filterAsesor, setFilterAsesor] = useState('');
   const [sortBy, setSortBy] = useState('recientes');
 
   useEffect(() => {
@@ -62,7 +63,7 @@ const ReporteNotas = ({ onBack }) => {
 
   useEffect(() => {
     applyFilters();
-  }, [filterEmpresa, filterNotaMin, sortBy, data]);
+  }, [filterEmpresa, filterNotaMin, filterAsesor, sortBy, data]);
 
   const applyFilters = () => {
     let result = [...data];
@@ -73,6 +74,10 @@ const ReporteNotas = ({ onBack }) => {
 
     if (filterNotaMin > 0) {
       result = result.filter(item => (item.nota || 0) >= filterNotaMin);
+    }
+
+    if (filterAsesor.trim() !== '') {
+      result = result.filter(item => (item.nombre_asesor || '').toLowerCase().includes(filterAsesor.toLowerCase()));
     }
 
     if (sortBy === 'fecha_desc') {
@@ -214,12 +219,13 @@ const ReporteNotas = ({ onBack }) => {
             />
           </div>
           <div className="col-span-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Evaluador</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Asesor de Ventas</label>
             <input
               type="text"
-              placeholder="Filtrar por evaluador..."
+              value={filterAsesor}
+              onChange={(e) => setFilterAsesor(e.target.value)}
+              placeholder="Escribe el nombre del asesor..."
               className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
-              disabled
             />
           </div>
           <div>
