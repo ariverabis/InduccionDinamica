@@ -665,8 +665,8 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
           .grid-profile {
             display: grid;
-            grid-template-cols: repeat(3, 1fr);
-            gap: 15px;
+            grid-template-cols: 1fr 1fr;
+            gap: 12px 40px;
             margin-bottom: 20px;
             background-color: #f8fafc;
             padding: 15px;
@@ -880,28 +880,28 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
             <span class="profile-value">${selectedAsesor.nombre}</span>
           </div>
           <div class="profile-item">
-            <span class="profile-label">Correo Personal</span>
-            <span class="profile-value">${selectedAsesor.correo || selectedAsesor.usuario}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Correo Corporativo</span>
-            <span class="profile-value">${selectedAsesor.correo_corporativo || 'Sin asignar'}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Empresa / Ramo</span>
-            <span class="profile-value">${selectedAsesor.empresa || 'Febeca'} / ${selectedAsesor.ramo || 'Sin ramo'}</span>
-          </div>
-          <div class="profile-item">
             <span class="profile-label">Zona / Ubicación</span>
             <span class="profile-value">${selectedAsesor.zona || 'N/A'} - ${selectedAsesor.estado || ''}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Correo Personal</span>
+            <span class="profile-value">${selectedAsesor.correo || selectedAsesor.usuario}</span>
           </div>
           <div class="profile-item">
             <span class="profile-label">Teléfono</span>
             <span class="profile-value">${selectedAsesor.telefono || 'Sin teléfono'}</span>
           </div>
           <div class="profile-item">
+            <span class="profile-label">Correo Corporativo</span>
+            <span class="profile-value">${selectedAsesor.correo_corporativo || 'Sin asignar'}</span>
+          </div>
+          <div class="profile-item">
             <span class="profile-label">Fecha de Ingreso</span>
             <span class="profile-value">${selectedAsesor.fecha_ingreso || 'N/A'}</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Empresa / Ramo</span>
+            <span class="profile-value">${selectedAsesor.empresa || 'Febeca'} / ${selectedAsesor.ramo || 'Sin ramo'}</span>
           </div>
           <div class="profile-item">
             <span class="profile-label">Estatus General</span>
