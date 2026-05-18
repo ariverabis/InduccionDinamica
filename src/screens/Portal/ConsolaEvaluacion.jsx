@@ -874,38 +874,42 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         </table>
 
         <div class="section-title">1. Ficha del Asesor de Ventas</div>
-        <div class="grid-profile">
-          <div class="profile-item">
-            <span class="profile-label">Asesor Evaluado</span>
-            <span class="profile-value">${selectedAsesor.nombre}</span>
+        <div class="grid-profile" style="display: flex !important; justify-content: space-between !important; gap: 40px !important; background-color: #f8fafc !important; padding: 15px !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 20px !important; flex-direction: row !important;">
+          <div style="flex: 1 !important; display: flex !important; flex-direction: column !important; gap: 12px !important;">
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Asesor Evaluado</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.nombre}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Correo Personal</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.correo || selectedAsesor.usuario}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Correo Corporativo</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.correo_corporativo || 'Sin asignar'}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Empresa / Ramo</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.empresa || 'Febeca'} / ${selectedAsesor.ramo || 'Sin ramo'}</span>
+            </div>
           </div>
-          <div class="profile-item">
-            <span class="profile-label">Zona / Ubicación</span>
-            <span class="profile-value">${selectedAsesor.zona || 'N/A'} - ${selectedAsesor.estado || ''}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Correo Personal</span>
-            <span class="profile-value">${selectedAsesor.correo || selectedAsesor.usuario}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Teléfono</span>
-            <span class="profile-value">${selectedAsesor.telefono || 'Sin teléfono'}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Correo Corporativo</span>
-            <span class="profile-value">${selectedAsesor.correo_corporativo || 'Sin asignar'}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Fecha de Ingreso</span>
-            <span class="profile-value">${selectedAsesor.fecha_ingreso || 'N/A'}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Empresa / Ramo</span>
-            <span class="profile-value">${selectedAsesor.empresa || 'Febeca'} / ${selectedAsesor.ramo || 'Sin ramo'}</span>
-          </div>
-          <div class="profile-item">
-            <span class="profile-label">Estatus General</span>
-            <span class="profile-value">${getAsesorStatus(selectedAsesor).label}</span>
+          <div style="flex: 1 !important; display: flex !important; flex-direction: column !important; gap: 12px !important;">
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Zona / Ubicación</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.zona || 'N/A'} - ${selectedAsesor.estado || ''}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Teléfono</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.telefono || 'Sin teléfono'}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Fecha de Ingreso</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.fecha_ingreso || 'N/A'}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Estatus General</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${getAsesorStatus(selectedAsesor).label}</span>
+            </div>
           </div>
         </div>
 
@@ -1081,7 +1085,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
   const calcularNotaFinal = (sm, evalState, notaExistente) => {
     if (!sm.contenido || sm.contenido.length === 0) {
-      return { nota: parseFloat(evalState?.nota !== undefined ? evalState.nota : notaExistente?.nota) || 0, detalle: null, obs: evalState?.obs !== undefined ? evalState.obs : notaExistente?.comentario };
+      const defaultNota = notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : 5;
+      return { 
+        nota: parseFloat(evalState?.nota !== undefined ? evalState.nota : defaultNota) || 0, 
+        detalle: null, 
+        obs: evalState?.obs !== undefined ? evalState.obs : (notaExistente?.comentario || '') 
+      };
     }
     let notaTotal = 0;
     const detalle = {};
@@ -1091,7 +1100,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
     
     sm.contenido.forEach((act, idx) => {
-       let notaItem = 0;
+       let notaItem = 5;
        if (evalState?.notas && evalState.notas[idx] !== undefined) {
           notaItem = parseFloat(evalState.notas[idx]) || 0;
        } else if (parsedExistente?.detalle_evaluacion?.[act.actividad]) {
@@ -1902,7 +1911,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                       <div className="flex flex-col gap-2 w-full mt-4">
                                         {(sm.contenido && sm.contenido.length > 0) ? (
                                            sm.contenido.map((act, idx) => {
-                                              let notaInicial = '';
+                                              let notaInicial = '5';
                                               if (notaExistente?.comentario?.startsWith('{')) {
                                                 try { 
                                                   const p = JSON.parse(notaExistente.comentario);
@@ -1938,7 +1947,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                                 className="w-24 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
                                                 placeholder="Nota (0-10)" 
                                                 max="10"
-                                                defaultValue={notaExistente?.nota || ''}
+                                                defaultValue={notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : '5'}
                                                 onBlur={(e) => {
                                                   const val = parseFloat(e.target.value) || 0;
                                                   setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: val}});
