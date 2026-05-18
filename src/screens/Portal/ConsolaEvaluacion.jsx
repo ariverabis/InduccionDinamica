@@ -129,6 +129,18 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [message, setMessage] = useState('');
   const [notasGuardadas, setNotasGuardadas] = useState([]);
   const [observacionGlobal, setObservacionGlobal] = useState('');
+  const [recomendaciones, setRecomendaciones] = useState('');
+  const [activeSubTab, setActiveSubTab] = useState('evaluacion');
+  const [seguimientos, setSeguimientos] = useState([]);
+  const [incidencias, setIncidencias] = useState([]);
+  const [newSeguimiento, setNewSeguimiento] = useState({ fecha_programada: '', actividad: '' });
+  const [newIncidencia, setNewIncidencia] = useState({ 
+    fecha_reporte: new Date().toISOString().split('T')[0], 
+    descripcion: '', 
+    observacion: '', 
+    recomendaciones: '', 
+    requiere_seguimiento: false 
+  });
   const [evidenciasAsesor, setEvidenciasAsesor] = useState([]);
   const [deptoSeleccionado, setDeptoSeleccionado] = useState('');
   const [responsables, setResponsables] = useState([]);
@@ -215,6 +227,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       fetchNotasAsesor(selectedAsesor.id);
       fetchEvidenciasAsesor(selectedAsesor.id);
       setObservacionGlobal(selectedAsesor.observacion_cualitativa || '');
+      setRecomendaciones(selectedAsesor.recomendaciones || '');
+      fetchSeguimientos(selectedAsesor.id);
+      fetchIncidencias(selectedAsesor.id);
+      setActiveSubTab('evaluacion');
     }
   }, [selectedAsesor]);
 
@@ -323,6 +339,169 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     } catch (err) {
       console.error(err);
       setMessage('❌ Error al guardar la observación.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const fetchSeguimientos = async (asesorId) => {
+    const { data, error } = await supabase
+      .schema('portal_afv')
+      .from('seguimientos')
+      .select('*')
+      .eq('id_asesor', asesorId)
+      .order('fecha_programada', { ascending: true });
+
+    if (!error) {
+      setSeguimientos(data || []);
+    } else {
+      console.error('Error fetching seguimientos:', error);
+    }
+  };
+
+  const fetchIncidencias = async (asesorId) => {
+    const { data, error } = await supabase
+      .schema('portal_afv')
+      .from('incidencias')
+      .select('*')
+      .eq('id_asesor', asesorId)
+      .order('fecha_reporte', { ascending: false });
+
+    if (!error) {
+      setIncidencias(data || []);
+    } else {
+      console.error('Error fetching incidencias:', error);
+    }
+  };
+
+  const handleSaveRecomendaciones = async () => {
+    if (!selectedAsesor) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('usuarios')
+        .update({ recomendaciones })
+        .eq('id', selectedAsesor.id);
+
+      if (error) throw error;
+      setMessage('✅ Recomendaciones guardadas.');
+      
+      setAsesores(prev => prev.map(as => 
+        as.id === selectedAsesor.id 
+          ? { ...as, recomendaciones } 
+          : as
+      ));
+      setSelectedAsesor(prev => ({ ...prev, recomendaciones }));
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al guardar recomendaciones.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleCreateSeguimiento = async () => {
+    if (!selectedAsesor || !newSeguimiento.fecha_programada || !newSeguimiento.actividad.trim()) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('seguimientos')
+        .insert({
+          id_asesor: selectedAsesor.id,
+          fecha_programada: newSeguimiento.fecha_programada,
+          actividad: newSeguimiento.actividad,
+          estado: 'pendiente'
+        });
+
+      if (error) throw error;
+      setMessage('✅ Actividad de seguimiento programada.');
+      setNewSeguimiento({ fecha_programada: '', actividad: '' });
+      fetchSeguimientos(selectedAsesor.id);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al crear seguimiento.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleUpdateSeguimiento = async (segId, estado, observacion) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('seguimientos')
+        .update({ estado, observacion })
+        .eq('id', segId);
+
+      if (error) throw error;
+      setMessage('✅ Seguimiento actualizado.');
+      fetchSeguimientos(selectedAsesor.id);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al actualizar.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleCreateIncidencia = async () => {
+    if (!selectedAsesor || !newIncidencia.descripcion.trim()) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('incidencias')
+        .insert({
+          id_asesor: selectedAsesor.id,
+          fecha_reporte: newIncidencia.fecha_reporte,
+          descripcion: newIncidencia.descripcion,
+          observacion: newIncidencia.observacion,
+          recomendaciones: newIncidencia.recomendaciones,
+          requiere_seguimiento: newIncidencia.requiere_seguimiento,
+          estado_seguimiento: newIncidencia.requiere_seguimiento ? 'pendiente' : 'no_aplica'
+        });
+
+      if (error) throw error;
+      setMessage('✅ Eventualidad reportada.');
+      setNewIncidencia({ 
+        fecha_reporte: new Date().toISOString().split('T')[0], 
+        descripcion: '', 
+        observacion: '', 
+        recomendaciones: '', 
+        requiere_seguimiento: false 
+      });
+      fetchIncidencias(selectedAsesor.id);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al reportar eventualidad.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleUpdateIncidenciaEstado = async (incId, nuevoEstado) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('incidencias')
+        .update({ estado_seguimiento: nuevoEstado })
+        .eq('id', incId);
+
+      if (error) throw error;
+      setMessage('✅ Estado de eventualidad actualizado.');
+      fetchIncidencias(selectedAsesor.id);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al actualizar.');
     } finally {
       setIsSaving(false);
       setTimeout(() => setMessage(''), 3000);
@@ -854,6 +1033,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         const { error } = await supabase.schema('portal_afv').from('usuarios').update({
           nombre: editData.nombre,
           correo: editData.correo,
+          correo_corporativo: editData.correo_corporativo,
           empresa: editData.empresa,
           ramo: editData.ramo,
           estado: editData.estado,
@@ -1086,8 +1266,13 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                     <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest block mb-1">
                                         Inducción en Curso - Intento #{itinerarioActual[0]?.intento}
                                     </span>
-                                    <div className="flex gap-4 text-[9px] text-slate-400 font-medium uppercase tracking-widest">
-                                       <span>📧 {selectedAsesor.correo || selectedAsesor.usuario}</span>
+                                    <div className="flex gap-4 text-[9px] text-slate-400 font-medium uppercase tracking-widest flex-wrap mt-2">
+                                       <span>📧 Personal: {selectedAsesor.correo || selectedAsesor.usuario}</span>
+                                       <span>🏢 Corp: {selectedAsesor.correo_corporativo ? (
+                                         <span className="text-emerald-400 font-bold">{selectedAsesor.correo_corporativo}</span>
+                                       ) : (
+                                         <span className="text-amber-400 font-bold bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">⚠️ Sin Correo Corp</span>
+                                       )}</span>
                                        <span>📍 {selectedAsesor.zona || 'Zona no definida'}</span>
                                        <span>📱 {selectedAsesor.telefono || 'Sin teléfono'}</span>
                                        <span>📅 Ingreso: {selectedAsesor.fecha_ingreso || 'N/A'}</span>
@@ -1105,206 +1290,488 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                     </div>
                   )}
 
-                  {/* OBSERVACIÓN CUALITATIVA GLOBAL */}
-                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4 border-b pb-4">
-                      <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
-                        📝 Observación Cualitativa Global del Asesor
-                      </h3>
-                      <button 
-                        onClick={handleSaveObservacionGlobal}
-                        disabled={isSaving}
-                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-40"
-                      >
-                        💾 Guardar Observación
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium mb-3">
-                      Escribe un comentario general sobre el desempeño, fortalezas y áreas de mejora del asesor durante todo el proceso de inducción.
-                    </p>
-                    <textarea
-                      value={observacionGlobal}
-                      onChange={(e) => setObservacionGlobal(e.target.value)}
-                      placeholder="Ej. El asesor demuestra excelentes habilidades blandas y dominio de televentas, sin embargo, requiere afianzar el conocimiento técnico de retenciones de IVA..."
-                      className="w-full h-28 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
-                    />
+                  {/* NAVEGACIÓN DE PESTAÑAS (TABS) */}
+                  <div className="flex gap-4 border-b border-slate-200 pb-2 mb-6 mt-4">
+                    <button 
+                      onClick={() => setActiveSubTab('evaluacion')}
+                      className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'evaluacion' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >
+                      👥 Evaluaciones del Itinerario
+                    </button>
+                    <button 
+                      onClick={() => setActiveSubTab('seguimiento')}
+                      className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'seguimiento' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >
+                      📈 Seguimiento y Feedback
+                    </button>
+                    <button 
+                      onClick={() => setActiveSubTab('incidencias')}
+                      className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'incidencias' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >
+                      ⚠️ Bitácora de Eventualidades ({incidencias.length})
+                    </button>
                   </div>
 
-                  {/* TEMAS POR DEPARTAMENTO */}
-                  {itinerarioActual.length > 0 && (
-                     <div className="flex justify-end mb-6">
-                        <button 
-                           onClick={handleSaveAllNotas} 
-                           disabled={isSaving}
-                           className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3 active:scale-95"
-                        >
-                           {isSaving ? (
-                              <>
-                                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                 Guardando Todo...
-                              </>
-                           ) : '✅ Guardar Evaluación Completa'}
-                        </button>
-                     </div>
-                  )}
+                  {activeSubTab === 'evaluacion' && (
+                    <div className="space-y-6">
+                      {/* TEMAS POR DEPARTAMENTO */}
+                      {itinerarioActual.length > 0 && (
+                         <div className="flex justify-end mb-6">
+                            <button 
+                               onClick={handleSaveAllNotas} 
+                               disabled={isSaving}
+                               className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3 active:scale-95"
+                            >
+                               {isSaving ? (
+                                  <>
+                                     <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                     Guardando Todo...
+                                  </>
+                               ) : '✅ Guardar Evaluación Completa'}
+                            </button>
+                         </div>
+                      )}
 
-                  {itinerarioActual.map(it => {
-                    const temasDepto = submodulos.filter(sm => sm.id_departamento === it.id_departamento);
-                    return (
-                      <div key={it.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                        <h3 className="text-xs font-black uppercase text-slate-800 mb-6 border-b pb-4">{it.departamentos?.nombre}</h3>
-                        
-                        {temasDepto.length === 0 ? (
-                          <div className="py-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aún no hay temas cargados para este departamento</p>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {temasDepto.map(sm => {
-                              const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
-                              let submission = null;
-                              if (notaExistente?.comentario?.startsWith('{')) {
-                                try {
-                                  const parsed = JSON.parse(notaExistente.comentario);
-                                  if (parsed.type === 'exercise_submission') submission = parsed;
-                                } catch (e) {}
-                              }
+                      {itinerarioActual.map(it => {
+                        const temasDepto = submodulos.filter(sm => sm.id_departamento === it.id_departamento);
+                        return (
+                          <div key={it.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                            <h3 className="text-xs font-black uppercase text-slate-800 mb-6 border-b pb-4">{it.departamentos?.nombre}</h3>
+                            
+                            {temasDepto.length === 0 ? (
+                              <div className="py-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aún no hay temas cargados para este departamento</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {temasDepto.map(sm => {
+                                  const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
+                                  let submission = null;
+                                  if (notaExistente?.comentario?.startsWith('{')) {
+                                    try {
+                                      const parsed = JSON.parse(notaExistente.comentario);
+                                      if (parsed.type === 'exercise_submission') submission = parsed;
+                                    } catch (e) {}
+                                  }
 
-                              return (
-                                <div key={sm.id} className="bg-slate-50 rounded-2xl p-5 border border-slate-50 hover:border-blue-200 transition-all">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <h4 className="text-[10px] font-black uppercase text-slate-700">{sm.nombre_tarea}</h4>
-                                    {sm.area_tecnica && (
-                                      <span className={`text-[6px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
-                                        sm.area_tecnica.includes('VENTAS') ? 'bg-blue-100 text-blue-700' :
-                                        sm.area_tecnica.includes('COBRANZA') ? 'bg-green-100 text-green-700' :
-                                        sm.area_tecnica.includes('CATÁLOGO') ? 'bg-purple-100 text-purple-700' :
-                                        sm.area_tecnica.includes('SKU') ? 'bg-orange-100 text-orange-700' :
-                                        'bg-slate-100 text-slate-600'
-                                      }`}>
-                                        {sm.area_tecnica}
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  {submission && (
-                                    <div className="mb-4 space-y-2">
-                                      <div className="bg-white p-3 rounded-xl border border-slate-100">
-                                        <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1">Propuesta del Asesor:</p>
-                                        <p className="text-[10px] text-slate-600 italic leading-relaxed">"{submission.speech}"</p>
+                                  return (
+                                    <div key={sm.id} className="bg-slate-50 rounded-2xl p-5 border border-slate-50 hover:border-blue-200 transition-all">
+                                      <div className="flex justify-between items-start mb-2">
+                                        <h4 className="text-[10px] font-black uppercase text-slate-700">{sm.nombre_tarea}</h4>
+                                        {sm.area_tecnica && (
+                                          <span className={`text-[6px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                                            sm.area_tecnica.includes('VENTAS') ? 'bg-blue-100 text-blue-700' :
+                                            sm.area_tecnica.includes('COBRANZA') ? 'bg-green-100 text-green-700' :
+                                            sm.area_tecnica.includes('CATÁLOGO') ? 'bg-purple-100 text-purple-700' :
+                                            sm.area_tecnica.includes('SKU') ? 'bg-orange-100 text-orange-700' :
+                                            'bg-slate-100 text-slate-600'
+                                          }`}>
+                                            {sm.area_tecnica}
+                                          </span>
+                                        )}
                                       </div>
-                                      {submission.files && submission.files.length > 0 && (
-                                        <div className="flex gap-2">
-                                          {submission.files.map((f, i) => (
-                                            <button key={i} onClick={() => window.open(f.url, '_blank')} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2">
-                                              📄 Ver Soporte
-                                            </button>
-                                          ))}
+                                      
+                                      {submission && (
+                                        <div className="mb-4 space-y-2">
+                                          <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1">Propuesta del Asesor:</p>
+                                            <p className="text-[10px] text-slate-600 italic leading-relaxed">"{submission.speech}"</p>
+                                          </div>
+                                          {submission.files && submission.files.length > 0 && (
+                                            <div className="flex gap-2">
+                                              {submission.files.map((f, i) => (
+                                                <button key={i} onClick={() => window.open(f.url, '_blank')} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2">
+                                                  📄 Ver Soporte
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
                                         </div>
                                       )}
-                                    </div>
-                                  )}
 
-                                  <div className="flex flex-col gap-2 w-full mt-4">
-                                    {(sm.contenido && sm.contenido.length > 0) ? (
-                                       sm.contenido.map((act, idx) => {
-                                          let notaInicial = '';
-                                          if (notaExistente?.comentario?.startsWith('{')) {
-                                            try { 
-                                              const p = JSON.parse(notaExistente.comentario);
-                                              if (p.detalle_evaluacion?.[act.actividad]) notaInicial = p.detalle_evaluacion[act.actividad].nota;
-                                            } catch(e){}
-                                          }
-                                          return (
-                                            <div key={idx} className="flex items-center gap-2">
-                                                <span className="text-[9px] text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
-                                                <input 
-                                                  type="number" 
-                                                  className="w-14 h-8 bg-white border border-slate-200 rounded-lg text-center font-black text-[10px]" 
-                                                  placeholder="Nota" 
-                                                  max="100"
-                                                  defaultValue={notaInicial}
-                                                  onBlur={(e) => {
-                                                    const val = parseFloat(e.target.value) || 0;
-                                                    const currentEval = evaluaciones[sm.id] || { notas: [] };
-                                                    const newNotas = [...(currentEval.notas || [])];
-                                                    newNotas[idx] = val;
-                                                    setEvaluaciones({...evaluaciones, [sm.id]: {...currentEval, notas: newNotas}});
-                                                  }}
-                                                />
-                                            </div>
-                                          );
-                                       })
-                                    ) : (
-                                       <div className="flex gap-2">
+                                      <div className="flex flex-col gap-2 w-full mt-4">
+                                        {(sm.contenido && sm.contenido.length > 0) ? (
+                                           sm.contenido.map((act, idx) => {
+                                              let notaInicial = '';
+                                              if (notaExistente?.comentario?.startsWith('{')) {
+                                                try { 
+                                                  const p = JSON.parse(notaExistente.comentario);
+                                                  if (p.detalle_evaluacion?.[act.actividad]) notaInicial = p.detalle_evaluacion[act.actividad].nota;
+                                                } catch(e){}
+                                              }
+                                              return (
+                                                <div key={idx} className="flex items-center gap-2">
+                                                    <span className="text-[9px] text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
+                                                    <input 
+                                                      type="number" 
+                                                      className="w-14 h-8 bg-white border border-slate-200 rounded-lg text-center font-black text-[10px]" 
+                                                      placeholder="Nota" 
+                                                      max="100"
+                                                      defaultValue={notaInicial}
+                                                      onBlur={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        const currentEval = evaluaciones[sm.id] || { notas: [] };
+                                                        const newNotas = [...(currentEval.notas || [])];
+                                                        newNotas[idx] = val;
+                                                        setEvaluaciones({...evaluaciones, [sm.id]: {...currentEval, notas: newNotas}});
+                                                      }}
+                                                    />
+                                                </div>
+                                              );
+                                           })
+                                        ) : (
+                                           <div className="flex gap-2">
+                                              <input 
+                                                type="number" 
+                                                className="w-16 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
+                                                placeholder="Nota" 
+                                                max="100"
+                                                defaultValue={notaExistente?.nota || ''}
+                                                onBlur={(e) => {
+                                                  const val = parseFloat(e.target.value) || 0;
+                                                  setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: val}});
+                                                }}
+                                              />
+                                           </div>
+                                        )}
+                                        <div className="flex gap-2 mt-2">
                                           <input 
-                                            type="number" 
-                                            className="w-16 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
-                                            placeholder="Nota" 
-                                            max="100"
-                                            defaultValue={notaExistente?.nota || ''}
-                                            onBlur={(e) => {
-                                              const val = parseFloat(e.target.value) || 0;
-                                              setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: val}});
-                                            }}
+                                            type="text" 
+                                            className="flex-1 px-4 bg-white border border-slate-200 rounded-xl text-[9px] outline-none" 
+                                            placeholder="Feedback del evaluador..." 
+                                            defaultValue={(() => {
+                                                if (submission) return '';
+                                                if (notaExistente?.comentario?.startsWith('{')) {
+                                                   try { return JSON.parse(notaExistente.comentario).texto || ''; } catch(e){}
+                                                }
+                                                return notaExistente?.comentario || '';
+                                            })()}
+                                            onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], obs: e.target.value}})}
                                           />
-                                       </div>
-                                    )}
-                                    <div className="flex gap-2 mt-2">
-                                      <input 
-                                        type="text" 
-                                        className="flex-1 px-4 bg-white border border-slate-200 rounded-xl text-[9px] outline-none" 
-                                        placeholder="Feedback del evaluador..." 
-                                        defaultValue={(() => {
-                                            if (submission) return '';
-                                            if (notaExistente?.comentario?.startsWith('{')) {
-                                               try { return JSON.parse(notaExistente.comentario).texto || ''; } catch(e){}
-                                            }
-                                            return notaExistente?.comentario || '';
-                                        })()}
-                                        onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], obs: e.target.value}})}
-                                      />
-                                      <button onClick={() => handleSaveNota(sm, evaluaciones[sm.id], notaExistente)} className="px-5 h-10 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
+                                          <button onClick={() => handleSaveNota(sm, evaluaciones[sm.id], notaExistente)} className="px-5 h-10 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* ===== SECCIÓN ROLEPLAY DIGITAL ===== */}
+                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                        <div className="flex items-center justify-between mb-6 border-b pb-4">
+                          <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
+                            🎭 Entregas de Roleplay Digital
+                            {evidenciasAsesor.length > 0 && (
+                              <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-[8px] font-black">{evidenciasAsesor.length}</span>
+                            )}
+                          </h3>
+                        </div>
+
+                        {evidenciasAsesor.length === 0 ? (
+                          <div className="py-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sin entregas de Roleplay aún</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {evidenciasAsesor.map((ev) => (
+                              <EvidenciaCard
+                                key={ev.id}
+                                evidencia={ev}
+                                onSave={handleSaveNotaRoleplay}
+                                onDelete={handleDeleteRoleplay}
+                                isSaving={isSaving}
+                              />
+                            ))}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-
-                  {/* ===== SECCIÓN ROLEPLAY DIGITAL ===== */}
-                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-6 border-b pb-4">
-                      <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
-                        🎭 Entregas de Roleplay Digital
-                        {evidenciasAsesor.length > 0 && (
-                          <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-[8px] font-black">{evidenciasAsesor.length}</span>
-                        )}
-                      </h3>
                     </div>
+                  )}
 
-                    {evidenciasAsesor.length === 0 ? (
-                      <div className="py-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sin entregas de Roleplay aún</p>
+                  {activeSubTab === 'seguimiento' && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* OBSERVACIÓN CUALITATIVA GLOBAL */}
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between mb-4 border-b pb-4">
+                              <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
+                                📝 Observación Cualitativa Global
+                              </h3>
+                              <button 
+                                onClick={handleSaveObservacionGlobal}
+                                disabled={isSaving}
+                                className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-40"
+                              >
+                                💾 Guardar
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-medium mb-3">
+                              Desempeño general, fortalezas y áreas de mejora durante todo el proceso.
+                            </p>
+                            <textarea
+                              value={observacionGlobal}
+                              onChange={(e) => setObservacionGlobal(e.target.value)}
+                              placeholder="Ej. El asesor demuestra excelentes habilidades blandas y dominio de televentas..."
+                              className="w-full h-36 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* RECOMENDACIONES GENERALES */}
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between mb-4 border-b pb-4">
+                              <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
+                                💡 Recomendaciones Generales
+                              </h3>
+                              <button 
+                                onClick={handleSaveRecomendaciones}
+                                disabled={isSaving}
+                                className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-40"
+                              >
+                                💾 Guardar
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-medium mb-3">
+                              Consejos accionables y sugerencias estratégicas para el éxito del asesor.
+                            </p>
+                            <textarea
+                              value={recomendaciones}
+                              onChange={(e) => setRecomendaciones(e.target.value)}
+                              placeholder="Ej. Se recomienda realizar acompañamiento en ruta durante su primer mes..."
+                              className="w-full h-36 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {evidenciasAsesor.map((ev) => (
-                          <EvidenciaCard
-                            key={ev.id}
-                            evidencia={ev}
-                            onSave={handleSaveNotaRoleplay}
-                            onDelete={handleDeleteRoleplay}
-                            isSaving={isSaving}
-                          />
-                        ))}
+
+                      {/* PLAN DE SEGUIMIENTO EN EL TIEMPO */}
+                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">🗓️ Plan de Seguimiento Comercial (Llamadas / Acompañamiento en Calle)</h3>
+                        
+                        {/* FORMULARIO AGENDAR */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 bg-slate-50 p-6 rounded-3xl border border-slate-100 items-end">
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha Programada</label>
+                            <input 
+                              type="date"
+                              value={newSeguimiento.fecha_programada}
+                              onChange={(e) => setNewSeguimiento({...newSeguimiento, fecha_programada: e.target.value})}
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Actividad / Objetivo</label>
+                            <input 
+                              type="text"
+                              placeholder="Ej. Llamada de feedback primera semana en calle"
+                              value={newSeguimiento.actividad}
+                              onChange={(e) => setNewSeguimiento({...newSeguimiento, actividad: e.target.value})}
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-medium outline-none"
+                            />
+                          </div>
+                          <button 
+                            onClick={handleCreateSeguimiento}
+                            disabled={isSaving || !newSeguimiento.fecha_programada || !newSeguimiento.actividad.trim()}
+                            className="h-11 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md"
+                          >
+                            ➕ Programar Actividad
+                          </button>
+                        </div>
+
+                        {/* LISTADO DE SEGUIMIENTOS */}
+                        {seguimientos.length === 0 ? (
+                          <p className="text-center py-8 text-xs font-bold text-slate-300 uppercase tracking-wider">No se han agendado actividades de seguimiento.</p>
+                        ) : (
+                          <div className="relative border-l-2 border-slate-100 pl-6 ml-4 space-y-6">
+                            {seguimientos.map((seg) => (
+                              <div key={seg.id} className="relative bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                {/* Dot on timeline */}
+                                <div className={`absolute -left-[31px] top-6 w-3 h-3 rounded-full border-2 border-white ${seg.estado === 'realizado' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                                
+                                <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
+                                  <div>
+                                    <span className="text-[9px] font-mono font-bold text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded">📅 {seg.fecha_programada}</span>
+                                    <h4 className="text-xs font-black text-slate-800 uppercase mt-1">{seg.actividad}</h4>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {seg.estado === 'pendiente' ? (
+                                      <button 
+                                        onClick={() => handleUpdateSeguimiento(seg.id, 'realizado', seg.observacion)}
+                                        className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-100 transition-all"
+                                      >
+                                        ✓ Marcar Realizado
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        onClick={() => handleUpdateSeguimiento(seg.id, 'pendiente', seg.observacion)}
+                                        className="bg-amber-50 text-amber-600 border border-amber-100 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase hover:bg-amber-100 transition-all"
+                                      >
+                                        ↺ Reabrir Pendiente
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="mt-4">
+                                  <label className="text-[8px] font-black uppercase text-slate-400 block mb-1">Observaciones / Resultado en Calle</label>
+                                  <div className="flex gap-2">
+                                    <input 
+                                      type="text"
+                                      placeholder="Ej. Le fue muy bien, concretó 3 visitas pero tiene dudas en el manejo del inventario..."
+                                      defaultValue={seg.observacion || ''}
+                                      onBlur={(e) => seg.observacion = e.target.value}
+                                      className="flex-1 h-9 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none"
+                                    />
+                                    <button 
+                                      onClick={() => handleUpdateSeguimiento(seg.id, seg.estado, seg.observacion)}
+                                      className="px-4 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-slate-800 transition-all"
+                                    >
+                                      Guardar Observación
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {activeSubTab === 'incidencias' && (
+                    <div className="space-y-6">
+                      {/* FORMULARIO DE REPORTE */}
+                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">⚠️ Registrar Nueva Eventualidad o Inconveniente en Calle</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha del Suceso</label>
+                            <input 
+                              type="date"
+                              value={newIncidencia.fecha_reporte}
+                              onChange={(e) => setNewIncidencia({...newIncidencia, fecha_reporte: e.target.value})}
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
+                            />
+                          </div>
+                          <div className="flex items-center h-14 md:mt-2">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input 
+                                type="checkbox"
+                                checked={newIncidencia.requiere_seguimiento}
+                                onChange={(e) => setNewIncidencia({...newIncidencia, requiere_seguimiento: e.target.checked})}
+                                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500"
+                              />
+                              <span className="text-[10px] font-black uppercase text-rose-700 tracking-wider">⚠️ ¿Requiere Seguimiento Preventivo / Plan Especial?</span>
+                            </label>
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Descripción del Inconveniente / Mala Práctica</label>
+                            <textarea 
+                              placeholder="Ej. Incumplimiento de horario de ruta o reporte incorrecto de visitas..."
+                              value={newIncidencia.descripcion}
+                              onChange={(e) => setNewIncidencia({...newIncidencia, descripcion: e.target.value})}
+                              className="w-full h-20 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Observaciones / Análisis del Evaluador</label>
+                            <textarea 
+                              placeholder="Ej. Se conversó con el supervisor de zona..."
+                              value={newIncidencia.observacion}
+                              onChange={(e) => setNewIncidencia({...newIncidencia, observacion: e.target.value})}
+                              className="w-full h-20 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Recomendaciones Correctivas</label>
+                            <textarea 
+                              placeholder="Ej. Reforzar el uso del GPS corporativo..."
+                              value={newIncidencia.recomendaciones}
+                              onChange={(e) => setNewIncidencia({...newIncidencia, recomendaciones: e.target.value})}
+                              className="w-full h-20 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button 
+                            onClick={handleCreateIncidencia}
+                            disabled={isSaving || !newIncidencia.descripcion.trim()}
+                            className="bg-rose-600 text-white px-8 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-md shadow-rose-100 disabled:opacity-40"
+                          >
+                            🚨 Reportar Eventualidad
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* HISTORIAL */}
+                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">⚠️ Bitácora Histórica de Inconvenientes y Plan de Acción</h3>
+                        
+                        {incidencias.length === 0 ? (
+                          <p className="text-center py-8 text-xs font-bold text-slate-300 uppercase tracking-wider">No se han registrado eventualidades en la labor del asesor.</p>
+                        ) : (
+                          <div className="space-y-6">
+                            {incidencias.map((inc) => (
+                              <div key={inc.id} className="bg-rose-50/50 p-6 rounded-[2rem] border border-rose-100 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-5 text-7xl">🚨</div>
+                                
+                                <div className="flex justify-between items-start flex-wrap gap-2 mb-4 border-b border-rose-100/50 pb-3">
+                                  <div>
+                                    <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[8px] font-bold">📅 SUCESO: {inc.fecha_reporte}</span>
+                                  </div>
+                                  
+                                  {inc.requiere_seguimiento ? (
+                                    <div className="flex gap-2 items-center">
+                                      <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-200 text-rose-800 border border-rose-300">
+                                        Requiere Seguimiento
+                                      </span>
+                                      {inc.estado_seguimiento === 'pendiente' ? (
+                                        <button 
+                                          onClick={() => handleUpdateIncidenciaEstado(inc.id, 'resuelto')}
+                                          className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-700 transition-all shadow-sm"
+                                        >
+                                          ✓ Resolver Caso
+                                        </button>
+                                      ) : (
+                                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-[8px] font-black uppercase">
+                                          Resuelto
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">No requiere seguimiento</span>
+                                  )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs mt-2">
+                                  <div className="bg-white p-4 rounded-xl border border-rose-100/30">
+                                    <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-1">Descripción del Incidente:</p>
+                                    <p className="text-slate-700 leading-relaxed font-semibold">{inc.descripcion}</p>
+                                  </div>
+                                  <div className="bg-white p-4 rounded-xl border border-rose-100/30">
+                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Observaciones / Análisis:</p>
+                                    <p className="text-slate-600 leading-relaxed italic">{inc.observacion || 'Ninguna observación cargada.'}</p>
+                                  </div>
+                                  <div className="bg-white p-4 rounded-xl border border-rose-100/30">
+                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Plan de Acción / Recomendaciones:</p>
+                                    <p className="text-slate-600 leading-relaxed italic">{inc.recomendaciones || 'Ninguna sugerencia o recomendación registrada.'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               )}
@@ -1970,8 +2437,8 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
                         />
                     </div>
-                    <div className="col-span-2">
-                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Correo Electrónico</label>
+                    <div className={editType === 'usuario' ? 'col-span-1' : 'col-span-2'}>
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Correo Electrónico (Personal)</label>
                         <input 
                           type="email" 
                           value={editType === 'usuario' ? editData.correo : editData.email_contacto} 
@@ -1979,6 +2446,18 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
                         />
                     </div>
+                    {editType === 'usuario' && (
+                      <div className="col-span-1">
+                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Correo Corporativo</label>
+                          <input 
+                            type="email" 
+                            value={editData.correo_corporativo || ''} 
+                            placeholder="ejemplo@empresa.com"
+                            onChange={(e) => setEditData({ ...editData, correo_corporativo: e.target.value })}
+                            className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                      </div>
+                    )}
                     {editType === 'candidato' && (
                       <div>
                           <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Cédula / ID</label>
