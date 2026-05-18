@@ -537,7 +537,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
             const parsed = JSON.parse(notaExistente.comentario);
             if (parsed.detalle_evaluacion) {
               detalleTexto = Object.entries(parsed.detalle_evaluacion)
-                .map(([act, d]) => `${act}: ${d.nota}%`)
+                .map(([act, d]) => `${act}: ${d.nota}/10`)
                 .join(', ');
             } else if (parsed.texto) {
               detalleTexto = parsed.texto;
@@ -553,7 +553,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
           <tr>
             <td><strong>${it.departamentos?.nombre || 'Depto'}</strong></td>
             <td>${sm.nombre_tarea}</td>
-            <td class="text-center font-bold">${notaExistente ? `${nota}%` : 'N/A'}</td>
+            <td class="text-center font-bold">${notaExistente ? `${nota}/10` : 'N/A'}</td>
             <td>${detalleTexto || '-'}</td>
           </tr>
         `;
@@ -927,7 +927,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         <div class="summary-box">
           <div class="summary-card">
             <div class="summary-label">Promedio de Inducción</div>
-            <div class="summary-val">${generalAverage}%</div>
+            <div class="summary-val">${generalAverage}/10</div>
           </div>
         </div>
 
@@ -1108,9 +1108,15 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
   const handleSaveNota = async (sm, evalState, notaExistente) => {
     if (!selectedAsesor || itinerarioActual.length === 0) return;
-    setIsSaving(true);
     
     const { nota, detalle, obs } = calcularNotaFinal(sm, evalState, notaExistente);
+    if (nota > 10) {
+      setMessage('⚠️ La nota no puede superar los 10 puntos.');
+      setTimeout(() => setMessage(''), 4000);
+      return;
+    }
+    
+    setIsSaving(true);
     let comentarioFinal = obs;
     if (detalle) {
       comentarioFinal = JSON.stringify({ texto: obs, detalle_evaluacion: detalle });
@@ -1148,14 +1154,14 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const handleSaveAllNotas = async () => {
     if (!selectedAsesor || itinerarioActual.length === 0) return;
     
-    // Validamos que ninguna nota pase de 100
+    // Validamos que ninguna nota pase de 10
     const notasInvalidas = Object.keys(evaluaciones).some(id => {
        const evalItem = evaluaciones[id];
-       if (evalItem.notas) return evalItem.notas.some(n => parseFloat(n) > 100);
-       return parseFloat(evalItem.nota) > 100;
+       if (evalItem.notas) return evalItem.notas.some(n => parseFloat(n) > 10);
+       return parseFloat(evalItem.nota) > 10;
     });
     if (notasInvalidas) {
-      setMessage('⚠️ Hay notas mayores a 100. Por favor rertifíquelas.');
+      setMessage('⚠️ Hay notas mayores a 10. Por favor rectifíquelas.');
       setTimeout(() => setMessage(''), 4000);
       return;
     }
@@ -1908,9 +1914,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                                     <span className="text-[9px] text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
                                                     <input 
                                                       type="number" 
+                                                      step="any"
                                                       className="w-14 h-8 bg-white border border-slate-200 rounded-lg text-center font-black text-[10px]" 
-                                                      placeholder="Nota" 
-                                                      max="100"
+                                                      placeholder="Nota (0-10)" 
+                                                      max="10"
                                                       defaultValue={notaInicial}
                                                       onBlur={(e) => {
                                                         const val = parseFloat(e.target.value) || 0;
@@ -1927,9 +1934,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                            <div className="flex gap-2">
                                               <input 
                                                 type="number" 
-                                                className="w-16 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
-                                                placeholder="Nota" 
-                                                max="100"
+                                                step="any"
+                                                className="w-24 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
+                                                placeholder="Nota (0-10)" 
+                                                max="10"
                                                 defaultValue={notaExistente?.nota || ''}
                                                 onBlur={(e) => {
                                                   const val = parseFloat(e.target.value) || 0;
