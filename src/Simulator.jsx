@@ -18,6 +18,7 @@ import SdsApp from './components/Simulator/SdsApp';
 function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
   const [pantalla, setPantalla] = useState('inicio');
+  
   // 🚀 Modo de aplicación: 'ventas', 'cobranza' o 'todos'
   const [procesoActivo, setProcesoActivo] = useState(import.meta.env.VITE_APP_MODE || 'todos');
   
@@ -372,49 +373,7 @@ function App() {
           setMostrarAfvCalc={setMostrarAfvCalc}
         />
 
-        {/* PROCESO DE COBRANZAS (Modularizado) */}
-        <AfvCollections 
-          theme={theme}
-          empresaSeleccionada={empresaSeleccionada}
-          setPantalla={setPantalla}
-          pantalla={pantalla}
-          formaPago={formaPago}
-          setFormaPago={setFormaPago}
-          mostrarFormaPagoCombo={mostrarFormaPagoCombo}
-          setMostrarFormaPagoCombo={setMostrarFormaPagoCombo}
-          mostrarModalRecibo={mostrarModalRecibo}
-          setMostrarModalRecibo={setMostrarModalRecibo}
-          mostrarSoporte={mostrarSoporte}
-          setMostrarSoporte={setMostrarSoporte}
-          mostrarLupa={mostrarLupa}
-          setMostrarLupa={setMostrarLupa}
-        />
-
-        {/* PROCESO DE RETENCIONES (Modularizado) */}
-        <AfvTax 
-          theme={theme}
-          empresaSeleccionada={empresaSeleccionada}
-          setPantalla={setPantalla}
-          pantalla={pantalla}
-          retencionesLista={retencionesLista}
-          retencionTipo={retencionTipo}
-          setRetencionTipo={setRetencionTipo}
-          retencionMetodo={retencionMetodo}
-          setRetencionMetodo={setRetencionMetodo}
-          mostrarComboRetencion={mostrarComboRetencion}
-          setMostrarComboRetencion={setMostrarComboRetencion}
-          retencionFecha={retencionFecha}
-          setRetencionFecha={setRetencionFecha}
-          mostrarCalendario={mostrarCalendario}
-          setMostrarCalendario={setMostrarCalendario}
-          retencionPeriodo={retencionPeriodo}
-          setRetencionPeriodo={setRetencionPeriodo}
-          retencionSecuencia={retencionSecuencia}
-          setRetencionSecuencia={setRetencionSecuencia}
-          retencionMonto={retencionMonto}
-          setRetencionMonto={setRetencionMonto}
-          setRetencionesLista={setRetencionesLista}
-        />
+        {/* PROCESO DE PEDIDOS (Modularizado) */}
 
         {/* BARRA SAMSUNG DE NAVEGACIÓN */}
         <div className="h-12 bg-white flex items-center justify-center gap-14 border-t border-gray-100">

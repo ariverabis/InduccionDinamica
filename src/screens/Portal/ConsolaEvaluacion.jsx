@@ -14,7 +14,7 @@ const getGoogleDriveThumbnail = (url) => {
     id = url.split('/file/d/')[1].split('/')[0];
   }
   
-  return id ? `https://drive.google.com/uc?export=view&id=${id}` : url;
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w800` : url;
 };
 
 const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
@@ -122,7 +122,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   
   const [masterEscenarios, setMasterEscenarios] = useState({});
   const [activeCompanyEscenarios, setActiveCompanyEscenarios] = useState('Febeca');
-  const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '', horas: '', es_interno: false });
+  const [newSubmodulo, setNewSubmodulo] = useState({ nombre: '', descripcion: '', horas: '', es_interno: false, contenido: [], recursos: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -365,15 +365,49 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     return 0;
   };
 
-  const handleSaveNota = async (submoduloId, nota, comentario) => {
+  const calcularNotaFinal = (sm, evalState, notaExistente) => {
+    if (!sm.contenido || sm.contenido.length === 0) {
+      return { nota: parseFloat(evalState?.nota !== undefined ? evalState.nota : notaExistente?.nota) || 0, detalle: null, obs: evalState?.obs !== undefined ? evalState.obs : notaExistente?.comentario };
+    }
+    let notaTotal = 0;
+    const detalle = {};
+    let parsedExistente = null;
+    if (notaExistente?.comentario?.startsWith('{')) {
+      try { parsedExistente = JSON.parse(notaExistente.comentario); } catch(e){}
+    }
+    
+    sm.contenido.forEach((act, idx) => {
+       let notaItem = 0;
+       if (evalState?.notas && evalState.notas[idx] !== undefined) {
+          notaItem = parseFloat(evalState.notas[idx]) || 0;
+       } else if (parsedExistente?.detalle_evaluacion?.[act.actividad]) {
+          notaItem = parseFloat(parsedExistente.detalle_evaluacion[act.actividad].nota) || 0;
+       }
+       const peso = parseFloat(act.peso) || 0;
+       notaTotal += (notaItem * (peso / 100));
+       detalle[act.actividad] = { nota: notaItem, peso: peso };
+    });
+    
+    const obsFinal = evalState?.obs !== undefined ? evalState.obs : (parsedExistente?.texto || notaExistente?.comentario || '');
+    return { nota: parseFloat(notaTotal.toFixed(2)), detalle, obs: obsFinal };
+  };
+
+  const handleSaveNota = async (sm, evalState, notaExistente) => {
     if (!selectedAsesor || itinerarioActual.length === 0) return;
     setIsSaving(true);
+    
+    const { nota, detalle, obs } = calcularNotaFinal(sm, evalState, notaExistente);
+    let comentarioFinal = obs;
+    if (detalle) {
+      comentarioFinal = JSON.stringify({ texto: obs, detalle_evaluacion: detalle });
+    }
+
     const payload = {
       id_asesor: selectedAsesor.id,
-      id_submodulo: submoduloId,
+      id_submodulo: sm.id,
       email_evaluador: user.usuario,
-      nota: parseFloat(nota) || 0,
-      comentario: comentario || '',
+      nota: nota,
+      comentario: comentarioFinal,
       intento: itinerarioActual[0].intento
     };
 
@@ -400,25 +434,37 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const handleSaveAllNotas = async () => {
     if (!selectedAsesor || itinerarioActual.length === 0) return;
     
-    // Validamos que ninguna nota pase de 99
-    const notasInvalidas = Object.values(evaluaciones).some(e => parseFloat(e.nota) > 99);
+    // Validamos que ninguna nota pase de 100
+    const notasInvalidas = Object.keys(evaluaciones).some(id => {
+       const evalItem = evaluaciones[id];
+       if (evalItem.notas) return evalItem.notas.some(n => parseFloat(n) > 100);
+       return parseFloat(evalItem.nota) > 100;
+    });
     if (notasInvalidas) {
-      setMessage('⚠️ Hay notas mayores a 99. Por favor rertifíquelas.');
+      setMessage('⚠️ Hay notas mayores a 100. Por favor rertifíquelas.');
       setTimeout(() => setMessage(''), 4000);
       return;
     }
 
-    // Filtramos solo los que tienen nota
-    const payloads = Object.keys(evaluaciones)
-      .filter(id => evaluaciones[id].nota !== undefined && evaluaciones[id].nota !== '')
-      .map(id => ({
-        id_asesor: selectedAsesor.id,
-        id_submodulo: id,
-        email_evaluador: user.usuario,
-        nota: parseFloat(evaluaciones[id].nota) || 0,
-        comentario: evaluaciones[id].obs || '',
-        intento: itinerarioActual[0].intento
-      }));
+    // Filtramos y calculamos payloads
+    const payloads = Object.keys(evaluaciones).map(id => {
+        const sm = submodulos.find(s => s.id == id);
+        if(!sm) return null;
+        const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
+        const { nota, detalle, obs } = calcularNotaFinal(sm, evaluaciones[id], notaExistente);
+        
+        let comentarioFinal = obs;
+        if (detalle) comentarioFinal = JSON.stringify({ texto: obs, detalle_evaluacion: detalle });
+
+        return {
+          id_asesor: selectedAsesor.id,
+          id_submodulo: id,
+          email_evaluador: user.usuario,
+          nota: nota,
+          comentario: comentarioFinal,
+          intento: itinerarioActual[0].intento
+        };
+    }).filter(p => p !== null);
 
     if (payloads.length === 0) {
       setMessage('No hay notas nuevas para guardar.');
@@ -489,7 +535,9 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         descripcion: newSubmodulo.descripcion,
         duracion_horas: newSubmodulo.horas,
         id_departamento: departamento.id,
-        es_interno: newSubmodulo.es_interno
+        es_interno: newSubmodulo.es_interno,
+        contenido: newSubmodulo.contenido,
+        recursos: newSubmodulo.recursos
       }]);
       if (error) throw error;
       setMessage('Tema guardado con éxito.');
@@ -512,7 +560,9 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         nombre_tarea: newSubmodulo.nombre,
         descripcion: newSubmodulo.descripcion,
         duracion_horas: newSubmodulo.horas,
-        es_interno: newSubmodulo.es_interno
+        es_interno: newSubmodulo.es_interno,
+        contenido: newSubmodulo.contenido,
+        recursos: newSubmodulo.recursos
       }).eq('id', isEditingSub);
       
       if (error) throw error;
@@ -869,12 +919,23 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                 {/* FOTO DE PERFIL EN EVALUACIÓN */}
                                 <div className="w-20 h-20 rounded-[2rem] bg-slate-800 border-2 border-slate-700 overflow-hidden shadow-2xl flex items-center justify-center">
                                     {selectedAsesor.foto_url ? (
-                                        <img 
-                                          src={getGoogleDriveThumbnail(selectedAsesor.foto_url)} 
-                                          alt="Perfil" 
-                                          className="w-full h-full object-cover" 
-                                          onError={(e) => e.target.style.display = 'none'}
-                                        />
+                                        <a href={selectedAsesor.foto_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative group">
+                                            <img 
+                                              src={getGoogleDriveThumbnail(selectedAsesor.foto_url)} 
+                                              alt="Perfil" 
+                                              className="w-full h-full object-cover transition-opacity" 
+                                              onError={(e) => {
+                                                  e.target.style.display = 'none';
+                                                  if(e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                                              }}
+                                            />
+                                            <div className="absolute inset-0 items-center justify-center text-2xl font-black text-blue-400 bg-slate-800" style={{ display: 'none' }}>
+                                                {selectedAsesor.nombre?.substring(0,1)}
+                                            </div>
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-300" title="Ver Foto Original">
+                                                <span className="text-xl">🔗</span>
+                                            </div>
+                                        </a>
                                     ) : (
                                         <span className="text-2xl font-black text-blue-400">{selectedAsesor.nombre?.substring(0,1)}</span>
                                     )}
@@ -1002,30 +1063,67 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                     </div>
                                   )}
 
-                                  <div className="flex gap-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-16 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
-                                      placeholder="Nota" 
-                                      max="99"
-                                      defaultValue={notaExistente?.nota || ''}
-                                      onBlur={(e) => {
-                                        const val = parseFloat(e.target.value);
-                                        if (val > 99) {
-                                            alert("La nota no puede ser mayor a 99.");
-                                            e.target.value = 99;
-                                        }
-                                        setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: e.target.value}})
-                                      }}
-                                    />
-                                    <input 
-                                      type="text" 
-                                      className="flex-1 px-4 bg-white border border-slate-200 rounded-xl text-[9px] outline-none" 
-                                      placeholder="Feedback del evaluador..." 
-                                      defaultValue={submission ? '' : (notaExistente?.comentario || '')}
-                                      onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], obs: e.target.value}})}
-                                    />
-                                    <button onClick={() => handleSaveNota(sm.id, evaluaciones[sm.id]?.nota || notaExistente?.nota, evaluaciones[sm.id]?.obs || (submission ? '' : notaExistente?.comentario))} className="px-5 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
+                                  <div className="flex flex-col gap-2 w-full mt-4">
+                                    {(sm.contenido && sm.contenido.length > 0) ? (
+                                       sm.contenido.map((act, idx) => {
+                                          let notaInicial = '';
+                                          if (notaExistente?.comentario?.startsWith('{')) {
+                                            try { 
+                                              const p = JSON.parse(notaExistente.comentario);
+                                              if (p.detalle_evaluacion?.[act.actividad]) notaInicial = p.detalle_evaluacion[act.actividad].nota;
+                                            } catch(e){}
+                                          }
+                                          return (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                <span className="text-[9px] text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
+                                                <input 
+                                                  type="number" 
+                                                  className="w-14 h-8 bg-white border border-slate-200 rounded-lg text-center font-black text-[10px]" 
+                                                  placeholder="Nota" 
+                                                  max="100"
+                                                  defaultValue={notaInicial}
+                                                  onBlur={(e) => {
+                                                    const val = parseFloat(e.target.value) || 0;
+                                                    const currentEval = evaluaciones[sm.id] || { notas: [] };
+                                                    const newNotas = [...(currentEval.notas || [])];
+                                                    newNotas[idx] = val;
+                                                    setEvaluaciones({...evaluaciones, [sm.id]: {...currentEval, notas: newNotas}});
+                                                  }}
+                                                />
+                                            </div>
+                                          );
+                                       })
+                                    ) : (
+                                       <div className="flex gap-2">
+                                          <input 
+                                            type="number" 
+                                            className="w-16 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
+                                            placeholder="Nota" 
+                                            max="100"
+                                            defaultValue={notaExistente?.nota || ''}
+                                            onBlur={(e) => {
+                                              const val = parseFloat(e.target.value) || 0;
+                                              setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: val}});
+                                            }}
+                                          />
+                                       </div>
+                                    )}
+                                    <div className="flex gap-2 mt-2">
+                                      <input 
+                                        type="text" 
+                                        className="flex-1 px-4 bg-white border border-slate-200 rounded-xl text-[9px] outline-none" 
+                                        placeholder="Feedback del evaluador..." 
+                                        defaultValue={(() => {
+                                            if (submission) return '';
+                                            if (notaExistente?.comentario?.startsWith('{')) {
+                                               try { return JSON.parse(notaExistente.comentario).texto || ''; } catch(e){}
+                                            }
+                                            return notaExistente?.comentario || '';
+                                        })()}
+                                        onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], obs: e.target.value}})}
+                                      />
+                                      <button onClick={() => handleSaveNota(sm, evaluaciones[sm.id], notaExistente)} className="px-5 h-10 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -1091,16 +1189,27 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                        <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
                              <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
-                                {nota.foto_url ? (
-                                    <img 
-                                      src={getGoogleDriveThumbnail(nota.foto_url)} 
-                                      alt="Foto" 
-                                      className="w-full h-full object-cover" 
-                                      onError={(e) => e.target.style.display = 'none'}
-                                    />
-                                ) : (
-                                    <span className="text-slate-400 text-xs font-black">{nota.nombre_apellido?.substring(0,1)}</span>
-                                )}
+                                 {nota.foto_url ? (
+                                    <a href={nota.foto_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative group">
+                                        <img 
+                                          src={getGoogleDriveThumbnail(nota.foto_url)} 
+                                          alt="Foto" 
+                                          className="w-full h-full object-cover transition-opacity" 
+                                          onError={(e) => {
+                                              e.target.style.display = 'none';
+                                              if(e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 items-center justify-center bg-slate-100 text-slate-400 text-xs font-black" style={{ display: 'none' }}>
+                                            {nota.nombre_apellido?.substring(0,1)}
+                                        </div>
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300" title="Ver Foto Original">
+                                            <span className="text-sm">🔗</span>
+                                        </div>
+                                    </a>
+                                 ) : (
+                                     <span className="text-slate-400 text-xs font-black">{nota.nombre_apellido?.substring(0,1)}</span>
+                                 )}
                              </div>
                              <div>
                                 <p className="text-xs font-bold text-slate-800">{nota.nombre_apellido}</p>
@@ -1371,6 +1480,30 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Horas</label>
                     <input type="number" className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Ej: 2" value={newSubmodulo.horas} onChange={(e) => setNewSubmodulo({...newSubmodulo, horas: e.target.value})}/>
                   </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Recursos (Enlaces / Descargables)</label>
+                    <textarea className="w-full h-20 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-400 transition-all resize-none" placeholder="- Presentación\n- Manual del AFV..." value={newSubmodulo.recursos || ''} onChange={(e) => setNewSubmodulo({...newSubmodulo, recursos: e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex justify-between items-center">
+                       Contenido Evaluado (Actividades)
+                       <button onClick={() => setNewSubmodulo({...newSubmodulo, contenido: [...(newSubmodulo.contenido||[]), {actividad:'', peso:0}]})} className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[8px] hover:bg-blue-200">+ Añadir</button>
+                    </label>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                       {(newSubmodulo.contenido || []).map((act, idx) => (
+                         <div key={idx} className="flex gap-2 items-center">
+                            <input type="text" placeholder="Actividad..." className="flex-1 h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px]" value={act.actividad} onChange={(e) => { const n = [...newSubmodulo.contenido]; n[idx].actividad = e.target.value; setNewSubmodulo({...newSubmodulo, contenido: n}); }} />
+                            <input type="number" placeholder="Peso %" className="w-16 h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] text-center" value={act.peso} onChange={(e) => { const n = [...newSubmodulo.contenido]; n[idx].peso = e.target.value; setNewSubmodulo({...newSubmodulo, contenido: n}); }} />
+                            <button onClick={() => { const n = [...newSubmodulo.contenido]; n.splice(idx,1); setNewSubmodulo({...newSubmodulo, contenido: n}); }} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                         </div>
+                       ))}
+                       {newSubmodulo.contenido?.length > 0 && (
+                          <div className={`text-[9px] font-black text-right ${newSubmodulo.contenido.reduce((acc, a) => acc + (parseFloat(a.peso)||0), 0) !== 100 ? 'text-orange-500' : 'text-green-500'}`}>
+                             Total Peso: {newSubmodulo.contenido.reduce((acc, a) => acc + (parseFloat(a.peso)||0), 0)}%
+                          </div>
+                       )}
+                    </div>
+                  </div>
                   <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
                     <input 
                       type="checkbox" 
@@ -1392,7 +1525,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                   </button>
                   {isEditingSub && (
                     <button 
-                      onClick={() => { setIsEditingSub(null); setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false }); }} 
+                      onClick={() => { setIsEditingSub(null); setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false, contenido: [], recursos: '' }); }} 
                       className="w-full h-10 text-slate-400 font-bold uppercase text-[10px] hover:text-slate-600"
                     >
                       Cancelar Edición
@@ -1444,7 +1577,9 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                               nombre: sub.nombre_tarea,
                               descripcion: sub.descripcion || '',
                               horas: sub.duracion_horas || '',
-                              es_interno: sub.es_interno || false
+                              es_interno: sub.es_interno || false,
+                              contenido: sub.contenido || [],
+                              recursos: sub.recursos || ''
                             });
                             // Asegurar que el departamento esté seleccionado
                             setDeptoSeleccionado(sub.id_departamento);

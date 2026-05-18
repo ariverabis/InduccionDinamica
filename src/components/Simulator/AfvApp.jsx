@@ -14,23 +14,26 @@ export const AfvConfig = ({ theme, empresaSeleccionada, setPantalla, nivelSelecc
           <p className="text-xs font-semibold text-gray-700 mt-1">{nombreVendedor || 'Alberto Gonzalez'}</p>
         </div>
 
-        <div className="border-b-2 border-[#009bba] pb-1">
-          <label className="text-[10px] font-bold text-[#009bba]">Proceso Seleccionado</label>
-          <div className="flex gap-2 mt-2">
-            <button 
-              onClick={() => setProcesoActivo('ventas')}
-              className={`flex-1 py-1.5 rounded text-[9px] font-bold transition-colors ${procesoActivo === 'ventas' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
-            >
-              VENTAS
-            </button>
-            <button 
-              onClick={() => setProcesoActivo('cobranza')}
-              className={`flex-1 py-1.5 rounded text-[9px] font-bold transition-colors ${procesoActivo === 'cobranza' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
-            >
-              COBRANZA
-            </button>
+        {/* Solo mostrar el selector si estamos en modo 'todos' */}
+        {import.meta.env.VITE_APP_MODE === 'todos' && (
+          <div className="border-b-2 border-[#009bba] pb-1">
+            <label className="text-[10px] font-bold text-[#009bba]">Proceso Seleccionado</label>
+            <div className="flex gap-2 mt-2">
+              <button 
+                onClick={() => setProcesoActivo('ventas')}
+                className={`flex-1 py-1.5 rounded text-[9px] font-bold transition-colors ${procesoActivo === 'ventas' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+              >
+                VENTAS
+              </button>
+              <button 
+                onClick={() => setProcesoActivo('cobranza')}
+                className={`flex-1 py-1.5 rounded text-[9px] font-bold transition-colors ${procesoActivo === 'cobranza' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+              >
+                COBRANZA
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="border-b-2 border-gray-300 pb-1 relative">
           <label className="text-[10px] font-bold text-gray-500">Zona de Venta</label>
@@ -53,8 +56,7 @@ export const AfvConfig = ({ theme, empresaSeleccionada, setPantalla, nivelSelecc
       </div>
 
       <div className="p-4 flex gap-4 bg-white border-t border-gray-100">
-        <button onClick={() => setPantalla('escritorio')} className="flex-1 bg-[#ccc] py-2.5 rounded text-[11px] font-bold text-gray-700 shadow-sm active:bg-gray-400">SALIR</button>
-        <button onClick={() => setPantalla('menu')} className="flex-1 bg-[#ccc] py-2.5 rounded text-[11px] font-bold text-gray-700 shadow-sm active:bg-gray-400">SIGUIENTE</button>
+        <button onClick={() => setPantalla('menu')} className="flex-1 bg-blue-600 py-3 rounded text-[12px] font-bold text-white shadow-md active:bg-blue-700">INICIAR SIMULACIÓN DE VENTAS</button>
       </div>
     </div>
   );
@@ -100,8 +102,12 @@ export const AfvMenu = ({
 
       {mostrarSubmenu && (
         <div className="absolute right-2 top-12 bg-white shadow-2xl rounded border border-gray-200 z-50 w-48 overflow-hidden">
-          <button onClick={() => { setMostrarSubmenu(false); setPantalla('menu'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 border-b border-gray-100">Ventas</button>
-          <button onClick={() => { setMostrarSubmenu(false); setPantalla('recibo_cliente'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100">Cobranza</button>
+          {(import.meta.env.VITE_APP_MODE === 'todos' || import.meta.env.VITE_APP_MODE === 'ventas') && (
+            <button onClick={() => { setMostrarSubmenu(false); setPantalla('menu'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 border-b border-gray-100">Ventas</button>
+          )}
+          {(import.meta.env.VITE_APP_MODE === 'todos' || import.meta.env.VITE_APP_MODE === 'cobranza') && (
+            <button onClick={() => { setMostrarSubmenu(false); setPantalla('recibo_cliente'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100">Cobranza</button>
+          )}
         </div>
       )}
 
