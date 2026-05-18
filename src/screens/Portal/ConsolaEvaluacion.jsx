@@ -128,6 +128,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [notasGuardadas, setNotasGuardadas] = useState([]);
+  const [observacionGlobal, setObservacionGlobal] = useState('');
   const [evidenciasAsesor, setEvidenciasAsesor] = useState([]);
   const [deptoSeleccionado, setDeptoSeleccionado] = useState('');
   const [responsables, setResponsables] = useState([]);
@@ -213,6 +214,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       fetchItinerarioAsesor(selectedAsesor.id);
       fetchNotasAsesor(selectedAsesor.id);
       fetchEvidenciasAsesor(selectedAsesor.id);
+      setObservacionGlobal(selectedAsesor.observacion_cualitativa || '');
     }
   }, [selectedAsesor]);
 
@@ -295,6 +297,36 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       fetchEvidenciasAsesor(selectedAsesor.id);
     } catch (err) { console.error(err); setMessage('❌ Error al eliminar escenario.'); }
     finally { setIsSaving(false); setTimeout(() => setMessage(''), 3000); }
+  };
+
+  const handleSaveObservacionGlobal = async () => {
+    if (!selectedAsesor) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('usuarios')
+        .update({ observacion_cualitativa: observacionGlobal })
+        .eq('id', selectedAsesor.id);
+
+      if (error) throw error;
+
+      setMessage('✅ Observación global guardada con éxito.');
+      
+      setAsesores(prev => prev.map(as => 
+        as.id === selectedAsesor.id 
+          ? { ...as, observacion_cualitativa: observacionGlobal } 
+          : as
+      ));
+      
+      setSelectedAsesor(prev => ({ ...prev, observacion_cualitativa: observacionGlobal }));
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al guardar la observación.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   const fetchInitialData = async () => {
@@ -1072,6 +1104,31 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                         </div>
                     </div>
                   )}
+
+                  {/* OBSERVACIÓN CUALITATIVA GLOBAL */}
+                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4 border-b pb-4">
+                      <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
+                        📝 Observación Cualitativa Global del Asesor
+                      </h3>
+                      <button 
+                        onClick={handleSaveObservacionGlobal}
+                        disabled={isSaving}
+                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-40"
+                      >
+                        💾 Guardar Observación
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium mb-3">
+                      Escribe un comentario general sobre el desempeño, fortalezas y áreas de mejora del asesor durante todo el proceso de inducción.
+                    </p>
+                    <textarea
+                      value={observacionGlobal}
+                      onChange={(e) => setObservacionGlobal(e.target.value)}
+                      placeholder="Ej. El asesor demuestra excelentes habilidades blandas y dominio de televentas, sin embargo, requiere afianzar el conocimiento técnico de retenciones de IVA..."
+                      className="w-full h-28 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
+                    />
+                  </div>
 
                   {/* TEMAS POR DEPARTAMENTO */}
                   {itinerarioActual.length > 0 && (
