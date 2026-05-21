@@ -14,7 +14,18 @@ const getGoogleDriveThumbnail = (url) => {
     id = url.split('/file/d/')[1].split('/')[0];
   }
   
-  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w800` : url;
+  return id ? `https://lh3.googleusercontent.com/d/${id}` : url;
+};
+
+const parseDateForSort = (as) => {
+  if (as.fecha_ingreso) {
+    const parts = as.fecha_ingreso.trim().split('/');
+    if (parts.length === 3) {
+      const ts = new Date(parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:00').getTime();
+      if (!isNaN(ts)) return ts;
+    }
+  }
+  return as.created_at ? new Date(as.created_at).getTime() : 0;
 };
 
 const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
@@ -139,8 +150,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     descripcion: '', 
     observacion: '', 
     recomendaciones: '', 
-    requiere_seguimiento: false 
+    requiere_seguimiento: false,
+    clasificacion: 'Otros'
   });
+  const [editingIncidencia, setEditingIncidencia] = useState(null);
   const [evidenciasAsesor, setEvidenciasAsesor] = useState([]);
   const [deptoSeleccionado, setDeptoSeleccionado] = useState('');
   const [responsables, setResponsables] = useState([]);
@@ -154,6 +167,16 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [editType, setEditType] = useState(null); // 'usuario' | 'candidato'
   const [editData, setEditData] = useState({});
   const [isEditingSub, setIsEditingSub] = useState(null); // ID del submodulo en edición
+
+  // Estados para Evaluación de Imagen Personal
+  const [imagenPersonal, setImagenPersonal] = useState({
+    afeitado: '',
+    vestimenta: '',
+    cabello: '',
+    lenguaje: '',
+    actitud: '',
+    observaciones: ''
+  });
 
   // Estados para Mantenimiento de Departamentos
   const [todosDeptos, setTodosDeptos] = useState([]);
@@ -231,6 +254,22 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       fetchSeguimientos(selectedAsesor.id);
       fetchIncidencias(selectedAsesor.id);
       setActiveSubTab('evaluacion');
+      // Cargar Imagen Personal desde observacion_cualitativa
+      try {
+        const raw = selectedAsesor.observacion_cualitativa || '';
+        if (raw.startsWith('{')) {
+          const parsed = JSON.parse(raw);
+          if (parsed.imagen_personal) {
+            setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: '', ...parsed.imagen_personal });
+          } else {
+            setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: raw });
+          }
+        } else {
+          setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: raw });
+        }
+      } catch(e) {
+        setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: '' });
+      }
     }
   }, [selectedAsesor]);
 
@@ -339,6 +378,37 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     } catch (err) {
       console.error(err);
       setMessage('❌ Error al guardar la observación.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleSaveImagenPersonal = async () => {
+    if (!selectedAsesor) return;
+    setIsSaving(true);
+    try {
+      // Leer el valor actual de observacion_cualitativa para no pisar texto plano
+      let currentRaw = selectedAsesor.observacion_cualitativa || '';
+      let baseObj = {};
+      if (currentRaw.startsWith('{')) {
+        try { baseObj = JSON.parse(currentRaw); } catch(e) {}
+      }
+      const newValue = JSON.stringify({ ...baseObj, imagen_personal: imagenPersonal });
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('usuarios')
+        .update({ observacion_cualitativa: newValue })
+        .eq('id', selectedAsesor.id);
+      if (error) throw error;
+      setMessage('✅ Evaluación de Imagen Personal guardada.');
+      setAsesores(prev => prev.map(as =>
+        as.id === selectedAsesor.id ? { ...as, observacion_cualitativa: newValue } : as
+      ));
+      setSelectedAsesor(prev => ({ ...prev, observacion_cualitativa: newValue }));
+    } catch(err) {
+      console.error(err);
+      setMessage('❌ Error al guardar la evaluación de imagen personal.');
     } finally {
       setIsSaving(false);
       setTimeout(() => setMessage(''), 3000);
@@ -461,7 +531,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         .insert({
           id_asesor: selectedAsesor.id,
           fecha_reporte: newIncidencia.fecha_reporte,
-          descripcion: newIncidencia.descripcion,
+          descripcion: `[${newIncidencia.clasificacion || 'Otros'}] ${newIncidencia.descripcion}`,
           observacion: newIncidencia.observacion,
           recomendaciones: newIncidencia.recomendaciones,
           requiere_seguimiento: newIncidencia.requiere_seguimiento,
@@ -475,7 +545,8 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         descripcion: '', 
         observacion: '', 
         recomendaciones: '', 
-        requiere_seguimiento: false 
+        requiere_seguimiento: false,
+        clasificacion: 'Otros'
       });
       fetchIncidencias(selectedAsesor.id);
     } catch (err) {
@@ -508,8 +579,78 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
   };
 
-  const handleGeneratePDF = () => {
+  const handleDeleteIncidencia = async (incId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta eventualidad del historial?')) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('incidencias')
+        .delete()
+        .eq('id', incId);
+
+      if (error) throw error;
+      setMessage('🗑️ Eventualidad eliminada del historial.');
+      fetchIncidencias(selectedAsesor.id);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al eliminar la eventualidad.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleUpdateIncidencia = async (incId, updatedData) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('incidencias')
+        .update({
+          fecha_reporte: updatedData.fecha_reporte,
+          descripcion: `[${updatedData.clasificacion || 'Otros'}] ${updatedData.descripcion}`,
+          observacion: updatedData.observacion,
+          recomendaciones: updatedData.recomendaciones,
+          requiere_seguimiento: updatedData.requiere_seguimiento,
+          estado_seguimiento: updatedData.requiere_seguimiento ? updatedData.estado_seguimiento : 'no_aplica'
+        })
+        .eq('id', incId);
+
+      if (error) throw error;
+      setMessage('✅ Eventualidad actualizada con éxito.');
+      setEditingIncidencia(null);
+      fetchIncidencias(selectedAsesor.id);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al actualizar la eventualidad.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const fetchImageAsBase64 = async (url) => {
+    try {
+      const response = await fetch(url, { referrerPolicy: 'no-referrer' });
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const handleGeneratePDF = async () => {
     if (!selectedAsesor) return;
+
+    let fotoBase64 = null;
+    if (selectedAsesor.foto_url) {
+      fotoBase64 = await fetchImageAsBase64(selectedAsesor.foto_url);
+    }
 
     const today = new Date().toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -523,7 +664,15 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
     const gradesTableRows = itinerarioActual.map((it) => {
       const temasDepto = submodulos.filter(sm => sm.id_departamento === it.id_departamento);
-      return temasDepto.map(sm => {
+      const deptoNombre = it.departamentos?.nombre || 'Departamento';
+      const headerRow = `
+        <tr>
+          <td colspan="3" style="background-color:#1e293b; color:#ffffff; font-weight:900; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; padding:8px 12px; border:none;">
+            📂 ${deptoNombre}
+          </td>
+        </tr>
+      `;
+      const temaRows = temasDepto.map(sm => {
         const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
         const nota = notaExistente?.nota || 0;
         if (notaExistente) {
@@ -551,13 +700,13 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
         return `
           <tr>
-            <td><strong>${it.departamentos?.nombre || 'Depto'}</strong></td>
             <td>${sm.nombre_tarea}</td>
             <td class="text-center font-bold">${notaExistente ? `${nota}/10` : 'N/A'}</td>
             <td>${detalleTexto || '-'}</td>
           </tr>
         `;
       }).join('');
+      return headerRow + temaRows;
     }).join('');
 
     const generalAverage = countedSubmodules > 0 ? (sumGrades / countedSubmodules).toFixed(1) : 'N/A';
@@ -575,19 +724,47 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       </tr>
     `).join('');
 
-    const incidencesRows = incidencias.map(inc => `
-      <tr>
-        <td class="font-mono">${inc.fecha_reporte}</td>
-        <td class="text-danger font-bold">${inc.descripcion}</td>
-        <td>${inc.observacion || '-'}</td>
-        <td>${inc.recomendaciones || '-'}</td>
-        <td class="text-center">
-          <span class="badge ${inc.estado_seguimiento === 'resuelto' ? 'badge-success' : 'badge-danger'}">
-            ${inc.estado_seguimiento === 'resuelto' ? 'Resuelto' : inc.estado_seguimiento === 'pendiente' ? 'Pendiente' : 'No Aplica'}
-          </span>
-        </td>
-      </tr>
-    `).join('');
+    const incidencesRows = incidencias.map(inc => {
+      let clasif = 'Otros';
+      let descReal = inc.descripcion || '';
+      if (descReal.startsWith('[')) {
+        const match = descReal.match(/^\[(.*?)\]\s*(.*)$/);
+        if (match) {
+          clasif = match[1];
+          descReal = match[2];
+        }
+      }
+      return `
+        <tr>
+          <td class="font-mono">${inc.fecha_reporte}</td>
+          <td>
+            <span class="badge" style="background-color: ${
+              clasif === 'Mala Práctica' ? '#fee2e2' :
+              clasif === 'Problema Técnico' ? '#dbeafe' :
+              clasif === 'Ausencia / Tardanza' ? '#f3e8ff' :
+              clasif === 'Inconveniente en Calle' ? '#ffedd5' :
+              clasif === 'Reclamo de Cliente' ? '#fef9c3' : '#f1f5f9'
+            }; color: ${
+              clasif === 'Mala Práctica' ? '#b91c1c' :
+              clasif === 'Problema Técnico' ? '#1d4ed8' :
+              clasif === 'Ausencia / Tardanza' ? '#7e22ce' :
+              clasif === 'Inconveniente en Calle' ? '#c2410c' :
+              clasif === 'Reclamo de Cliente' ? '#a16207' : '#475569'
+            }; display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: 900; margin-bottom: 4px; text-transform: uppercase;">
+              ${clasif}
+            </span>
+            <div style="font-weight: bold; color: #1e293b;">${descReal}</div>
+          </td>
+          <td>${inc.observacion || '-'}</td>
+          <td>${inc.recomendaciones || '-'}</td>
+          <td class="text-center">
+            <span class="badge ${inc.estado_seguimiento === 'resuelto' ? 'badge-success' : 'badge-danger'}">
+              ${inc.estado_seguimiento === 'resuelto' ? 'Resuelto' : inc.estado_seguimiento === 'pendiente' ? 'Pendiente' : 'No Aplica'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     const printWindow = window.open('', '_blank', 'width=900,height=800');
     if (!printWindow) {
@@ -874,7 +1051,13 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         </table>
 
         <div class="section-title">1. Ficha del Asesor de Ventas</div>
-        <div class="grid-profile" style="display: flex !important; justify-content: space-between !important; gap: 40px !important; background-color: #f8fafc !important; padding: 15px !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 20px !important; flex-direction: row !important;">
+        <div class="grid-profile" style="display: flex !important; align-items: center !important; gap: 30px !important; background-color: #f8fafc !important; padding: 15px !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 20px !important; flex-direction: row !important;">
+          <div style="flex-shrink: 0 !important;">
+            ${fotoBase64 ? 
+              `<img src="${fotoBase64}" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid #0f172a;" />` : 
+              `<div style="width:90px; height:90px; border-radius:50%; background:#0f172a; color:#fff; font-size:32px; font-weight:900; text-align: center; line-height: 90px; display: inline-block;">${selectedAsesor.nombre?.charAt(0).toUpperCase() || '?'}</div>`
+            }
+          </div>
           <div style="flex: 1 !important; display: flex !important; flex-direction: column !important; gap: 12px !important;">
             <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
               <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Asesor Evaluado</span>
@@ -917,14 +1100,13 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         <table class="report-table">
           <thead>
             <tr>
-              <th style="width: 25%;">Departamento</th>
-              <th style="width: 30%;">Tema / Evaluación</th>
+              <th style="width: 40%;">Tema / Evaluación</th>
               <th style="width: 15%;" class="text-center">Calificación</th>
-              <th style="width: 30%;">Detalle / Feedback</th>
+              <th style="width: 45%;">Detalle / Feedback</th>
             </tr>
           </thead>
           <tbody>
-            ${gradesTableRows || '<tr><td colspan="4" class="text-center">No hay registros de calificaciones guardadas.</td></tr>'}
+            ${gradesTableRows || '<tr><td colspan="3" class="text-center">No hay registros de calificaciones guardadas.</td></tr>'}
           </tbody>
         </table>
 
@@ -970,7 +1152,38 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
           </table>
         `}
 
-        <div class="section-title">5. Conclusión y Recomendaciones Finales</div>
+        <div class="section-title">5. Evaluación de Imagen Personal y Presentación</div>
+        ${(() => {
+          const criterios = [
+            { key: 'afeitado', label: 'Afeitado e Higiene Facial' },
+            { key: 'vestimenta', label: 'Vestimenta y Limpieza' },
+            { key: 'cabello', label: 'Cabello y Presentación General' },
+            { key: 'lenguaje', label: 'Lenguaje y Comunicación Verbal' },
+            { key: 'actitud', label: 'Actitud y Postura Corporal' },
+          ];
+          const hayDatos = criterios.some(c => imagenPersonal[c.key]);
+          if (!hayDatos && !imagenPersonal.observaciones) {
+            return `<p style="font-style: italic; color: #64748b; margin-left: 10px;">No se registró evaluación de imagen personal para este asesor.</p>`;
+          }
+          const rows = criterios.map(({ key, label }) => {
+            const val = imagenPersonal[key] || 'Sin evaluar';
+            const bg = val === 'Cumple' ? '#d1fae5' : val === 'Parcialmente' ? '#fef3c7' : val === 'No Cumple' ? '#fee2e2' : '#f1f5f9';
+            const color = val === 'Cumple' ? '#065f46' : val === 'Parcialmente' ? '#92400e' : val === 'No Cumple' ? '#991b1b' : '#475569';
+            return `<tr>
+              <td><strong>${label}</strong></td>
+              <td class="text-center"><span style="background:${bg}; color:${color}; padding:3px 10px; border-radius:6px; font-weight:900; font-size:9px; text-transform:uppercase;">${val}</span></td>
+            </tr>`;
+          }).join('');
+          return `
+            <table class="report-table" style="margin-bottom:10px;">
+              <thead><tr><th style="width:70%;">Criterio de Presentación</th><th style="width:30%;" class="text-center">Valoración</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+            ${imagenPersonal.observaciones ? `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-top:8px; font-size:10px;"><strong>Observaciones adicionales:</strong> ${imagenPersonal.observaciones}</div>` : ''}
+          `;
+        })()}
+
+        <div class="section-title">6. Conclusión y Recomendaciones Finales</div>
         <div class="grid-feedback">
           <div class="feedback-card">
             <div class="feedback-title">Observación Cualitativa Global</div>
@@ -1032,7 +1245,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
           *,
           itinerarios_induccion(*),
           notas_por_submodulo(*)
-        `).eq('rol', 'asesor').order('nombre', { ascending: true });
+        `).eq('rol', 'asesor').order('created_at', { ascending: false });
         
         // Si es evaluador, solo ve asesores de SU empresa
         if (user.rol === 'evaluador' && user.empresa) {
@@ -1040,14 +1253,11 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         }
         
         const { data: listaAsesores } = await queryAsesores;
-        setAsesores(listaAsesores || []);
+        const sortedList = (listaAsesores || []).sort((a, b) => parseDateForSort(b) - parseDateForSort(a));
+        setAsesores(sortedList);
 
-        // Si es administrador, carga TODOS los temas para poder ver cualquier itinerario
+        // Carga todos los temas para poder ver cualquier itinerario y calcular el estatus correctamente
         let queryTemas = supabase.schema('portal_afv').from('submodulos_finales').select('*');
-        if (user.rol === 'evaluador' && deptoParaCarga?.id) {
-          queryTemas = queryTemas.eq('id_departamento', deptoParaCarga.id);
-        }
-        
         const { data: listaSub } = await queryTemas;
         setSubmodulos(listaSub || []);
       } else if (viewMode === 'automatico') {
@@ -1085,7 +1295,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
   const calcularNotaFinal = (sm, evalState, notaExistente) => {
     if (!sm.contenido || sm.contenido.length === 0) {
-      const defaultNota = notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : 5;
+      const defaultNota = notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : 0;
       return { 
         nota: parseFloat(evalState?.nota !== undefined ? evalState.nota : defaultNota) || 0, 
         detalle: null, 
@@ -1100,7 +1310,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
     
     sm.contenido.forEach((act, idx) => {
-       let notaItem = 5;
+       let notaItem = 0;
        if (evalState?.notas && evalState.notas[idx] !== undefined) {
           notaItem = parseFloat(evalState.notas[idx]) || 0;
        } else if (parsedExistente?.detalle_evaluacion?.[act.actividad]) {
@@ -1390,10 +1600,11 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       *,
       itinerarios_induccion(*),
       notas_por_submodulo(*)
-    `).eq('rol', 'asesor').order('nombre', { ascending: true });
+    `).eq('rol', 'asesor').order('created_at', { ascending: false });
     setResponsables(evData || []);
     setTodosLosEvaluadores(evUsers || []);
-    setAsesores(asUsers || []);
+    const sortedAsUsers = (asUsers || []).sort((a, b) => parseDateForSort(b) - parseDateForSort(a));
+    setAsesores(sortedAsUsers);
   };
 
   const formatInductionDate = (as) => {
@@ -1636,7 +1847,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
             <div className="col-span-3">
               <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm flex flex-col max-h-[80vh]">
                 <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
-                  <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Asesores Activos</h3>
+                  <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Asesores Activos</h3>
                   <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[8px] font-black">
                     {asesores.length}
                   </span>
@@ -1665,14 +1876,14 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           className={`p-4 cursor-pointer border-b border-slate-100 transition-all ${selectedAsesor?.id === as.id ? 'bg-blue-50 border-l-4 border-l-blue-600 shadow-sm' : 'hover:bg-slate-50'}`}
                         >
                           <div className="flex justify-between items-start mb-1 gap-2">
-                            <h3 className="text-xs font-bold text-slate-800 leading-tight flex-1">{as.nombre}</h3>
+                            <h3 className="text-sm font-bold text-slate-800 leading-tight flex-1">{as.nombre}</h3>
                             <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider border shrink-0 ${status.color}`}>
                               {status.label}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                          <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
                             <span>{as.empresa || 'Independiente'}</span>
-                            <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex items-center gap-1 font-mono text-[7px] border border-slate-200">
+                            <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex items-center gap-1 font-mono text-[10px] border border-slate-200">
                               📅 {formatInductionDate(as)}
                             </span>
                           </div>
@@ -1733,6 +1944,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                             <img 
                                               src={getGoogleDriveThumbnail(selectedAsesor.foto_url)} 
                                               alt="Perfil" 
+                                              referrerPolicy="no-referrer"
                                               className="w-full h-full object-cover transition-opacity" 
                                               onError={(e) => {
                                                   e.target.style.display = 'none';
@@ -1810,24 +2022,30 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                   )}
 
                   {/* NAVEGACIÓN DE PESTAÑAS (TABS) */}
-                  <div className="flex gap-4 border-b border-slate-200 pb-2 mb-6 mt-4">
+                  <div className="flex flex-wrap gap-3 border-b border-slate-200 pb-2 mb-6 mt-4">
                     <button 
                       onClick={() => setActiveSubTab('evaluacion')}
-                      className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'evaluacion' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'evaluacion' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     >
                       👥 Evaluaciones del Itinerario
                     </button>
                     <button 
                       onClick={() => setActiveSubTab('seguimiento')}
-                      className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'seguimiento' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'seguimiento' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     >
                       📈 Seguimiento y Feedback
                     </button>
                     <button 
                       onClick={() => setActiveSubTab('incidencias')}
-                      className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'incidencias' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'incidencias' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     >
                       ⚠️ Bitácora de Eventualidades ({incidencias.length})
+                    </button>
+                    <button 
+                      onClick={() => setActiveSubTab('imagen_personal')}
+                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'imagen_personal' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >
+                      🪒 Imagen Personal
                     </button>
                   </div>
 
@@ -1855,7 +2073,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                         const temasDepto = submodulos.filter(sm => sm.id_departamento === it.id_departamento);
                         return (
                           <div key={it.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                            <h3 className="text-xs font-black uppercase text-slate-800 mb-6 border-b pb-4">{it.departamentos?.nombre}</h3>
+                            <h3 className="text-sm font-black uppercase text-slate-800 mb-6 border-b pb-4">{it.departamentos?.nombre}</h3>
                             
                             {temasDepto.length === 0 ? (
                               <div className="py-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
@@ -1876,7 +2094,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                   return (
                                     <div key={sm.id} className="bg-slate-50 rounded-2xl p-5 border border-slate-50 hover:border-blue-200 transition-all">
                                       <div className="flex justify-between items-start mb-2">
-                                        <h4 className="text-[10px] font-black uppercase text-slate-700">{sm.nombre_tarea}</h4>
+                                        <h4 className="text-xs font-black uppercase text-slate-700">{sm.nombre_tarea}</h4>
                                         {sm.area_tecnica && (
                                           <span className={`text-[6px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
                                             sm.area_tecnica.includes('VENTAS') ? 'bg-blue-100 text-blue-700' :
@@ -1911,7 +2129,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                       <div className="flex flex-col gap-2 w-full mt-4">
                                         {(sm.contenido && sm.contenido.length > 0) ? (
                                            sm.contenido.map((act, idx) => {
-                                              let notaInicial = '5';
+                                              let notaInicial = '';
                                               if (notaExistente?.comentario?.startsWith('{')) {
                                                 try { 
                                                   const p = JSON.parse(notaExistente.comentario);
@@ -1920,7 +2138,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                               }
                                               return (
                                                 <div key={idx} className="flex items-center gap-2">
-                                                    <span className="text-[9px] text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
+                                                    <span className="text-xs text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
                                                     <input 
                                                       type="number" 
                                                       step="any"
@@ -1947,7 +2165,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                                 className="w-24 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
                                                 placeholder="Nota (0-10)" 
                                                 max="10"
-                                                defaultValue={notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : '5'}
+                                                defaultValue={notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : ''}
                                                 onBlur={(e) => {
                                                   const val = parseFloat(e.target.value) || 0;
                                                   setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: val}});
@@ -2171,7 +2389,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
                         <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">⚠️ Registrar Nueva Eventualidad o Inconveniente en Calle</h3>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
                           <div>
                             <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha del Suceso</label>
                             <input 
@@ -2181,7 +2399,22 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                               className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
                             />
                           </div>
-                          <div className="flex items-center h-14 md:mt-2">
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Clasificación de Eventualidad</label>
+                            <select
+                              value={newIncidencia.clasificacion || 'Otros'}
+                              onChange={(e) => setNewIncidencia({...newIncidencia, clasificacion: e.target.value})}
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
+                            >
+                              <option value="Mala Práctica">⚠️ Mala Práctica Comercial</option>
+                              <option value="Problema Técnico">⚙️ Problema Técnico / AFV</option>
+                              <option value="Ausencia / Tardanza">🕒 Ausencia / Tardanza Ruta</option>
+                              <option value="Inconveniente en Calle">🚗 Inconveniente en Calle</option>
+                              <option value="Reclamo de Cliente">💬 Reclamo de Cliente</option>
+                              <option value="Otros">📦 Otros</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center h-14 md:mt-4">
                             <label className="flex items-center gap-2 cursor-pointer select-none">
                               <input 
                                 type="checkbox"
@@ -2189,10 +2422,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                 onChange={(e) => setNewIncidencia({...newIncidencia, requiere_seguimiento: e.target.checked})}
                                 className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500"
                               />
-                              <span className="text-[10px] font-black uppercase text-rose-700 tracking-wider">⚠️ ¿Requiere Seguimiento Preventivo / Plan Especial?</span>
+                              <span className="text-[10px] font-black uppercase text-rose-700 tracking-wider">⚠️ ¿Requiere Seguimiento Preventivo?</span>
                             </label>
                           </div>
-                          <div className="col-span-2">
+                          <div className="col-span-1 md:col-span-3">
                             <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Descripción del Inconveniente / Mala Práctica</label>
                             <textarea 
                               placeholder="Ej. Incumplimiento de horario de ruta o reporte incorrecto de visitas..."
@@ -2201,7 +2434,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                               className="w-full h-20 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
                             />
                           </div>
-                          <div>
+                          <div className="col-span-1 md:col-span-1.5">
                             <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Observaciones / Análisis del Evaluador</label>
                             <textarea 
                               placeholder="Ej. Se conversó con el supervisor de zona..."
@@ -2210,7 +2443,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                               className="w-full h-20 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
                             />
                           </div>
-                          <div>
+                          <div className="col-span-1 md:col-span-1.5">
                             <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Recomendaciones Correctivas</label>
                             <textarea 
                               placeholder="Ej. Reforzar el uso del GPS corporativo..."
@@ -2240,57 +2473,332 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                           <p className="text-center py-8 text-xs font-bold text-slate-300 uppercase tracking-wider">No se han registrado eventualidades en la labor del asesor.</p>
                         ) : (
                           <div className="space-y-6">
-                            {incidencias.map((inc) => (
-                              <div key={inc.id} className="bg-rose-50/50 p-6 rounded-[2rem] border border-rose-100 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-8 opacity-5 text-7xl">🚨</div>
-                                
-                                <div className="flex justify-between items-start flex-wrap gap-2 mb-4 border-b border-rose-100/50 pb-3">
-                                  <div>
-                                    <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[8px] font-bold">📅 SUCESO: {inc.fecha_reporte}</span>
-                                  </div>
-                                  
-                                  {inc.requiere_seguimiento ? (
-                                    <div className="flex gap-2 items-center">
-                                      <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-200 text-rose-800 border border-rose-300">
-                                        Requiere Seguimiento
-                                      </span>
-                                      {inc.estado_seguimiento === 'pendiente' ? (
+                            {incidencias.map((inc) => {
+                              // Parsar clasificación y descripción
+                              let clasif = 'Otros';
+                              let descReal = inc.descripcion || '';
+                              if (descReal.startsWith('[')) {
+                                const match = descReal.match(/^\[(.*?)\]\s*(.*)$/);
+                                if (match) {
+                                  clasif = match[1];
+                                  descReal = match[2];
+                                }
+                              }
+
+                              const isEditing = editingIncidencia && editingIncidencia.id === inc.id;
+
+                              return (
+                                <div key={inc.id} className="bg-rose-50/30 p-6 rounded-[2rem] border border-rose-100 relative overflow-hidden">
+                                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-7xl">🚨</div>
+
+                                  {isEditing ? (
+                                    <div className="space-y-4">
+                                      <div className="flex justify-between items-center border-b pb-3 mb-2">
+                                        <h4 className="text-[10px] font-black uppercase text-rose-700">✏️ Editar Eventualidad</h4>
+                                        <span className="text-[8px] text-slate-400 font-mono">ID: {inc.id.substring(0, 8)}</span>
+                                      </div>
+                                      
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha</label>
+                                          <input 
+                                            type="date"
+                                            value={editingIncidencia.fecha_reporte}
+                                            onChange={(e) => setEditingIncidencia({...editingIncidencia, fecha_reporte: e.target.value})}
+                                            className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Clasificación</label>
+                                          <select
+                                            value={editingIncidencia.clasificacion}
+                                            onChange={(e) => setEditingIncidencia({...editingIncidencia, clasificacion: e.target.value})}
+                                            className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
+                                          >
+                                            <option value="Mala Práctica">⚠️ Mala Práctica</option>
+                                            <option value="Problema Técnico">⚙️ Problema Técnico</option>
+                                            <option value="Ausencia / Tardanza">🕒 Ausencia / Tardanza</option>
+                                            <option value="Inconveniente en Calle">🚗 Inconveniente en Calle</option>
+                                            <option value="Reclamo de Cliente">💬 Reclamo de Cliente</option>
+                                            <option value="Otros">📦 Otros</option>
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Estado de Seguimiento</label>
+                                          <select
+                                            value={editingIncidencia.estado_seguimiento}
+                                            onChange={(e) => setEditingIncidencia({...editingIncidencia, estado_seguimiento: e.target.value})}
+                                            disabled={!editingIncidencia.requiere_seguimiento}
+                                            className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none disabled:opacity-40"
+                                          >
+                                            <option value="pendiente">Pendiente</option>
+                                            <option value="resuelto">Resuelto</option>
+                                            <option value="no_aplica">No Aplica</option>
+                                          </select>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input 
+                                          type="checkbox"
+                                          checked={editingIncidencia.requiere_seguimiento}
+                                          onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setEditingIncidencia({
+                                              ...editingIncidencia, 
+                                              requiere_seguimiento: checked,
+                                              estado_seguimiento: checked ? 'pendiente' : 'no_aplica'
+                                            });
+                                          }}
+                                          className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500"
+                                        />
+                                        <span className="text-[9px] font-black uppercase text-rose-700 tracking-wider">⚠️ ¿Requiere Seguimiento Preventivo?</span>
+                                      </div>
+
+                                      <div>
+                                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Descripción del Inconveniente</label>
+                                        <textarea 
+                                          value={editingIncidencia.descripcion}
+                                          onChange={(e) => setEditingIncidencia({...editingIncidencia, descripcion: e.target.value})}
+                                          className="w-full h-16 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
+                                        />
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Observaciones / Análisis del Evaluador</label>
+                                          <textarea 
+                                            value={editingIncidencia.observacion}
+                                            onChange={(e) => setEditingIncidencia({...editingIncidencia, observacion: e.target.value})}
+                                            className="w-full h-16 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Recomendaciones Correctivas</label>
+                                          <textarea 
+                                            value={editingIncidencia.recomendaciones}
+                                            onChange={(e) => setEditingIncidencia({...editingIncidencia, recomendaciones: e.target.value})}
+                                            className="w-full h-16 bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:ring-1 focus:ring-rose-400"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="flex justify-end gap-2 pt-2">
                                         <button 
-                                          onClick={() => handleUpdateIncidenciaEstado(inc.id, 'resuelto')}
-                                          className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-700 transition-all shadow-sm"
+                                          onClick={() => setEditingIncidencia(null)}
+                                          className="bg-slate-200 text-slate-700 px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-300 transition-all"
                                         >
-                                          ✓ Resolver Caso
+                                          Cancelar
                                         </button>
-                                      ) : (
-                                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-[8px] font-black uppercase">
-                                          Resuelto
-                                        </span>
-                                      )}
+                                        <button 
+                                          onClick={() => handleUpdateIncidencia(inc.id, editingIncidencia)}
+                                          disabled={isSaving || !editingIncidencia.descripcion.trim()}
+                                          className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50"
+                                        >
+                                          💾 Guardar Cambios
+                                        </button>
+                                      </div>
                                     </div>
                                   ) : (
-                                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">No requiere seguimiento</span>
+                                    <>
+                                      <div className="flex justify-between items-start flex-wrap gap-2 mb-4 border-b border-rose-100/50 pb-3">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[8px] font-bold">📅 SUCESO: {inc.fecha_reporte}</span>
+                                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                            clasif === 'Mala Práctica' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                            clasif === 'Problema Técnico' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                                            clasif === 'Ausencia / Tardanza' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                                            clasif === 'Inconveniente en Calle' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                                            clasif === 'Reclamo de Cliente' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                          }`}>
+                                            {clasif}
+                                          </span>
+                                        </div>
+                                        
+                                        <div className="flex gap-2 items-center">
+                                          {inc.requiere_seguimiento ? (
+                                            <>
+                                              <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-200 text-rose-800 border border-rose-300">
+                                                Requiere Seguimiento
+                                              </span>
+                                              {inc.estado_seguimiento === 'pendiente' ? (
+                                                <button 
+                                                  onClick={() => handleUpdateIncidenciaEstado(inc.id, 'resuelto')}
+                                                  className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-700 transition-all shadow-sm"
+                                                >
+                                                  ✓ Resolver Caso
+                                                </button>
+                                              ) : (
+                                                <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-[8px] font-black uppercase">
+                                                  Resuelto
+                                                </span>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">No requiere seguimiento</span>
+                                          )}
+
+                                          {/* ACCIONES DE MANTENIMIENTO */}
+                                          <button 
+                                            onClick={() => setEditingIncidencia({
+                                              id: inc.id,
+                                              fecha_reporte: inc.fecha_reporte,
+                                              descripcion: descReal,
+                                              observacion: inc.observacion || '',
+                                              recomendaciones: inc.recomendaciones || '',
+                                              requiere_seguimiento: inc.requiere_seguimiento,
+                                              estado_seguimiento: inc.estado_seguimiento || 'pendiente',
+                                              clasificacion: clasif
+                                            })}
+                                            className="bg-slate-100 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg text-[10px] font-bold transition-all border border-slate-200"
+                                            title="Editar Eventualidad"
+                                          >
+                                            ✏️
+                                          </button>
+                                          <button 
+                                            onClick={() => handleDeleteIncidencia(inc.id)}
+                                            className="bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 p-1.5 rounded-lg text-[10px] font-bold transition-all border border-slate-200"
+                                            title="Eliminar Eventualidad"
+                                          >
+                                            🗑️
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs mt-2">
+                                        <div className="bg-white p-4 rounded-xl border border-rose-100/30">
+                                          <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-1">Descripción del Incidente:</p>
+                                          <p className="text-slate-700 leading-relaxed font-semibold">{descReal}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-rose-100/30">
+                                          <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Observaciones / Análisis:</p>
+                                          <p className="text-slate-600 leading-relaxed italic">{inc.observacion || 'Ninguna observación cargada.'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-rose-100/30">
+                                          <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Plan de Acción / Recomendaciones:</p>
+                                          <p className="text-slate-600 leading-relaxed italic">{inc.recomendaciones || 'Ninguna sugerencia o recomendación registrada.'}</p>
+                                        </div>
+                                      </div>
+                                    </>
                                   )}
                                 </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs mt-2">
-                                  <div className="bg-white p-4 rounded-xl border border-rose-100/30">
-                                    <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-1">Descripción del Incidente:</p>
-                                    <p className="text-slate-700 leading-relaxed font-semibold">{inc.descripcion}</p>
-                                  </div>
-                                  <div className="bg-white p-4 rounded-xl border border-rose-100/30">
-                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Observaciones / Análisis:</p>
-                                    <p className="text-slate-600 leading-relaxed italic">{inc.observacion || 'Ninguna observación cargada.'}</p>
-                                  </div>
-                                  <div className="bg-white p-4 rounded-xl border border-rose-100/30">
-                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Plan de Acción / Recomendaciones:</p>
-                                    <p className="text-slate-600 leading-relaxed italic">{inc.recomendaciones || 'Ninguna sugerencia o recomendación registrada.'}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* === PESTAÑA: IMAGEN PERSONAL === */}
+                  {activeSubTab === 'imagen_personal' && (
+                    <div className="space-y-6">
+                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">🪒 Evaluación de Imagen Personal y Presentación</h3>
+                        <p className="text-[10px] text-slate-500 font-semibold mb-8 leading-relaxed">Registra la evaluación de la presentación personal del asesor durante la inducción. Cada criterio se evalúa como <span className="text-emerald-600 font-black">Cumple</span>, <span className="text-amber-500 font-black">Parcialmente</span> o <span className="text-rose-500 font-black">No Cumple</span>.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                          {[
+                            { key: 'afeitado', icon: '🪒', label: 'Afeitado e Higiene Facial', desc: 'Se presenta bien afeitado o con barba aseada y limpia' },
+                            { key: 'vestimenta', icon: '👔', label: 'Vestimenta y Limpieza', desc: 'Ropa limpia, planchada y acorde al dress code corporativo' },
+                            { key: 'cabello', icon: '💇', label: 'Cabello y Presentación General', desc: 'Cabello ordenado y apariencia general prolija' },
+                            { key: 'lenguaje', icon: '🗣️', label: 'Lenguaje y Comunicación Verbal', desc: 'Habla con vocabulario apropiado, sin expresiones inadecuadas' },
+                            { key: 'actitud', icon: '🎯', label: 'Actitud y Postura Corporal', desc: 'Actitud proactiva y postura profesional durante la inducción' },
+                          ].map(({ key, icon, label, desc }) => (
+                            <div key={key} className={`p-5 rounded-2xl border-2 transition-all ${
+                              imagenPersonal[key] === 'Cumple' ? 'bg-emerald-50 border-emerald-200' :
+                              imagenPersonal[key] === 'Parcialmente' ? 'bg-amber-50 border-amber-200' :
+                              imagenPersonal[key] === 'No Cumple' ? 'bg-rose-50 border-rose-200' :
+                              'bg-slate-50 border-slate-200'
+                            }`}>
+                              <div className="flex items-start gap-3 mb-4">
+                                <span className="text-2xl">{icon}</span>
+                                <div className="flex-1">
+                                  <p className="text-[10px] font-black text-slate-800 uppercase tracking-wide">{label}</p>
+                                  <p className="text-[9px] text-slate-500 font-semibold mt-0.5 leading-relaxed">{desc}</p>
+                                </div>
+                                {imagenPersonal[key] && (
+                                  <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase shrink-0 ${
+                                    imagenPersonal[key] === 'Cumple' ? 'bg-emerald-500 text-white' :
+                                    imagenPersonal[key] === 'Parcialmente' ? 'bg-amber-500 text-white' :
+                                    'bg-rose-500 text-white'
+                                  }`}>{imagenPersonal[key]}</span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                {['Cumple', 'Parcialmente', 'No Cumple'].map(val => (
+                                  <button
+                                    key={val}
+                                    onClick={() => setImagenPersonal(prev => ({ ...prev, [key]: val }))}
+                                    className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-wide transition-all ${
+                                      imagenPersonal[key] === val
+                                        ? val === 'Cumple' ? 'bg-emerald-500 text-white shadow-md' :
+                                          val === 'Parcialmente' ? 'bg-amber-500 text-white shadow-md' :
+                                          'bg-rose-500 text-white shadow-md'
+                                        : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    {val === 'Cumple' ? '✓ Cumple' : val === 'Parcialmente' ? '~ Parcial' : '✗ No Cumple'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">
+                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-2">📝 Observaciones Adicionales de Imagen Personal</label>
+                          <textarea
+                            rows={4}
+                            value={imagenPersonal.observaciones}
+                            onChange={(e) => setImagenPersonal(prev => ({ ...prev, observaciones: e.target.value }))}
+                            placeholder="Comentarios libres sobre la presentación personal del asesor durante la inducción..."
+                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-300 resize-none leading-relaxed"
+                          />
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            onClick={handleSaveImagenPersonal}
+                            disabled={isSaving}
+                            className="bg-emerald-600 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
+                          >
+                            {isSaving ? '⏳ Guardando...' : '💾 Guardar Evaluación de Imagen Personal'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Resumen visual de la evaluación */}
+                      {Object.values(imagenPersonal).some(v => v && v !== imagenPersonal.observaciones) && (
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                          <h4 className="text-xs font-black uppercase text-slate-700 mb-5">📊 Resumen de Criterios Evaluados</h4>
+                          <div className="grid grid-cols-5 gap-3">
+                            {[
+                              { key: 'afeitado', icon: '🪒', label: 'Higiene Facial' },
+                              { key: 'vestimenta', icon: '👔', label: 'Vestimenta' },
+                              { key: 'cabello', icon: '💇', label: 'Cabello' },
+                              { key: 'lenguaje', icon: '🗣️', label: 'Lenguaje' },
+                              { key: 'actitud', icon: '🎯', label: 'Actitud' },
+                            ].map(({ key, icon, label }) => (
+                              <div key={key} className={`flex flex-col items-center p-4 rounded-2xl text-center ${
+                                imagenPersonal[key] === 'Cumple' ? 'bg-emerald-50 border-2 border-emerald-200' :
+                                imagenPersonal[key] === 'Parcialmente' ? 'bg-amber-50 border-2 border-amber-200' :
+                                imagenPersonal[key] === 'No Cumple' ? 'bg-rose-50 border-2 border-rose-200' :
+                                'bg-slate-50 border-2 border-slate-200'
+                              }`}>
+                                <span className="text-2xl mb-2">{icon}</span>
+                                <p className="text-[8px] font-black uppercase text-slate-500 mb-1">{label}</p>
+                                <span className={`text-[8px] font-black uppercase ${
+                                  imagenPersonal[key] === 'Cumple' ? 'text-emerald-600' :
+                                  imagenPersonal[key] === 'Parcialmente' ? 'text-amber-500' :
+                                  imagenPersonal[key] === 'No Cumple' ? 'text-rose-500' :
+                                  'text-slate-400'
+                                }`}>{imagenPersonal[key] || 'Sin eval.'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -2324,6 +2832,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                         <img 
                                           src={getGoogleDriveThumbnail(nota.foto_url)} 
                                           alt="Foto" 
+                                          referrerPolicy="no-referrer"
                                           className="w-full h-full object-cover transition-opacity" 
                                           onError={(e) => {
                                               e.target.style.display = 'none';
