@@ -1,17 +1,29 @@
-
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-const supabaseUrl = 'https://rreqcrmdyrgevdugzurx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyZXFjcm1keXJnZXZkdWd6dXJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNDIxNTcsImV4cCI6MjA4ODYxODE1N30.4OIG_NMwzCmkhgFJlf69dMP7S276wa7wezzEg4gPWOY';
+// Read .env file manually since dotenv is not necessarily installed
+const envPath = path.resolve(process.cwd(), '.env');
+const envStr = fs.readFileSync(envPath, 'utf8');
+const env = {};
+envStr.split('\n').forEach(line => {
+  const [k, v] = line.split('=');
+  if (k && v) env[k.trim()] = v.trim();
+});
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_KEY);
 
 async function check() {
-  const { data, error } = await supabase.schema('portal_afv').from('submodulos_finales').select('*').limit(1);
+  const { data, error } = await supabase
+    .schema('portal_afv')
+    .from('notas_por_submodulo')
+    .select('*')
+    .limit(1);
+    
   if (error) {
-    console.error('Error fetching submodulos_finales:', error);
+    console.error('Error:', error);
   } else {
-    console.log('Columns in submodulos_finales:', Object.keys(data[0] || {}));
+    console.log('Columns:', Object.keys(data[0] || {}));
   }
 }
 

@@ -1,6 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { ResumenEvaluaciones } from './ResumenEvaluaciones';
 import ReporteNotas from './ReporteNotas';
+
+const DISPONIBLE_SKILLS_TAGS = [
+  { category: 'Ventas y Comercial', icon: '💼', tags: ['Ventas de Campo', 'Televentas', 'Ventas B2B', 'Ventas de Consumo Masivo', 'Negociación Comercial'] },
+  { category: 'Mercadeo y Promoción', icon: '📈', tags: ['Trade Marketing', 'Estrategia de Mercadeo', 'Promociones', 'Análisis de Clientes'] },
+  { category: 'Supervisión y Liderazgo', icon: '👥', tags: ['Supervisión de Personal', 'Liderazgo de Equipos', 'Gestión Comercial', 'Coaching/Capacitación'] },
+  { category: 'Habilidades Blandas', icon: '🗣️', tags: ['Comunicación Asertiva', 'Proactividad', 'Resolución de Conflictos', 'Empatía', 'Trabajo Bajo Presión'] }
+];
+
+const parseObservacionCualitativa = (raw) => {
+  const defaultState = {
+    observacion_global: '',
+    imagen_personal: { afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: '' },
+    cualidades_generales: { tags: [], detalle: '' }
+  };
+
+  if (!raw) return defaultState;
+
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return {
+        observacion_global: parsed.observacion_global || parsed.observaciones_adicionales || '',
+        imagen_personal: { ...defaultState.imagen_personal, ...parsed.imagen_personal },
+        cualidades_generales: {
+          tags: Array.isArray(parsed.cualidades_generales?.tags) ? parsed.cualidades_generales.tags : [],
+          detalle: parsed.cualidades_generales?.detalle || (typeof parsed.cualidades_generales === 'string' ? parsed.cualidades_generales : '')
+        }
+      };
+    } catch (e) {
+      console.error("Error parsing JSON for observacion_cualitativa:", e);
+    }
+  }
+
+  // Fallback for legacy plain text
+  return {
+    ...defaultState,
+    observacion_global: raw,
+    imagen_personal: { ...defaultState.imagen_personal, observaciones: raw }
+  };
+};
 
 // Sub-componente para mostrar y calificar una entrega de Roleplay
 const getGoogleDriveThumbnail = (url) => {
@@ -31,6 +73,7 @@ const parseDateForSort = (as) => {
 const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
   const [nota, setNota] = useState(evidencia.nota_ejercicio ?? '');
   const [feedback, setFeedback] = useState(evidencia.feedback_evaluador ?? '');
+  const [noPresento, setNoPresento] = useState(evidencia.no_presento ?? false);
   const escNum = evidencia.maestro_escenarios?.numero_escenario;
   const fechaStr = new Date(evidencia.fecha_entrega).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
 
@@ -77,11 +120,30 @@ const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
       <div className="flex gap-3 items-end">
         <div className="w-24">
           <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Nota (0-100)</label>
-          <input
-            type="number" min="0" max="100" value={nota}
-            onChange={(e) => setNota(Math.min(100, Math.max(0, e.target.value)))}
-            className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-center outline-none focus:ring-1 focus:ring-indigo-400"
-          />
+          <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={noPresento}
+                onChange={(e) => {
+                  setNoPresento(e.target.checked);
+                  if (e.target.checked) setNota('');
+                }}
+                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                id={`no-presento-${evidencia.id}`}
+              />
+              <label htmlFor={`no-presento-${evidencia.id}`} className="text-xs font-medium text-slate-600">
+                No presentó
+              </label>
+            </div>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={nota}
+              onChange={(e) => setNota(Math.min(100, Math.max(0, e.target.value)))}
+              disabled={noPresento}
+              className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-center outline-none focus:ring-1 focus:ring-indigo-400"
+            />
         </div>
         <div className="flex-1">
           <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Feedback</label>
@@ -92,8 +154,8 @@ const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
           />
         </div>
         <button
-          onClick={() => onSave(evidencia.id, nota, feedback)}
-          disabled={isSaving || nota === ''}
+          onClick={() => onSave(evidencia.id, nota, feedback, noPresento)}
+          disabled={isSaving || (nota === '' && !noPresento)}
           className="h-10 px-5 bg-indigo-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-40 transition-all whitespace-nowrap"
         >
           ✅ Guardar
@@ -123,6 +185,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
   const [notasAutomaticas, setNotasAutomaticas] = useState([]);
   const [searchTermAuto, setSearchTermAuto] = useState('');
   const [searchTermAsesores, setSearchTermAsesores] = useState('');
+  const [filterStatus, setFilterStatus] = useState('todos');
   const [sortConfig, setSortConfig] = useState({ key: 'fecha_sincronizacion', direction: 'desc' });
   
   // Estados para activación de itinerario e historial
@@ -176,6 +239,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     lenguaje: '',
     actitud: '',
     observaciones: ''
+  });
+
+  // Estados para Perfil de Habilidades y Experiencia (Skills Profile)
+  const [cualidadesGenerales, setCualidadesGenerales] = useState({
+    tags: [],
+    detalle: ''
   });
 
   // Estados para Mantenimiento de Departamentos
@@ -249,27 +318,16 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       fetchItinerarioAsesor(selectedAsesor.id);
       fetchNotasAsesor(selectedAsesor.id);
       fetchEvidenciasAsesor(selectedAsesor.id);
-      setObservacionGlobal(selectedAsesor.observacion_cualitativa || '');
+      
+      const parsedData = parseObservacionCualitativa(selectedAsesor.observacion_cualitativa);
+      setObservacionGlobal(parsedData.observacion_global);
+      setImagenPersonal(parsedData.imagen_personal);
+      setCualidadesGenerales(parsedData.cualidades_generales);
+      
       setRecomendaciones(selectedAsesor.recomendaciones || '');
       fetchSeguimientos(selectedAsesor.id);
       fetchIncidencias(selectedAsesor.id);
       setActiveSubTab('evaluacion');
-      // Cargar Imagen Personal desde observacion_cualitativa
-      try {
-        const raw = selectedAsesor.observacion_cualitativa || '';
-        if (raw.startsWith('{')) {
-          const parsed = JSON.parse(raw);
-          if (parsed.imagen_personal) {
-            setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: '', ...parsed.imagen_personal });
-          } else {
-            setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: raw });
-          }
-        } else {
-          setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: raw });
-        }
-      } catch(e) {
-        setImagenPersonal({ afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: '' });
-      }
     }
   }, [selectedAsesor]);
 
@@ -328,13 +386,15 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
   };
 
-  const handleSaveNotaRoleplay = async (evidenciaId, nota, feedback) => {
+  const handleSaveNotaRoleplay = async (evidenciaId, nota, feedback, noPresento) => {
     setIsSaving(true);
     try {
-      const { error } = await supabase.schema('portal_afv').from('ejercicios_evidencias').update({
-        nota_ejercicio: parseFloat(nota),
-        feedback_evaluador: feedback
-      }).eq('id', evidenciaId);
+      const payload = {
+        nota_ejercicio: noPresento ? null : parseFloat(nota),
+        feedback_evaluador: feedback,
+        no_presento: noPresento
+      };
+      const { error } = await supabase.schema('portal_afv').from('ejercicios_evidencias').update(payload).eq('id', evidenciaId);
       if (error) throw error;
       setMessage('Evaluación de Roleplay guardada.');
       fetchEvidenciasAsesor(selectedAsesor.id);
@@ -354,65 +414,79 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     finally { setIsSaving(false); setTimeout(() => setMessage(''), 3000); }
   };
 
-  const handleSaveObservacionGlobal = async () => {
+  const handleSaveQualitativeData = async (key, value) => {
     if (!selectedAsesor) return;
     setIsSaving(true);
     try {
+      const currentRaw = selectedAsesor.observacion_cualitativa || '';
+      let baseObj = {};
+      
+      const trimmed = currentRaw.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          baseObj = JSON.parse(trimmed);
+        } catch (e) {
+          console.error(e);
+        }
+      } else if (currentRaw) {
+        baseObj = { observacion_global: currentRaw };
+      }
+      
+      const updatedObj = {
+        ...baseObj,
+        [key]: value
+      };
+      
+      // Sync other local values to prevent wiping them out if they are not in database yet
+      if (key !== 'imagen_personal') {
+        updatedObj.imagen_personal = imagenPersonal;
+      }
+      if (key !== 'observacion_global') {
+        updatedObj.observacion_global = observacionGlobal;
+      }
+      if (key !== 'cualidades_generales') {
+        updatedObj.cualidades_generales = cualidadesGenerales;
+      }
+      
+      const newValue = JSON.stringify(updatedObj);
       const { error } = await supabase
         .schema('portal_afv')
         .from('usuarios')
-        .update({ observacion_cualitativa: observacionGlobal })
+        .update({ observacion_cualitativa: newValue })
         .eq('id', selectedAsesor.id);
 
       if (error) throw error;
 
-      setMessage('✅ Observación global guardada con éxito.');
+      setMessage('✅ Datos guardados correctamente.');
       
       setAsesores(prev => prev.map(as => 
-        as.id === selectedAsesor.id 
-          ? { ...as, observacion_cualitativa: observacionGlobal } 
-          : as
+        as.id === selectedAsesor.id ? { ...as, observacion_cualitativa: newValue } : as
       ));
+      setSelectedAsesor(prev => ({ ...prev, observacion_cualitativa: newValue }));
       
-      setSelectedAsesor(prev => ({ ...prev, observacion_cualitativa: observacionGlobal }));
+      if (key === 'observacion_global') setObservacionGlobal(value);
+      if (key === 'cualidades_generales') setCualidadesGenerales(value);
+      if (key === 'imagen_personal') setImagenPersonal(value);
+      
     } catch (err) {
       console.error(err);
-      setMessage('❌ Error al guardar la observación.');
+      setMessage('❌ Error al guardar datos.');
     } finally {
       setIsSaving(false);
       setTimeout(() => setMessage(''), 3000);
     }
   };
 
+  const handleSaveObservacionGlobal = async () => {
+    await handleSaveQualitativeData('observacion_global', observacionGlobal);
+  };
+
   const handleSaveImagenPersonal = async () => {
-    if (!selectedAsesor) return;
-    setIsSaving(true);
-    try {
-      // Leer el valor actual de observacion_cualitativa para no pisar texto plano
-      let currentRaw = selectedAsesor.observacion_cualitativa || '';
-      let baseObj = {};
-      if (currentRaw.startsWith('{')) {
-        try { baseObj = JSON.parse(currentRaw); } catch(e) {}
-      }
-      const newValue = JSON.stringify({ ...baseObj, imagen_personal: imagenPersonal });
-      const { error } = await supabase
-        .schema('portal_afv')
-        .from('usuarios')
-        .update({ observacion_cualitativa: newValue })
-        .eq('id', selectedAsesor.id);
-      if (error) throw error;
-      setMessage('✅ Evaluación de Imagen Personal guardada.');
-      setAsesores(prev => prev.map(as =>
-        as.id === selectedAsesor.id ? { ...as, observacion_cualitativa: newValue } : as
-      ));
-      setSelectedAsesor(prev => ({ ...prev, observacion_cualitativa: newValue }));
-    } catch(err) {
-      console.error(err);
-      setMessage('❌ Error al guardar la evaluación de imagen personal.');
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setMessage(''), 3000);
-    }
+    await handleSaveQualitativeData('imagen_personal', imagenPersonal);
+  };
+
+  const handleSaveCualidadesGenerales = async () => {
+    await handleSaveQualitativeData('cualidades_generales', cualidadesGenerales);
   };
 
   const fetchSeguimientos = async (asesorId) => {
@@ -674,8 +748,12 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
       `;
       const temaRows = temasDepto.map(sm => {
         const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
+        let noPresento = false;
+        if (notaExistente?.comentario?.startsWith('{')) {
+          try { noPresento = JSON.parse(notaExistente.comentario).no_presento || false; } catch(e){}
+        }
         const nota = notaExistente?.nota || 0;
-        if (notaExistente) {
+        if (notaExistente && !noPresento) {
           sumGrades += nota;
           countedSubmodules++;
         }
@@ -686,8 +764,11 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
             const parsed = JSON.parse(notaExistente.comentario);
             if (parsed.detalle_evaluacion) {
               detalleTexto = Object.entries(parsed.detalle_evaluacion)
-                .map(([act, d]) => `${act}: ${d.nota}/10`)
+                .map(([act, d]) => `${act}: ${d.np ? 'NP' : (d.nota || 0) + '/10'}`)
                 .join(', ');
+              if (parsed.texto && parsed.texto.trim() !== '') {
+                detalleTexto += ` | <strong>Obs:</strong> ${parsed.texto}`;
+              }
             } else if (parsed.texto) {
               detalleTexto = parsed.texto;
             }
@@ -701,7 +782,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         return `
           <tr>
             <td>${sm.nombre_tarea}</td>
-            <td class="text-center font-bold">${notaExistente ? `${nota}/10` : 'N/A'}</td>
+            <td class="text-center font-bold">${noPresento ? 'NP' : (notaExistente ? `${nota}/10` : 'N/A')}</td>
             <td>${detalleTexto || '-'}</td>
           </tr>
         `;
@@ -914,8 +995,8 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
           .grid-feedback {
             display: grid;
-            grid-template-cols: 1fr 1fr;
-            gap: 20px;
+            grid-template-cols: 1fr 1fr 1fr;
+            gap: 15px;
             margin-bottom: 25px;
           }
           .feedback-card {
@@ -1186,6 +1267,31 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         <div class="section-title">6. Conclusión y Recomendaciones Finales</div>
         <div class="grid-feedback">
           <div class="feedback-card">
+            <div class="feedback-title">Perfil de Habilidades y Experiencia</div>
+            <div class="feedback-content">
+              ${(() => {
+                const tagsList = cualidadesGenerales.tags && cualidadesGenerales.tags.length > 0 
+                  ? cualidadesGenerales.tags.map(t => {
+                      let bg = '#f1f5f9';
+                      let color = '#475569';
+                      if (DISPONIBLE_SKILLS_TAGS[0].tags.includes(t)) { bg = '#dbeafe'; color = '#1d4ed8'; }
+                      else if (DISPONIBLE_SKILLS_TAGS[1].tags.includes(t)) { bg = '#d1fae5'; color = '#065f46'; }
+                      else if (DISPONIBLE_SKILLS_TAGS[2].tags.includes(t)) { bg = '#f3e8ff'; color = '#7e22ce'; }
+                      else if (DISPONIBLE_SKILLS_TAGS[3].tags.includes(t)) { bg = '#fef3c7'; color = '#92400e'; }
+                      
+                      return `<span style="background:${bg}; color:${color}; display:inline-block; padding:2px 6px; border-radius:4px; font-size:8px; font-weight:700; margin: 2px; text-transform:uppercase;">${t}</span>`;
+                    }).join(' ')
+                  : '<span style="color:#94a3b8; font-style:italic;">Sin competencias destacadas.</span>';
+                
+                const detailText = cualidadesGenerales.detalle 
+                  ? `<div style="margin-top:10px; border-top:1px dashed #e2e8f0; padding-top:8px;">${cualidadesGenerales.detalle}</div>`
+                  : '';
+                
+                return `<div>${tagsList}</div>${detailText}`;
+              })()}
+            </div>
+          </div>
+          <div class="feedback-card">
             <div class="feedback-title">Observación Cualitativa Global</div>
             <div class="feedback-content">${observacionGlobal || 'Sin observaciones globales registradas.'}</div>
           </div>
@@ -1311,14 +1417,22 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     
     sm.contenido.forEach((act, idx) => {
        let notaItem = 0;
+       let isNp = false;
        if (evalState?.notas && evalState.notas[idx] !== undefined) {
           notaItem = parseFloat(evalState.notas[idx]) || 0;
+          isNp = evalState.notasNP?.[idx] || false;
        } else if (parsedExistente?.detalle_evaluacion?.[act.actividad]) {
           notaItem = parseFloat(parsedExistente.detalle_evaluacion[act.actividad].nota) || 0;
+          isNp = parsedExistente.detalle_evaluacion[act.actividad].np || false;
        }
+       if (evalState?.notasNP && evalState.notasNP[idx] !== undefined) {
+          isNp = evalState.notasNP[idx];
+       }
+       if (isNp) notaItem = 0;
+       
        const peso = parseFloat(act.peso) || 0;
        notaTotal += (notaItem * (peso / 100));
-       detalle[act.actividad] = { nota: notaItem, peso: peso };
+       detalle[act.actividad] = { nota: isNp ? null : notaItem, peso: peso, np: isNp };
     });
     
     const obsFinal = evalState?.obs !== undefined ? evalState.obs : (parsedExistente?.texto || notaExistente?.comentario || '');
@@ -1336,16 +1450,21 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
     }
     
     setIsSaving(true);
-    let comentarioFinal = obs;
+    const isNoPresento = evalState?.noPresento || false;
+    let comentarioObj = {
+      texto: obs,
+      no_presento: isNoPresento
+    };
     if (detalle) {
-      comentarioFinal = JSON.stringify({ texto: obs, detalle_evaluacion: detalle });
+      comentarioObj.detalle_evaluacion = detalle;
     }
+    const comentarioFinal = JSON.stringify(comentarioObj);
 
     const payload = {
       id_asesor: selectedAsesor.id,
       id_submodulo: sm.id,
       email_evaluador: user.usuario,
-      nota: nota,
+      nota: isNoPresento ? null : nota,
       comentario: comentarioFinal,
       intento: itinerarioActual[0].intento
     };
@@ -1392,14 +1511,21 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
         const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
         const { nota, detalle, obs } = calcularNotaFinal(sm, evaluaciones[id], notaExistente);
         
-        let comentarioFinal = obs;
-        if (detalle) comentarioFinal = JSON.stringify({ texto: obs, detalle_evaluacion: detalle });
+        const isNoPresento = evaluaciones[id]?.noPresento || false;
+        let comentarioObj = {
+          texto: obs,
+          no_presento: isNoPresento
+        };
+        if (detalle) {
+          comentarioObj.detalle_evaluacion = detalle;
+        }
+        const comentarioFinal = JSON.stringify(comentarioObj);
 
         return {
           id_asesor: selectedAsesor.id,
           id_submodulo: id,
           email_evaluador: user.usuario,
-          nota: nota,
+          nota: isNoPresento ? null : nota,
           comentario: comentarioFinal,
           intento: itinerarioActual[0].intento
         };
@@ -1809,15 +1935,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
           <div>
             <h1 className="text-2xl font-black text-slate-950">Consola de Evaluación y Reclutamiento</h1>
             <div className="flex gap-4 mt-6">
-             <button onClick={() => setViewMode('manual')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'manual' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                👥 Evaluaciones
-             </button>
-             <button onClick={() => setViewMode('mi-academia')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'mi-academia' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                📚 Mi Academia
-             </button>
-             <button onClick={() => setViewMode('automatico')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'automatico' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                📥 Aspirantes Excel
-             </button>
+              <button onClick={() => setViewMode('manual')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'manual' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>👥 Evaluaciones</button>
+              <button onClick={() => setViewMode('mi-academia')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'mi-academia' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>📚 Mi Academia</button>
+              <button onClick={() => setViewMode('automatico')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'automatico' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>📥 Aspirantes Excel</button>
+              <button onClick={() => setViewMode('resumen')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'resumen' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>📊 Resumen</button>
              {user.rol === 'admin' && (
                <>
                 <button onClick={() => setViewMode('configuracion')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'configuracion' ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
@@ -1849,12 +1970,19 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                 <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
                   <h3 className="text-sm font-black uppercase text-slate-500 tracking-widest">Asesores Activos</h3>
                   <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[8px] font-black">
-                    {asesores.length}
+                    {asesores.filter(as => {
+                      const s = getAsesorStatus(as).label;
+                      if (filterStatus === 'todos') return true;
+                      if (filterStatus === 'completado') return s === 'Completado';
+                      if (filterStatus === 'en_curso') return s === 'En Curso';
+                      if (filterStatus === 'sin_itinerario') return s === 'Sin Itinerario';
+                      return true;
+                    }).filter(as => as.nombre?.toLowerCase().includes(searchTermAsesores.toLowerCase())).length}
                   </span>
                 </div>
                 
-                {/* BUSCADOR DE ASESORES */}
-                <div className="p-3 border-b bg-white">
+                {/* BUSCADOR Y FILTRO DE ASESORES */}
+                <div className="p-3 border-b bg-white space-y-2">
                   <input
                     type="text"
                     placeholder="🔍 Buscar asesor..."
@@ -1862,10 +1990,28 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                     onChange={(e) => setSearchTermAsesores(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all"
                   />
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2394a3b8' d='M5 7L1 3h8z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                  >
+                    <option value="todos">📋 Todos los asesores</option>
+                    <option value="completado">✅ Inducción completada</option>
+                    <option value="en_curso">🔵 En curso</option>
+                    <option value="sin_itinerario">⚪ Sin itinerario</option>
+                  </select>
                 </div>
 
                 <div className="overflow-y-auto flex-1">
                   {asesores
+                    .filter(as => {
+                      const s = getAsesorStatus(as).label;
+                      if (filterStatus === 'completado') return s === 'Completado';
+                      if (filterStatus === 'en_curso') return s === 'En Curso';
+                      if (filterStatus === 'sin_itinerario') return s === 'Sin Itinerario';
+                      return true;
+                    })
                     .filter(as => as.nombre?.toLowerCase().includes(searchTermAsesores.toLowerCase()))
                     .map(as => {
                       const status = getAsesorStatus(as);
@@ -2127,6 +2273,25 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                       )}
 
                                       <div className="flex flex-col gap-2 w-full mt-4">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <input 
+                                            type="checkbox" 
+                                            id={`np-sm-${sm.id}`}
+                                            className="h-3 w-3 accent-amber-600 cursor-pointer"
+                                            checked={evaluaciones[sm.id]?.noPresento !== undefined ? evaluaciones[sm.id].noPresento : ((() => {
+                                                if (notaExistente?.comentario?.startsWith('{')) {
+                                                  try { return JSON.parse(notaExistente.comentario).no_presento || false; } catch(e){}
+                                                }
+                                                return false;
+                                            })())}
+                                            onChange={(e) => {
+                                              setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], noPresento: e.target.checked}});
+                                            }}
+                                          />
+                                          <label htmlFor={`np-sm-${sm.id}`} className="text-[10px] font-bold text-amber-700 cursor-pointer select-none">
+                                            No presentó
+                                          </label>
+                                        </div>
                                         {(sm.contenido && sm.contenido.length > 0) ? (
                                            sm.contenido.map((act, idx) => {
                                               let notaInicial = '';
@@ -2139,16 +2304,53 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                               return (
                                                 <div key={idx} className="flex items-center gap-2">
                                                     <span className="text-xs text-slate-500 font-bold flex-1 truncate" title={act.actividad}>{act.actividad} <span className="text-blue-500">({act.peso}%)</span></span>
+                                                    <div className="flex items-center gap-1">
+                                                      <input
+                                                        type="checkbox"
+                                                        id={`np-act-${sm.id}-${idx}`}
+                                                        className="h-3 w-3 accent-amber-600 cursor-pointer"
+                                                        checked={evaluaciones[sm.id]?.notasNP?.[idx] ?? ((() => {
+                                                            try { 
+                                                              if (notaExistente?.comentario?.startsWith('{')) {
+                                                                const p = JSON.parse(notaExistente.comentario);
+                                                                return p.detalle_evaluacion?.[act.actividad]?.np || false;
+                                                              }
+                                                              return false;
+                                                            } catch(e){ return false; }
+                                                        })())}
+                                                        onChange={(e) => {
+                                                            const currentEval = evaluaciones[sm.id] || { notas: [], notasNP: [] };
+                                                            const newNotasNP = [...(currentEval.notasNP || [])];
+                                                            newNotasNP[idx] = e.target.checked;
+                                                            setEvaluaciones({...evaluaciones, [sm.id]: {...currentEval, notasNP: newNotasNP}});
+                                                        }}
+                                                      />
+                                                      <label htmlFor={`np-act-${sm.id}-${idx}`} className="text-[8px] font-bold text-amber-700 cursor-pointer select-none">NP</label>
+                                                    </div>
                                                     <input 
                                                       type="number" 
                                                       step="any"
-                                                      className="w-14 h-8 bg-white border border-slate-200 rounded-lg text-center font-black text-[10px]" 
+                                                      className="w-14 h-8 bg-white border border-slate-200 rounded-lg text-center font-black text-[10px] disabled:opacity-50 disabled:bg-slate-50" 
                                                       placeholder="Nota (0-10)" 
                                                       max="10"
                                                       defaultValue={notaInicial}
+                                                      disabled={(evaluaciones[sm.id]?.noPresento !== undefined ? evaluaciones[sm.id].noPresento : ((() => {
+                                                          if (notaExistente?.comentario?.startsWith('{')) {
+                                                            try { return JSON.parse(notaExistente.comentario).no_presento || false; } catch(e){}
+                                                          }
+                                                          return false;
+                                                      })())) || (evaluaciones[sm.id]?.notasNP?.[idx] ?? ((() => {
+                                                            try { 
+                                                              if (notaExistente?.comentario?.startsWith('{')) {
+                                                                const p = JSON.parse(notaExistente.comentario);
+                                                                return p.detalle_evaluacion?.[act.actividad]?.np || false;
+                                                              }
+                                                              return false;
+                                                            } catch(e){ return false; }
+                                                        })()))}
                                                       onBlur={(e) => {
                                                         const val = parseFloat(e.target.value) || 0;
-                                                        const currentEval = evaluaciones[sm.id] || { notas: [] };
+                                                        const currentEval = evaluaciones[sm.id] || { notas: [], notasNP: [] };
                                                         const newNotas = [...(currentEval.notas || [])];
                                                         newNotas[idx] = val;
                                                         setEvaluaciones({...evaluaciones, [sm.id]: {...currentEval, notas: newNotas}});
@@ -2162,10 +2364,16 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                                               <input 
                                                 type="number" 
                                                 step="any"
-                                                className="w-24 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs" 
+                                                className="w-24 h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-xs disabled:opacity-50 disabled:bg-slate-50" 
                                                 placeholder="Nota (0-10)" 
                                                 max="10"
                                                 defaultValue={notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : ''}
+                                                disabled={evaluaciones[sm.id]?.noPresento !== undefined ? evaluaciones[sm.id].noPresento : ((() => {
+                                                    if (notaExistente?.comentario?.startsWith('{')) {
+                                                      try { return JSON.parse(notaExistente.comentario).no_presento || false; } catch(e){}
+                                                    }
+                                                    return false;
+                                                })())}
                                                 onBlur={(e) => {
                                                   const val = parseFloat(e.target.value) || 0;
                                                   setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], nota: val}});
@@ -2233,7 +2441,85 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
 
                   {activeSubTab === 'seguimiento' && (
                     <div className="space-y-6">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* PERFIL DE HABILIDADES Y EXPERIENCIA */}
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+                          <div className="flex flex-col h-full justify-between">
+                            <div>
+                              <div className="flex items-center justify-between mb-4 border-b pb-4">
+                                <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
+                                  💼 Perfil de Habilidades
+                                </h3>
+                                <button 
+                                  onClick={handleSaveCualidadesGenerales}
+                                  disabled={isSaving}
+                                  className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-40"
+                                >
+                                  💾 Guardar
+                                </button>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-medium mb-3">
+                                Selecciona las competencias clave y detalla su trayectoria laboral.
+                              </p>
+                              
+                              {/* SECCIÓN TAGS */}
+                              <div className="space-y-3 max-h-56 overflow-y-auto pr-1 mb-4 scrollbar-thin">
+                                {DISPONIBLE_SKILLS_TAGS.map((catObj) => (
+                                  <div key={catObj.category}>
+                                    <p className="text-[8px] font-black uppercase text-slate-500 mb-1 flex items-center gap-1">
+                                      <span>{catObj.icon}</span> {catObj.category}
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {catObj.tags.map((tag) => {
+                                        const isSelected = cualidadesGenerales.tags?.includes(tag);
+                                        let activeClass = '';
+                                        if (isSelected) {
+                                          if (catObj.icon === '💼') activeClass = 'bg-blue-600 text-white border-blue-600 shadow-sm';
+                                          else if (catObj.icon === '📈') activeClass = 'bg-emerald-600 text-white border-emerald-600 shadow-sm';
+                                          else if (catObj.icon === '👥') activeClass = 'bg-purple-600 text-white border-purple-600 shadow-sm';
+                                          else activeClass = 'bg-amber-600 text-white border-amber-600 shadow-sm';
+                                        } else {
+                                          activeClass = 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100 hover:text-slate-600';
+                                        }
+                                        return (
+                                          <button
+                                            key={tag}
+                                            onClick={() => {
+                                              const currentTags = cualidadesGenerales.tags || [];
+                                              let newTags = [];
+                                              if (currentTags.includes(tag)) {
+                                                newTags = currentTags.filter(t => t !== tag);
+                                              } else {
+                                                newTags = [...currentTags, tag];
+                                              }
+                                              setCualidadesGenerales(prev => ({ ...prev, tags: newTags }));
+                                            }}
+                                            className={`px-2 py-1 rounded-lg border text-[8px] font-bold transition-all duration-200 cursor-pointer ${activeClass}`}
+                                          >
+                                            {tag}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="mt-2">
+                              <p className="text-[9px] font-black uppercase text-slate-500 mb-1">
+                                📝 Trayectoria y Reseña de Experiencia
+                              </p>
+                              <textarea
+                                value={cualidadesGenerales.detalle || ''}
+                                onChange={(e) => setCualidadesGenerales(prev => ({ ...prev, detalle: e.target.value }))}
+                                placeholder="Detalla su experiencia laboral (ventas, mercadeo, supervisión) y cualidades..."
+                                className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
                         {/* OBSERVACIÓN CUALITATIVA GLOBAL */}
                         <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
                           <div>
@@ -2256,7 +2542,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                               value={observacionGlobal}
                               onChange={(e) => setObservacionGlobal(e.target.value)}
                               placeholder="Ej. El asesor demuestra excelentes habilidades blandas y dominio de televentas..."
-                              className="w-full h-36 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
+                              className="w-full h-44 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
                             />
                           </div>
                         </div>
@@ -2283,7 +2569,7 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
                               value={recomendaciones}
                               onChange={(e) => setRecomendaciones(e.target.value)}
                               placeholder="Ej. Se recomienda realizar acompañamiento en ruta durante su primer mes..."
-                              className="w-full h-36 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
+                              className="w-full h-44 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all resize-none"
                             />
                           </div>
                         </div>
@@ -2806,6 +3092,10 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
               )}
             </div>
           </div>
+        )}
+
+        {viewMode === 'resumen' && selectedAsesor && (
+          <ResumenEvaluaciones selectedAsesor={selectedAsesor} submodulos={submodulos} notasGuardadas={notasGuardadas} />
         )}
 
         {viewMode === 'automatico' && (

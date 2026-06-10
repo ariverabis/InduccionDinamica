@@ -18,6 +18,7 @@ async function tryInsert() {
   
   const sampleNote = notes[0];
   console.log('Testing with note ID:', sampleNote.id);
+  console.log('Columns:', Object.keys(sampleNote));
   
   const { error } = await supabase
     .schema('portal_afv')
