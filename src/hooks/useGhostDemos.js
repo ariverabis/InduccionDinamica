@@ -589,7 +589,7 @@ export function useGhostDemos({
     await sleep(800);
 
     await decir("4.- Nuevo Recibo de cobro.");
-    setCursorPos({ x: 100, y: 560, visible: true });
+    setCursorPos({ x: 160, y: 120, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_sel_factura');
@@ -605,14 +605,14 @@ export function useGhostDemos({
     await sleep(800);
 
     await decir("6.- Seleccione la factura en el check.");
-    setCursorPos({ x: 25, y: 190, visible: true });
+    setCursorPos({ x: 25, y: 160, visible: true });
     await sleep(1200);
     await triggerClick();
     setFacturaSeleccionada(true);
     await sleep(800);
 
     await decir("7.- Pulse al botón incluir.");
-    setCursorPos({ x: 220, y: 115, visible: true });
+    setCursorPos({ x: 280, y: 30, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_incluidas');
@@ -620,20 +620,20 @@ export function useGhostDemos({
     await sleep(800);
 
     await decir("8.- Mantenga Pulsada la barra azul. Cambiar el monto (abono).");
-    setCursorPos({ x: 160, y: 145, visible: true });
+    setCursorPos({ x: 160, y: 90, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_abono');
     await sleep(800);
 
-    setCursorPos({ x: 230, y: 320, visible: true });
+    setCursorPos({ x: 160, y: 140, visible: true });
     await sleep(1000);
     await triggerClick();
     setMontoAbono('40');
     await sleep(800);
 
     await decir("9.- Regresar en la flecha.");
-    setCursorPos({ x: 290, y: 99, visible: true });
+    setCursorPos({ x: 290, y: 30, visible: true });
     await sleep(1000);
     await triggerClick();
     setPantalla('recibo_incluidas');
@@ -641,28 +641,28 @@ export function useGhostDemos({
     await sleep(800);
 
     await decir("10.- Seleccione Simbolo (+).");
-    setCursorPos({ x: 280, y: 300, visible: true });
+    setCursorPos({ x: 280, y: 480, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalDeposito(true);
     await sleep(800);
 
     await decir("11.- Validar monto.");
-    setCursorPos({ x: 50, y: 300, visible: true });
+    setCursorPos({ x: 50, y: 150, visible: true });
     await sleep(1000);
     await triggerClick();
     setMontoDeposito('40');
     await sleep(500);
 
     await decir("13.- Pulse ok.");
-    setCursorPos({ x: 160, y: 330, visible: true });
+    setCursorPos({ x: 160, y: 400, visible: true });
     await sleep(1000);
     await triggerClick();
     setMontoDeposito('0');
     await sleep(800);
 
     await decir("14.- Cerrar en la x.");
-    setCursorPos({ x: 270, y: 215, visible: true });
+    setCursorPos({ x: 280, y: 80, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalDeposito(false);
@@ -670,7 +670,7 @@ export function useGhostDemos({
     await sleep(800);
 
     await decir("15.- Finalizar recibo.");
-    setCursorPos({ x: 230, y: 55, visible: true });
+    setCursorPos({ x: 160, y: 400, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_listo');
@@ -710,7 +710,7 @@ export function useGhostDemos({
     await sleep(800);
 
     await decir("4.- Nuevo Recibo de cobro.");
-    setCursorPos({ x: 100, y: 560, visible: true });
+    setCursorPos({ x: 160, y: 120, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_sel_factura');
@@ -728,12 +728,12 @@ export function useGhostDemos({
     setPantalla('recibo_sel_factura');
     await sleep(800);
     await decir("6.- Seleccione la factura y pulse Incluir.");
-    setCursorPos({ x: 25, y: 190, visible: true });
+    setCursorPos({ x: 25, y: 160, visible: true });
     await sleep(1000);
     await triggerClick();
     setFacturaSeleccionada(true);
     await sleep(800);
-    setCursorPos({ x: 220, y: 115, visible: true });
+    setCursorPos({ x: 280, y: 30, visible: true });
     await sleep(1000);
     await triggerClick();
     setPantalla('recibo_incluidas');
@@ -769,65 +769,65 @@ export function useGhostDemos({
     await sleep(500);
 
     await decir("10.- Coloque el monto equivalente en USD en el abono.");
-    setCursorPos({ x: 160, y: 145, visible: true });
+    setCursorPos({ x: 160, y: 90, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_abono');
     await sleep(800);
-    setCursorPos({ x: 160, y: 320, visible: true });
+    setCursorPos({ x: 160, y: 140, visible: true });
     await sleep(1200);
     setMontoAbono('84,46');
     await sleep(1000);
-    setCursorPos({ x: 160, y: 320, visible: true });
+    setCursorPos({ x: 160, y: 140, visible: true });
     await sleep(1200);
     setMontoAbono('43,39'); // Ajuste manual
     await sleep(1000);
-    setCursorPos({ x: 290, y: 99, visible: true });
+    setCursorPos({ x: 290, y: 30, visible: true });
     await sleep(1000);
     await triggerClick();
     setPantalla('recibo_incluidas');
     await sleep(800);
 
     await decir("11.- Seleccione Simbolo (+).");
-    setCursorPos({ x: 280, y: 300, visible: true });
+    setCursorPos({ x: 280, y: 480, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalDeposito(true);
     await sleep(800);
 
     await decir("12.- Llenamos los datos del pago (Monto, Referencia y Banco).");
-    setCursorPos({ x: 50, y: 290, visible: true });
+    setCursorPos({ x: 50, y: 150, visible: true });
     await sleep(800);
     await triggerClick();
     setMontoDeposito('23.490,11');
     await sleep(800);
 
-    setCursorPos({ x: 50, y: 360, visible: true });
+    setCursorPos({ x: 50, y: 210, visible: true });
     await sleep(800);
     await triggerClick();
     setReferenciaDeposito('14495478');
     await sleep(800);
 
-    setCursorPos({ x: 160, y: 440, visible: true });
+    setCursorPos({ x: 160, y: 270, visible: true });
     await sleep(800);
     await triggerClick();
     setMostrarComboBanco(true);
     await sleep(600);
-    setCursorPos({ x: 160, y: 550, visible: true });
+    setCursorPos({ x: 160, y: 320, visible: true });
     await sleep(800);
     await triggerClick();
     setBancoDeposito('Banco de Venezuela');
     setMostrarComboBanco(false);
     await sleep(800);
 
-    setCursorPos({ x: 50, y: 500, visible: true });
+    setCursorPos({ x: 50, y: 330, visible: true });
     await sleep(800);
     await triggerClick();
     setFechaDeposito('2025-10-24');
     await sleep(800);
 
     await decir("13.- Pulse OK para añadir pago (se limpian los campos).");
-    setCursorPos({ x: 160, y: 520, visible: true });
+    setCursorPos({ x: 160, y: 400, visible: true });
     await sleep(1000);
     await triggerClick();
     setMontoDeposito('');
@@ -837,14 +837,14 @@ export function useGhostDemos({
     await sleep(1000);
 
     await decir("14.- Cierre la ventana de pago con la X.");
-    setCursorPos({ x: 280, y: 210, visible: true });
+    setCursorPos({ x: 280, y: 80, visible: true });
     await sleep(1000);
     await triggerClick();
     setMostrarModalDeposito(false);
 
     setPantalla('recibo_pagado');
     await sleep(1000);
-    setCursorPos({ x: 230, y: 55, visible: true });
+    setCursorPos({ x: 160, y: 400, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('recibo_listo');

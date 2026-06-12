@@ -471,7 +471,7 @@ const PortalInicio = () => {
   }
 
   if (showEvaluatorConsole) {
-    return <ConsolaEvaluacion user={userSession} onBack={() => setShowEvaluatorConsole(false)} />;
+    return <ConsolaEvaluacion user={userSession} onBack={() => setShowEvaluatorConsole(false)} onLogout={handleLogout} />;
   }
 
   return (
@@ -550,12 +550,12 @@ const PortalInicio = () => {
             <div className="bg-white border border-slate-200 rounded-3xl p-8 hover:shadow-xl transition-all border-b-4 flex flex-col" style={{borderBottomColor: currentBrand.primary}}>
               <h3 className="text-sm font-bold text-slate-900 mb-2">Simulador de Ventas</h3>
               <p className="text-[11px] text-slate-500 mb-6 font-medium flex-1">Laboratorio de práctica para creación de pedidos y gestión de inventario.</p>
-              <button onClick={() => navigate('/simulador')} className="w-full py-3 rounded-xl font-black text-white text-[9px] uppercase tracking-widest shadow-md" style={{background: currentBrand.primary}}>💻 Iniciar Laboratorio</button>
+              <button onClick={() => navigate('/simulador', { state: { proceso: 'ventas' } })} className="w-full py-3 rounded-xl font-black text-white text-[9px] uppercase tracking-widest shadow-md" style={{background: currentBrand.primary}}>💻 Iniciar Laboratorio</button>
             </div>
             <div className="bg-white border border-slate-200 rounded-3xl p-8 hover:shadow-xl transition-all border-b-4 flex flex-col" style={{borderBottomColor: currentBrand.primary}}>
               <h3 className="text-sm font-bold text-slate-900 mb-2">Simulador de Cobranzas</h3>
               <p className="text-[11px] text-slate-500 mb-6 font-medium flex-1">Validación de flujos financieros, recibos y depósitos bancarios.</p>
-              <button onClick={() => navigate('/simulador')} className="w-full py-3 rounded-xl font-black text-white text-[9px] uppercase tracking-widest shadow-md" style={{background: currentBrand.primary}}>💰 Iniciar Gestión</button>
+              <button onClick={() => navigate('/simulador', { state: { proceso: 'cobranza' } })} className="w-full py-3 rounded-xl font-black text-white text-[9px] uppercase tracking-widest shadow-md" style={{background: currentBrand.primary}}>💰 Iniciar Gestión</button>
             </div>
           </div>
         </section>

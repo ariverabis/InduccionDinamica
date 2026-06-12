@@ -56,7 +56,9 @@ export const AfvConfig = ({ theme, empresaSeleccionada, setPantalla, nivelSelecc
       </div>
 
       <div className="p-4 flex gap-4 bg-white border-t border-gray-100">
-        <button onClick={() => setPantalla('menu')} className="flex-1 bg-blue-600 py-3 rounded text-[12px] font-bold text-white shadow-md active:bg-blue-700">INICIAR SIMULACIÓN DE VENTAS</button>
+        <button onClick={() => setPantalla('menu')} className="flex-1 bg-blue-600 py-3 rounded text-[12px] font-bold text-white shadow-md active:bg-blue-700">
+          INICIAR SIMULACIÓN DE {procesoActivo === 'cobranza' ? 'COBRANZAS' : 'VENTAS'}
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react'
+import { useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase'
 import { PRODUCTOS_FEBECA, PRODUCTOS_BEVAL } from './data/productosMocks';
 import { useGhostDemos } from './hooks/useGhostDemos';
@@ -19,8 +20,11 @@ function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
   const [pantalla, setPantalla] = useState('inicio');
   
+  const location = useLocation();
+  const initMode = location.state?.proceso || import.meta.env.VITE_APP_MODE || 'todos';
+  
   // 🚀 Modo de aplicación: 'ventas', 'cobranza' o 'todos'
-  const [procesoActivo, setProcesoActivo] = useState(import.meta.env.VITE_APP_MODE || 'todos');
+  const [procesoActivo, setProcesoActivo] = useState(initMode);
   
   // 🏠 REQUISITO: Cargar la empresa seleccionada desde el Portal
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState(() => {
@@ -245,6 +249,7 @@ function App() {
             setloginError={setloginError}
             setSubPantallaCatalog={setSubPantallaCatalog}
             setProcesoActivo={setProcesoActivo}
+            procesoActivo={procesoActivo}
           />
         )}
 
@@ -373,7 +378,77 @@ function App() {
           setMostrarAfvCalc={setMostrarAfvCalc}
         />
 
-        {/* PROCESO DE PEDIDOS (Modularizado) */}
+        {/* PROCESO DE COBRANZA (Modularizado) */}
+        <AfvCollections 
+          theme={theme}
+          empresaSeleccionada={empresaSeleccionada}
+          setPantalla={setPantalla}
+          pantalla={pantalla}
+          formaPago={formaPago}
+          setFormaPago={setFormaPago}
+          mostrarFormaPagoCombo={mostrarFormaPagoCombo}
+          setMostrarFormaPagoCombo={setMostrarFormaPagoCombo}
+          mostrarModalRecibo={mostrarModalRecibo}
+          setMostrarModalRecibo={setMostrarModalRecibo}
+          mostrarSoporte={mostrarSoporte}
+          setMostrarSoporte={setMostrarSoporte}
+          mostrarLupa={mostrarLupa}
+          setMostrarLupa={setMostrarLupa}
+          facturaSeleccionada={facturaSeleccionada}
+          setFacturaSeleccionada={setFacturaSeleccionada}
+          mostrarModalFormasPagoRecibo={mostrarModalFormasPagoRecibo}
+          setMostrarModalFormasPagoRecibo={setMostrarModalFormasPagoRecibo}
+          formaPagoReciboSeleccionada={formaPagoReciboSeleccionada}
+          setFormaPagoReciboSeleccionada={setFormaPagoReciboSeleccionada}
+          montoResta={montoResta}
+          setMontoResta={setMontoResta}
+          montoAbono={montoAbono}
+          setMontoAbono={setMontoAbono}
+          mostrarModalDeposito={mostrarModalDeposito}
+          setMostrarModalDeposito={setMostrarModalDeposito}
+          montoDeposito={montoDeposito}
+          setMontoDeposito={setMontoDeposito}
+          referenciaDeposito={referenciaDeposito}
+          setReferenciaDeposito={setReferenciaDeposito}
+          mostrarComboBanco={mostrarComboBanco}
+          setMostrarComboBanco={setMostrarComboBanco}
+          bancoDeposito={bancoDeposito}
+          setBancoDeposito={setBancoDeposito}
+          fechaDeposito={fechaDeposito}
+          setFechaDeposito={setFechaDeposito}
+          mostrarLupaMontos={mostrarLupaMontos}
+          setMostrarLupaMontos={setMostrarLupaMontos}
+          imgCalculadora={imgCalculadora}
+          setImgCalculadora={setImgCalculadora}
+          mostrarCalculadora={mostrarCalculadora}
+          setMostrarCalculadora={setMostrarCalculadora}
+        />
+
+        {/* PROCESO DE RETENCIONES (Modularizado) */}
+        <AfvTax 
+          theme={theme}
+          empresaSeleccionada={empresaSeleccionada}
+          setPantalla={setPantalla}
+          pantalla={pantalla}
+          retencionesLista={retencionesLista}
+          retencionTipo={retencionTipo}
+          setRetencionTipo={setRetencionTipo}
+          retencionMetodo={retencionMetodo}
+          setRetencionMetodo={setRetencionMetodo}
+          mostrarComboRetencion={mostrarComboRetencion}
+          setMostrarComboRetencion={setMostrarComboRetencion}
+          retencionFecha={retencionFecha}
+          setRetencionFecha={setRetencionFecha}
+          mostrarCalendario={mostrarCalendario}
+          setMostrarCalendario={setMostrarCalendario}
+          retencionPeriodo={retencionPeriodo}
+          setRetencionPeriodo={setRetencionPeriodo}
+          retencionSecuencia={retencionSecuencia}
+          setRetencionSecuencia={setRetencionSecuencia}
+          retencionMonto={retencionMonto}
+          setRetencionMonto={setRetencionMonto}
+          setRetencionesLista={setRetencionesLista}
+        />
 
         {/* BARRA SAMSUNG DE NAVEGACIÓN */}
         <div className="h-12 bg-white flex items-center justify-center gap-14 border-t border-gray-100">

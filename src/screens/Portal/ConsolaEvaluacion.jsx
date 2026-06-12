@@ -173,7 +173,7 @@ const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
   );
 };
 
-const ConsolaEvaluacion = ({ user, onBack }) => {
+const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [viewMode, setViewMode] = useState('manual'); // 'manual' | 'automatico' | 'escenarios' | 'reportes'
   const [asesores, setAsesores] = useState([]);
   const [departamento, setDepartamento] = useState(null);
@@ -1960,7 +1960,21 @@ const ConsolaEvaluacion = ({ user, onBack }) => {
              )}
             </div>
           </div>
-          <button onClick={onBack} className="px-8 py-3 bg-slate-900 text-white font-bold text-[9px] uppercase rounded-full shadow-lg">← Volver</button>
+          <div className="flex items-center gap-3">
+            {onLogout && (
+              <button
+                onClick={() => {
+                  if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                    onLogout();
+                  }
+                }}
+                className="px-6 py-3 bg-red-50 text-red-600 border border-red-200 font-bold text-[9px] uppercase rounded-full hover:bg-red-100 hover:border-red-300 transition-all flex items-center gap-2"
+              >
+                🔒 Cerrar Sesión
+              </button>
+            )}
+            <button onClick={onBack} className="px-8 py-3 bg-slate-900 text-white font-bold text-[9px] uppercase rounded-full shadow-lg">← Volver</button>
+          </div>
         </header>
 
         {viewMode === 'manual' && (

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Desktop = ({ setPantalla, empresaSeleccionada, setEmpresaSeleccionada, setloginUsername, setloginPassword, setloginError, setSubPantallaCatalog, setProcesoActivo }) => {
+const Desktop = ({ setPantalla, empresaSeleccionada, setEmpresaSeleccionada, setloginUsername, setloginPassword, setloginError, setSubPantallaCatalog, setProcesoActivo, procesoActivo }) => {
   const allApps = [
     { id: 'febeca', name: 'Febeca', logo: 'logoafv.jpeg', catalogLogo: 'logocatalogofebeca.png', sdsLogo: 'logo sds febeca.jpg', user: 'admin', pass: '1111' },
     { id: 'sillaca', name: 'Sillaca', logo: 'logoafv.jpeg', catalogLogo: 'logocatalogosillaca.png', sdsLogo: 'logo sds sillaca.jpg', user: 'admin', pass: '2222' },
@@ -14,10 +14,9 @@ const Desktop = ({ setPantalla, empresaSeleccionada, setEmpresaSeleccionada, set
     ? allApps.filter(app => app.name.toLowerCase().includes(empresaSeleccionada.toLowerCase()))
     : allApps;
 
-  // 🚀 Determinar qué accesos mostrar según el modo (.env)
-  const appMode = import.meta.env.VITE_APP_MODE || 'todos';
-  const showVentas = appMode === 'todos' || appMode === 'ventas';
-  const showCobranza = appMode === 'todos' || appMode === 'cobranza';
+  // 🚀 Determinar qué accesos mostrar según el procesoActivo
+  const showVentas = procesoActivo === 'todos' || procesoActivo === 'ventas';
+  const showCobranza = procesoActivo === 'todos' || procesoActivo === 'cobranza';
 
   return (
     <div className="flex-1 bg-blue-800 mt-8 rounded-t-2xl p-4 relative overflow-y-auto">
