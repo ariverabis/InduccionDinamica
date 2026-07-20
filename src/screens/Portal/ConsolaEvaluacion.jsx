@@ -60,14 +60,27 @@ const getGoogleDriveThumbnail = (url) => {
 };
 
 const parseDateForSort = (as) => {
+  let latestItinDate = 0;
+  if (as.itinerarios_induccion && as.itinerarios_induccion.length > 0) {
+    const dates = as.itinerarios_induccion.map(i => new Date(i.fecha_creacion).getTime()).filter(t => !isNaN(t));
+    if (dates.length > 0) {
+      latestItinDate = Math.max(...dates);
+    }
+  }
+
+  let baseDate = 0;
   if (as.fecha_ingreso) {
     const parts = as.fecha_ingreso.trim().split('/');
     if (parts.length === 3) {
       const ts = new Date(parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:00').getTime();
-      if (!isNaN(ts)) return ts;
+      if (!isNaN(ts)) baseDate = ts;
     }
   }
-  return as.created_at ? new Date(as.created_at).getTime() : 0;
+  if (!baseDate) {
+    baseDate = as.created_at ? new Date(as.created_at).getTime() : 0;
+  }
+
+  return Math.max(baseDate, latestItinDate);
 };
 
 const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
@@ -229,6 +242,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editType, setEditType] = useState(null); // 'usuario' | 'candidato'
   const [editData, setEditData] = useState({});
+  const [editPhotoFile, setEditPhotoFile] = useState(null);
   const [isEditingSub, setIsEditingSub] = useState(null); // ID del submodulo en edición
 
   // Estados para Evaluación de Imagen Personal
@@ -328,6 +342,8 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
       fetchSeguimientos(selectedAsesor.id);
       fetchIncidencias(selectedAsesor.id);
       setActiveSubTab('evaluacion');
+      
+      setEvaluaciones({}); // Limpiar estado de notas no guardadas al cambiar de asesor
     }
   }, [selectedAsesor]);
 
@@ -721,10 +737,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const handleGeneratePDF = async () => {
     if (!selectedAsesor) return;
 
-    let fotoBase64 = null;
-    if (selectedAsesor.foto_url) {
-      fotoBase64 = await fetchImageAsBase64(selectedAsesor.foto_url);
-    }
+    const fotoSrc = selectedAsesor.foto_url ? getGoogleDriveThumbnail(selectedAsesor.foto_url) : null;
 
     const today = new Date().toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -1134,8 +1147,8 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
         <div class="section-title">1. Ficha del Asesor de Ventas</div>
         <div class="grid-profile" style="display: flex !important; align-items: center !important; gap: 30px !important; background-color: #f8fafc !important; padding: 15px !important; border-radius: 8px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 20px !important; flex-direction: row !important;">
           <div style="flex-shrink: 0 !important;">
-            ${fotoBase64 ? 
-              `<img src="${fotoBase64}" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid #0f172a;" />` : 
+            ${fotoSrc ? 
+              `<img src="${fotoSrc}" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid #0f172a;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><div style="display:none; width:90px; height:90px; border-radius:50%; background:#0f172a; color:#fff; font-size:32px; font-weight:900; text-align: center; line-height: 90px;">${selectedAsesor.nombre?.charAt(0).toUpperCase() || '?'}</div>` : 
               `<div style="width:90px; height:90px; border-radius:50%; background:#0f172a; color:#fff; font-size:32px; font-weight:900; text-align: center; line-height: 90px; display: inline-block;">${selectedAsesor.nombre?.charAt(0).toUpperCase() || '?'}</div>`
             }
           </div>
@@ -1320,7 +1333,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           window.onload = function() {
             setTimeout(function() {
               window.print();
-            }, 300);
+            }, 800);
           };
         </script>
       </body>
@@ -1387,15 +1400,25 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
     setItinerarioActual(data || []);
   };
 
-  const checkExistenciaCandidato = async (email) => {
+  const checkExistenciaCandidato = async (email, shouldPopulate = false) => {
     const { data } = await supabase.schema('portal_afv').from('usuarios').select('id').eq('usuario', email).single();
     if (data) {
         setEsReintento(true);
         // Obtener último intento para saber cuál sigue
         const { data: itins } = await supabase.schema('portal_afv').from('itinerarios_induccion').select('intento').eq('id_asesor', data.id).order('intento', { ascending: false }).limit(1);
-        return itins && itins.length > 0 ? itins[0].intento : 0;
+        const maxIntento = itins && itins.length > 0 ? itins[0].intento : 0;
+        
+        if (shouldPopulate && maxIntento > 0) {
+            const { data: currentItin } = await supabase.schema('portal_afv').from('itinerarios_induccion').select('*').eq('id_asesor', data.id).eq('intento', maxIntento);
+            if (currentItin) {
+                setItinerarioConfig(currentItin.map(i => ({ id_depto: i.id_departamento, dias: i.duracion_dias })));
+            }
+        }
+        
+        return maxIntento;
     }
     setEsReintento(false);
+    if (shouldPopulate) setItinerarioConfig([]);
     return 0;
   };
 
@@ -1873,6 +1896,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const handleOpenEdit = (data, type) => {
     setEditType(type);
     setEditData({ ...data });
+    setEditPhotoFile(null);
     setShowEditModal(true);
   };
 
@@ -1880,6 +1904,26 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
     setIsSaving(true);
     try {
       if (editType === 'usuario') {
+        let photoUrl = editData.foto_url;
+
+        if (editPhotoFile) {
+          const fileExt = editPhotoFile.name.split('.').pop();
+          const fileName = `foto_perfil_${editData.id}_${Date.now()}.${fileExt}`;
+          const filePath = `${editData.id}/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('evidencias_asesores')
+            .upload(filePath, editPhotoFile, { upsert: true });
+            
+          if (uploadError) throw uploadError;
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('evidencias_asesores')
+            .getPublicUrl(filePath);
+            
+          photoUrl = publicUrl;
+        }
+
         const { error } = await supabase.schema('portal_afv').from('usuarios').update({
           nombre: editData.nombre,
           correo: editData.correo,
@@ -1889,13 +1933,14 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           estado: editData.estado,
           zona: editData.zona,
           telefono: editData.telefono,
-          fecha_ingreso: editData.fecha_ingreso
+          fecha_ingreso: editData.fecha_ingreso,
+          foto_url: photoUrl
         }).eq('id', editData.id);
 
         if (error) throw error;
         setMessage('✅ Datos del asesor actualizados.');
         if (selectedAsesor?.id === editData.id) {
-          setSelectedAsesor({ ...selectedAsesor, ...editData });
+          setSelectedAsesor({ ...selectedAsesor, ...editData, foto_url: photoUrl });
         }
         fetchInitialData();
       } else {
@@ -1991,7 +2036,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                       if (filterStatus === 'en_curso') return s === 'En Curso';
                       if (filterStatus === 'sin_itinerario') return s === 'Sin Itinerario';
                       return true;
-                    }).filter(as => as.nombre?.toLowerCase().includes(searchTermAsesores.toLowerCase())).length}
+                    }).filter(as => (as.nombre || '').toLowerCase().includes(searchTermAsesores.toLowerCase())).length}
                   </span>
                 </div>
                 
@@ -2026,7 +2071,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                       if (filterStatus === 'sin_itinerario') return s === 'Sin Itinerario';
                       return true;
                     })
-                    .filter(as => as.nombre?.toLowerCase().includes(searchTermAsesores.toLowerCase()))
+                    .filter(as => (as.nombre || '').toLowerCase().includes(searchTermAsesores.toLowerCase()))
                     .map(as => {
                       const status = getAsesorStatus(as);
                       return (
@@ -3126,7 +3171,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                    <th className="px-8 py-4 text-center">Acciones</th>
                 </tr></thead>
                 <tbody>
-                  {notasAutomaticas.filter(n => n.nombre_apellido?.toLowerCase().includes(searchTermAuto.toLowerCase())).map((nota) => (
+                  {notasAutomaticas.filter(n => (n.nombre_apellido || '').toLowerCase().includes(searchTermAuto.toLowerCase())).map((nota) => (
                     <tr key={nota.id} className="border-b border-slate-50 hover:bg-slate-50 transition-all">
                        <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
@@ -3173,9 +3218,8 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                             <button onClick={() => handleOpenEdit(nota, 'candidato')} className="bg-white border border-slate-200 text-slate-600 px-3 py-2.5 rounded-full text-[9px] font-black uppercase hover:bg-slate-50 transition-all">✏️</button>
                             <button onClick={async () => {
                                 setCandidatoAlta(nota);
-                                await checkExistenciaCandidato(nota.email_contacto);
+                                await checkExistenciaCandidato(nota.email_contacto, true);
                                 setShowAltaModal(true);
-                                setItinerarioConfig([]);
                             }} className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[9px] font-black uppercase hover:bg-blue-700 transition-all">Configurar Itinerario</button>
                           </div>
                        </td>
@@ -3863,6 +3907,20 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                           className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
                         />
                     </div>
+                    {editType === 'usuario' && (
+                      <div className="col-span-2">
+                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Foto de Perfil</label>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => setEditPhotoFile(e.target.files[0])}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                          {editData.foto_url && !editPhotoFile && (
+                            <p className="text-[9px] text-slate-500 mt-1">Ya tiene una foto subida. Seleccionar un nuevo archivo la reemplazará.</p>
+                          )}
+                      </div>
+                    )}
                 </div>
 
                 <div className="flex gap-4">

@@ -55,6 +55,8 @@ export function useGhostDemos({
   setMostrarComboRetencion,
   setMostrarCalendario,
   setRetencionesLista,
+  setFacturasSeleccionadas,
+  setMontosEditables,
   MOCK_PRODUCTOS
 }) {
   const sleep = (ms) => new Promise((resolve, reject) => {
@@ -856,8 +858,10 @@ export function useGhostDemos({
 
   const runDemoRetencion = async () => {
     setInvoiceChecked(false);
+    setFacturasSeleccionadas([]);
+    setMontosEditables({});
     setMostrarDetalleRetencion(false);
-    setRetencionMonto('870,30');
+    setRetencionMonto('');
     setRetencionFecha('');
     setRetencionPeriodo('');
     setRetencionSecuencia('');
@@ -919,68 +923,50 @@ export function useGhostDemos({
     setRetencionTipo('Manual');
     await sleep(1500);
 
-    await decir("7.- Colocamos la fecha seleccionándola en el calendario.");
-    setCursorPos({ x: 160, y: 210, visible: true });
+    await decir("7.- Colocamos la fecha en el campo.");
+    setCursorPos({ x: 200, y: 150, visible: true }); // Ajustado a la fila 3
     await sleep(1200);
     await triggerClick();
-    setMostrarCalendario(true);
-    await sleep(1000);
-
-    setCursorPos({ x: 140, y: 285, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setRetencionFecha('27-03-2026');
-    setMostrarCalendario(false);
+    setRetencionFecha('2026-03-27');
     await sleep(1200);
 
-    setCursorPos({ x: 190, y: 200, visible: true });
-    setRetencionPeriodo('202603');
-    await decir("8.- Llenamos el campo numero de comprobante.");
+    await decir("8.- Llenamos el comprobante (Período y Secuencia).");
+    setCursorPos({ x: 150, y: 200, visible: true }); // Período
     await sleep(800);
+    await triggerClick();
+    setRetencionPeriodo('202603');
+    await sleep(1000);
+    setCursorPos({ x: 250, y: 200, visible: true }); // Secuencia
     await sleep(800);
     await triggerClick();
     setRetencionSecuencia('00001234');
     await sleep(1500);
 
-    await decir("9.- Marcamos el check de la factura aplicable.");
-    setCursorPos({ x: 35, y: 350, visible: true });
+    await decir("9.- Marcamos el check de la factura aplicable (06980336).");
+    setCursorPos({ x: 40, y: 380, visible: true }); // Checkbox en la tabla de 06980336 (aprox)
     await sleep(1200);
     await triggerClick();
-    setInvoiceChecked(true);
+    setFacturasSeleccionadas(['06980336']);
     await sleep(1500);
 
-    await decir("10.- Pulsamos sobre la barra azul para abrir el detalle y ajustar la retención.");
-    setCursorPos({ x: 150, y: 380, visible: true });
+    await decir("10.- Ajustamos el monto de la retención de 63,87 a 63,90.");
+    setCursorPos({ x: 275, y: 380, visible: true }); // Campo de monto
     await sleep(1200);
     await triggerClick();
-    setMostrarDetalleRetencion(true);
+    setMontosEditables({ '06980336': '63,9' });
+    await sleep(500);
+    setMontosEditables({ '06980336': '63,90' });
     await sleep(1500);
 
-    await decir("11.- Editamos la Retención para igualar el comprobante físico del cliente.");
-    setCursorPos({ x: 200, y: 460, visible: true });
+    await decir("11.- Finalizamos pulsando FIN.");
+    setCursorPos({ x: 250, y: 50, visible: true }); // Botón FIN en el encabezado
     await sleep(1200);
     await triggerClick();
-    setRetencionMonto('870,3');
-    await sleep(200);
-    setRetencionMonto('870,');
-    await sleep(200);
-    setRetencionMonto('870');
-    await sleep(1100);
-
-    await decir("12.- Confirmamos los cambios pulsando OK.");
-    setCursorPos({ x: 100, y: 520, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setMostrarDetalleRetencion(false);
-    await sleep(1500);
-
-    await decir("13.- Finalizamos pulsando FIN.");
-    setCursorPos({ x: 245, y: 65, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setRetencionesLista([{ comprobante: retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000'), fecha: retencionFecha, monto: retencionMonto }]);
+    setRetencionesLista([{ comprobante: retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000'), fecha: retencionFecha, monto: '63.90' }]);
     setPantalla('retencion_list');
     setRetencionTipo('');
+    setFacturasSeleccionadas([]);
+    setMontosEditables({});
     await sleep(1500);
 
     setNarracionTexto("");

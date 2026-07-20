@@ -7,6 +7,7 @@ import { useGhostDemos } from './hooks/useGhostDemos';
 // Módulos internos modularizados
 import PhoneShell from './components/Simulator/PhoneShell';
 import Overlays from './components/Simulator/Overlays';
+import { GhostCursor } from './components/Simulator/Overlays';
 import Desktop from './components/Simulator/Desktop';
 import { AfvConfig, AfvMenu } from './components/Simulator/AfvApp';
 import { AfvOrders } from './components/Simulator/AfvOrders';
@@ -159,11 +160,12 @@ function App() {
   const [retencionComprobante, setRetencionComprobante] = useState('');
   const [mostrarDetalleRetencion, setMostrarDetalleRetencion] = useState(false);
   const [mostrarComboRetencion, setMostrarComboRetencion] = useState(false);
-  const [retencionMonto, setRetencionMonto] = useState('870,30');
-  const [mostrarRetencionCombo, setMostrarRetencionCombo] = useState(false);
-  const [retencionesLista, setRetencionesLista] = useState([]);
+  const [retencionMonto, setRetencionMonto] = useState('');
   const [retencionTipo, setRetencionTipo] = useState('');
   const [retencionMetodo, setRetencionMetodo] = useState('--Seleccione--');
+  const [retencionesLista, setRetencionesLista] = useState([]);
+  const [facturasSeleccionadas, setFacturasSeleccionadas] = useState([]);
+  const [montosEditables, setMontosEditables] = useState({});
   const [invoiceChecked, setInvoiceChecked] = useState(false);
   const [mostrarModalOtorgar, setMostrarModalOtorgar] = useState(false);
   const [condicionPedido, setCondicionPedido] = useState('0% de descuento a 30');
@@ -217,13 +219,18 @@ function App() {
     setImgCalculadora, setMostrarCalculadora, setMostrarSoporte, setMostrarLupa,
     setInvoiceChecked, setMostrarDetalleRetencion, setRetencionMonto, setRetencionFecha,
     setRetencionPeriodo, setRetencionSecuencia, setRetencionTipo, setRetencionMetodo,
-    setMostrarComboRetencion, setMostrarCalendario, setRetencionesLista, MOCK_PRODUCTOS
+    setMostrarComboRetencion, setMostrarCalendario, setRetencionesLista, 
+    setFacturasSeleccionadas, setMontosEditables, MOCK_PRODUCTOS
   });
 
 
 
   return (
-    <PhoneShell theme={theme}>
+    <PhoneShell
+      cursor={
+        <GhostCursor cursorPos={cursorPos} isClicking={isClicking} />
+      }
+    >
         {/* PANTALLA 0: INICIO DE SESIÓN */}
         {pantalla === 'inicio' && (
           <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col items-center justify-center p-6 bg-gradient-to-b from-white to-gray-50">
@@ -448,6 +455,10 @@ function App() {
           retencionMonto={retencionMonto}
           setRetencionMonto={setRetencionMonto}
           setRetencionesLista={setRetencionesLista}
+          facturasSeleccionadas={facturasSeleccionadas}
+          setFacturasSeleccionadas={setFacturasSeleccionadas}
+          montosEditables={montosEditables}
+          setMontosEditables={setMontosEditables}
         />
 
         {/* BARRA SAMSUNG DE NAVEGACIÓN */}
@@ -705,10 +716,8 @@ function App() {
           </div>
         )}
 
-        {/* Overlays (Cursor, Calculadora, etc.) */}
+        {/* Overlays (Calculadora, Soporte, etc.) */}
         <Overlays 
-            cursorPos={cursorPos} 
-            isClicking={isClicking} 
             mostrarCalculadora={mostrarCalculadora} 
             setMostrarCalculadora={setMostrarCalculadora}
             imgCalculadora={imgCalculadora}

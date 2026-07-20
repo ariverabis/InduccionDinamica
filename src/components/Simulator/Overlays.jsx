@@ -1,8 +1,45 @@
 import React from 'react';
 
+// Componente del cursor fantasma — se monta fuera del overflow-hidden del PhoneShell
+export const GhostCursor = ({ cursorPos, isClicking }) => {
+  if (!cursorPos.visible) return null;
+  return (
+    <div
+      className={`absolute pointer-events-none z-[999] ${isClicking ? 'scale-75' : 'scale-100'}`}
+      style={{
+        left: cursorPos.x,
+        top: cursorPos.y,
+        transition: 'left 0.4s ease-out, top 0.4s ease-out, transform 0.1s',
+        transform: 'translate(-4px, -4px)'
+      }}
+    >
+      <div className="relative">
+        {/* Cursor SVG inline — no depende de archivo externo */}
+        <svg
+          width="28" height="32"
+          viewBox="0 0 28 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}
+        >
+          <path
+            d="M4 2L4 26L10 20L14 30L17 29L13 19L22 19L4 2Z"
+            fill="white"
+            stroke="#1d1d1d"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+        {/* Efecto de click */}
+        {isClicking && (
+          <div className="absolute top-0 left-0 w-7 h-7 bg-blue-400/50 rounded-full animate-ping" />
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Overlays = ({ 
-  cursorPos, 
-  isClicking, 
   mostrarCalculadora, 
   setMostrarCalculadora,
   imgCalculadora,
@@ -12,24 +49,6 @@ const Overlays = ({
 }) => {
   return (
     <>
-      {/* Ghost Cursor */}
-      {cursorPos.visible && (
-        <div
-          className={`fixed pointer-events-none z-[999] transition-transform duration-100 ${isClicking ? 'scale-75' : 'scale-100'}`}
-          style={{
-            left: cursorPos.x,
-            top: cursorPos.y,
-            transition: 'left 0.4s ease-out, top 0.4s ease-out, transform 0.1s'
-          }}
-        >
-          <div className="relative">
-             <img src="cursor.png" className="w-8 h-8" alt="cursor" />
-             {isClicking && (
-               <div className="absolute inset-0 bg-blue-400/40 rounded-full animate-ping"></div>
-             )}
-          </div>
-        </div>
-      )}
 
       {/* CALCULADORA WINDOWS 11 STYLE */}
       {mostrarCalculadora && (
