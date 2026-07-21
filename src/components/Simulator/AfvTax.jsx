@@ -420,7 +420,6 @@ export const AfvTax = ({
               </div>
            </div>
         </div>
-      )}>
       )}
     </>
   );
