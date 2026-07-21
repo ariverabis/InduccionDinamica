@@ -162,62 +162,62 @@ export const AfvTax = ({
             ) : (
               <div className="flex flex-col h-full bg-white">
                 {/* ENCABEZADO TIPO ret1.jpeg */}
-                <div className="p-2 space-y-3 border-b border-gray-300">
+                <div className="p-1 space-y-1.5 border-b border-gray-300">
                    {/* Fila 1 */}
-                   <div className="flex items-center gap-2">
-                      <label className="text-[14px] text-gray-500 w-[70px]">RIF:</label>
-                      <div className="flex-1 bg-[#c0c0c0] px-2 py-1 text-[16px] font-bold text-black border-b border-gray-400">J312193697</div>
+                   <div className="flex items-center gap-1">
+                      <label className="text-[10px] text-gray-500 w-[50px]">RIF:</label>
+                      <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[11px] font-bold text-black border-b border-gray-400">J312193697</div>
                       <button onClick={() => {
                         setRetencionesLista([...retencionesLista, { comprobante: retencionPeriodo + retencionSecuencia, fecha: retencionFecha, monto: totalUSD.toFixed(2) }]);
                         setPantalla('retencion_list');
                         setRetencionTipo('');
-                      }} className="bg-[#e0e0e0] px-3 py-1 text-[12px] font-bold border border-gray-300 rounded">FIN</button>
-                      <button onClick={() => setRetencionTipo('')} className="bg-[#c0c0c0] w-8 h-8 rounded-full border border-gray-400 flex items-center justify-center font-bold text-white shadow-inner">←</button>
+                      }} className="bg-[#e0e0e0] px-2 py-0.5 text-[9px] font-bold border border-gray-300 rounded">FIN</button>
+                      <button onClick={() => setRetencionTipo('')} className="bg-[#c0c0c0] w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center font-bold text-white shadow-inner text-[10px]">←</button>
                    </div>
                    {/* Fila 2 */}
-                   <div className="flex items-center gap-2">
-                      <label className="text-[14px] text-gray-500 w-[90px]">Razón Social:</label>
-                      <div className="flex-1 bg-[#c0c0c0] px-2 py-1 text-[16px] text-black border-b border-gray-400 truncate">ALTAMIRA FERRE-INDUSTRIAL -</div>
+                   <div className="flex items-center gap-1">
+                      <label className="text-[10px] text-gray-500 w-[70px]">Razón Social:</label>
+                      <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[11px] text-black border-b border-gray-400 truncate">ALTAMIRA FERRE-INDUSTRIAL -</div>
                    </div>
                    {/* Fila 3 */}
-                   <div className="flex items-center gap-2">
-                      <label className="text-[14px] text-gray-500 w-[90px]">Fecha Comp:</label>
-                      <input type="date" value={retencionFecha} onChange={(e) => setRetencionFecha(e.target.value)} className="flex-1 bg-transparent border-b border-black py-1 text-[16px] font-bold outline-none text-black" />
+                   <div className="flex items-center gap-1">
+                      <label className="text-[10px] text-gray-500 w-[70px]">Fecha Comp:</label>
+                      <input type="date" value={retencionFecha} onChange={(e) => setRetencionFecha(e.target.value)} className="flex-1 bg-transparent border-b border-black py-0.5 text-[11px] font-bold outline-none text-black" />
                    </div>
                    {/* Fila 4 */}
-                   <div className="flex items-center gap-2">
-                      <label className="text-[14px] text-gray-500 w-[90px]">Comprobante:</label>
-                      <input type="text" value={retencionPeriodo} onChange={(e) => setRetencionPeriodo(e.target.value)} className="w-[100px] bg-[#c0c0c0] px-2 py-1 text-[16px] font-bold text-black border-b border-gray-400 outline-none" placeholder="Período" />
-                      <input type="text" value={retencionSecuencia} onChange={(e) => setRetencionSecuencia(e.target.value)} className="flex-1 bg-transparent border-b-2 border-blue-600 px-2 py-1 text-[16px] font-bold outline-none text-black" placeholder="Secuencia" />
+                   <div className="flex items-center gap-1">
+                      <label className="text-[10px] text-gray-500 w-[70px]">Comprobante:</label>
+                      <input type="text" value={retencionPeriodo} onChange={(e) => setRetencionPeriodo(e.target.value)} className="w-[70px] bg-[#c0c0c0] px-1 py-0.5 text-[11px] font-bold text-black border-b border-gray-400 outline-none" placeholder="Período" />
+                      <input type="text" value={retencionSecuencia} onChange={(e) => setRetencionSecuencia(e.target.value)} className="flex-1 bg-transparent border-b-2 border-blue-600 px-1 py-0.5 text-[11px] font-bold outline-none text-black" placeholder="Secuencia" />
                    </div>
                 </div>
 
                 {/* TABLA DE FACTURAS */}
                 <div className="flex-1 flex flex-col min-h-0 bg-white">
-                   <div className="flex bg-[#a0a0a0] text-white text-[12px] font-bold border-b-2 border-gray-400 mt-2 mx-1">
-                      <div className="w-[40px] py-1 border-r border-gray-300"></div>
-                      <div className="w-[50px] text-center py-1 border-r border-gray-300">Tipo</div>
-                      <div className="flex-1 text-center py-1 border-r border-gray-300">No. Fiscal</div>
-                      <div className="w-[90px] text-center py-1">Monto (USD)</div>
+                   <div className="flex bg-[#a0a0a0] text-white text-[9px] font-bold border-b-2 border-gray-400 mt-1 mx-1">
+                      <div className="w-[30px] py-0.5 border-r border-gray-300"></div>
+                      <div className="w-[40px] text-center py-0.5 border-r border-gray-300">Tipo</div>
+                      <div className="flex-1 text-center py-0.5 border-r border-gray-300">No. Fiscal</div>
+                      <div className="w-[70px] text-center py-0.5">Monto (USD)</div>
                    </div>
                    <div className="flex-1 overflow-y-auto mx-1 border-x border-b border-gray-300">
                       {facturasDisponibles.map((f, idx) => {
                          const isSelected = facturasSeleccionadas.includes(f.id);
                          return (
-                           <div key={f.id} onClick={() => handleSelectFactura(f.id)} className={`flex items-center text-[13px] border-b border-gray-200 cursor-pointer ${isSelected ? 'bg-[#00b0f0] text-white' : 'text-black'}`}>
-                              <div className="w-[40px] flex justify-center py-2 border-r border-gray-200">
-                                 <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-4 h-4 cursor-pointer" />
+                           <div key={f.id} onClick={() => handleSelectFactura(f.id)} className={`flex items-center text-[10px] border-b border-gray-200 cursor-pointer ${isSelected ? 'bg-[#00b0f0] text-white' : 'text-black'}`}>
+                              <div className="w-[30px] flex justify-center py-1 border-r border-gray-200">
+                                 <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3 h-3 cursor-pointer" />
                               </div>
-                              <div className="w-[50px] font-bold text-center py-2 border-r border-gray-200">FAC</div>
-                              <div className="flex-1 font-bold text-center py-2 border-r border-gray-200">{f.id}</div>
-                              <div className="w-[90px] font-bold text-right pr-2 py-1 flex items-center justify-end">
+                              <div className="w-[40px] font-bold text-center py-1 border-r border-gray-200">FAC</div>
+                              <div className="flex-1 font-bold text-center py-1 border-r border-gray-200">{f.id}</div>
+                              <div className="w-[70px] font-bold text-right pr-1 py-0.5 flex items-center justify-end">
                                 {isSelected ? (
                                   <input 
                                     type="text" 
                                     value={getMontoStr(f)} 
                                     onChange={(e) => handleMontoChange(f.id, e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="w-full bg-white text-black text-right border border-gray-400 px-1 py-1 rounded outline-none"
+                                    className="w-full bg-white text-black text-right border border-gray-400 px-0.5 py-0.5 rounded outline-none text-[10px]"
                                   />
                                 ) : (
                                   f.monto.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
@@ -230,14 +230,14 @@ export const AfvTax = ({
                 </div>
 
                 {/* FOOTER */}
-                <div className="p-2 space-y-2 border-t border-gray-300">
-                   <div className="flex items-center gap-2">
-                      <input type="checkbox" id="selectAll" checked={facturasSeleccionadas.length === facturasDisponibles.length && facturasDisponibles.length > 0} onChange={handleSelectAll} className="w-4 h-4" />
-                      <label htmlFor="selectAll" className="text-[14px] text-gray-700">Seleccionar todo</label>
+                <div className="p-1 space-y-1.5 border-t border-gray-300">
+                   <div className="flex items-center gap-1.5">
+                      <input type="checkbox" id="selectAll" checked={facturasSeleccionadas.length === facturasDisponibles.length && facturasDisponibles.length > 0} onChange={handleSelectAll} className="w-3.5 h-3.5" />
+                      <label htmlFor="selectAll" className="text-[10px] text-gray-700">Seleccionar todo</label>
                    </div>
-                   <div className="flex items-center gap-2 mt-2">
-                      <label className="text-[14px] text-gray-500 w-[90px]">Monto VES:</label>
-                      <div className="flex-1 bg-[#c0c0c0] px-2 py-2 text-[18px] font-bold text-black border-b border-gray-400">{totalVES}</div>
+                   <div className="flex items-center gap-1.5 mt-1">
+                      <label className="text-[10px] text-gray-500 w-[70px]">Monto VES:</label>
+                      <div className="flex-1 bg-[#c0c0c0] px-1.5 py-1 text-[12px] font-bold text-black border-b border-gray-400">{totalVES}</div>
                    </div>
                 </div>
               </div>
