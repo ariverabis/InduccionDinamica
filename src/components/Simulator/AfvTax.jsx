@@ -83,7 +83,7 @@ export const AfvTax = ({
 
   return (
     <>
-      {/* PANTALLA: LISTA DE RETENCIONES */}
+      {/* PANTALLA: LISTA DE RETENCIONES (061) */}
       {pantalla === 'retencion_list' && (
         <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
           <div className="bg-[#00b0f0] p-2.5 flex items-center text-black border-b border-[#0092c8] shadow-sm">
@@ -136,7 +136,7 @@ export const AfvTax = ({
         </div>
       )}
 
-      {/* PANTALLA: FORMULARIO DE RETENCION */}
+      {/* PANTALLA: FORMULARIO DE RETENCION (097) */}
       {pantalla === 'retencion_form' && (
         <div className="flex-1 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
           <div className="bg-[#00b0f0] p-2.5 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
@@ -207,7 +207,7 @@ export const AfvTax = ({
                        <input type="text" value={retencionSecuencia} onChange={(e) => setRetencionSecuencia(e.target.value)} className="flex-1 bg-transparent border-b-2 border-blue-600 px-1 py-0.5 text-[11px] font-bold outline-none text-black" placeholder="Secuencia" />
                     </div>
                  </div>
- 
+
                  {/* TABLA DE FACTURAS */}
                  <div className="flex-1 flex flex-col min-h-0 bg-white">
                     <div className="flex bg-[#a0a0a0] text-white text-[9px] font-bold border-b-2 border-gray-400 mt-1 mx-1">
@@ -244,7 +244,7 @@ export const AfvTax = ({
                        })}
                     </div>
                  </div>
- 
+
                  {/* FOOTER */}
                  <div className="p-1 space-y-1.5 border-t border-gray-300">
                     <div className="flex items-center gap-1.5">
@@ -323,66 +323,68 @@ export const AfvTax = ({
         </div>
       )}
 
-      {/* OVERLAY: KEYPAD (Introduzca el número) */}
+      {/* OVERLAY: KEYPAD (Introduzca el número) - popup compacto estilo retencion9.jpg */}
       {subPantalla === 'keypad' && (
-        <div className="absolute inset-0 bg-[#f4f4f4] mt-8 rounded-t-2xl flex flex-col z-50 overflow-hidden font-sans">
-          <div className="p-3 bg-white border-b border-gray-200">
-             <span className="text-[11px] font-bold text-gray-700 block">Introduzca el número:</span>
-             <div className="text-[16px] font-bold text-right text-black mt-1 pr-1 border-b border-gray-400">
+        <div className="absolute inset-0 bg-black/40 z-50 flex items-center justify-center p-4 font-sans">
+          <div className="bg-white w-full max-w-[240px] rounded-lg shadow-2xl overflow-hidden">
+            {/* Título y campo de monto */}
+            <div className="px-4 pt-4 pb-2">
+              <span className="text-[13px] font-bold text-black block">Introduzca el número:</span>
+              <div className="text-[15px] font-bold text-right text-black mt-2 pr-1 pb-1 border-b-2 border-gray-400">
                 {montoRetencionEditado || '0'}
-             </div>
-          </div>
+              </div>
+            </div>
 
-          <div className="flex-1 p-2 flex flex-col justify-between bg-gray-200">
-             {/* Keypad Grid */}
-             <div className="grid grid-cols-3 gap-1.5 flex-1 justify-center items-center py-2">
+            {/* Keypad Grid - fondo oscuro como la imagen */}
+            <div className="mx-3 mb-2 p-2 bg-[#555] rounded-lg">
+              <div className="grid grid-cols-3 gap-1.5">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, ',', 0].map((num) => (
-                   <button 
-                      key={num} 
-                      onClick={() => {
-                        if (num === ',') {
-                          if (!montoRetencionEditado.includes(',')) {
-                            setMontoRetencionEditado(montoRetencionEditado + ',');
-                          }
-                        } else {
-                          setMontoRetencionEditado(montoRetencionEditado + num);
+                  <button 
+                    key={num} 
+                    onClick={() => {
+                      if (num === ',') {
+                        if (!montoRetencionEditado.includes(',')) {
+                          setMontoRetencionEditado(montoRetencionEditado + ',');
                         }
-                      }} 
-                      className="bg-white hover:bg-gray-100 active:bg-gray-200 py-2.5 rounded text-sm font-bold text-gray-700 shadow border border-gray-300"
-                   >
-                      {num}
-                   </button>
+                      } else {
+                        setMontoRetencionEditado(montoRetencionEditado + num);
+                      }
+                    }} 
+                    className="bg-[#d0d0d0] hover:bg-[#bbb] active:bg-[#aaa] py-2 rounded-md text-[13px] font-bold text-gray-700 shadow-sm border border-gray-400"
+                  >
+                    {num}
+                  </button>
                 ))}
                 <button 
-                   onClick={() => setMontoRetencionEditado(montoRetencionEditado.slice(0, -1))}
-                   className="bg-white hover:bg-gray-100 py-2.5 rounded text-sm font-bold text-gray-700 shadow border border-gray-300"
+                  onClick={() => setMontoRetencionEditado(montoRetencionEditado.slice(0, -1))}
+                  className="bg-[#d0d0d0] hover:bg-[#bbb] active:bg-[#aaa] py-2 rounded-md text-[13px] font-bold text-gray-700 shadow-sm border border-gray-400"
                 >
-                   &lt;-
+                  &lt;-
                 </button>
-             </div>
+              </div>
+            </div>
 
-             {/* Action buttons */}
-             <div className="flex gap-3 pt-1">
-                <button 
-                   onClick={() => setSubPantalla('detalle')}
-                   className="flex-1 bg-[#e0e0e0] border border-gray-400 py-2 rounded text-[10px] font-bold shadow text-black"
-                >
-                   ACEPTAR
-                </button>
-                <button 
-                   onClick={() => {
-                     // Discard and restore
-                     const calculatedBase = (totalUSD / 1.16);
-                     const calculatedImpuesto = calculatedBase * 0.16;
-                     const calculatedRet = calculatedImpuesto * 0.75;
-                     setMontoRetencionEditado(calculatedRet.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                     setSubPantalla('detalle');
-                   }}
-                   className="flex-1 bg-[#e0e0e0] border border-gray-400 py-2 rounded text-[10px] font-bold shadow text-black"
-                >
-                   CANCELAR
-                </button>
-             </div>
+            {/* Botones ACEPTAR / CANCELAR */}
+            <div className="flex gap-3 px-3 pb-3">
+              <button 
+                onClick={() => setSubPantalla('detalle')}
+                className="flex-1 bg-[#e8e8e8] border border-gray-400 py-2 rounded text-[11px] font-bold shadow text-black hover:bg-[#ddd]"
+              >
+                ACEPTAR
+              </button>
+              <button 
+                onClick={() => {
+                  const calculatedBase = (totalUSD / 1.16);
+                  const calculatedImpuesto = calculatedBase * 0.16;
+                  const calculatedRet = calculatedImpuesto * 0.75;
+                  setMontoRetencionEditado(calculatedRet.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                  setSubPantalla('detalle');
+                }}
+                className="flex-1 bg-[#e8e8e8] border border-gray-400 py-2 rounded text-[11px] font-bold shadow text-black hover:bg-[#ddd]"
+              >
+                CANCELAR
+              </button>
+            </div>
           </div>
         </div>
       )}
