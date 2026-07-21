@@ -26,6 +26,10 @@ export const AfvTax = ({
   montosEditables,
   setMontosEditables
 }) => {
+  const [subPantalla, setSubPantalla] = useState(''); // '', 'detalle', 'keypad'
+  const [montoRetencionEditado, setMontoRetencionEditado] = useState('');
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+
   const facturasDisponibles = [
     { id: '06980316', monto: 8.87 },
     { id: '06980336', monto: 63.87 },
@@ -103,16 +107,23 @@ export const AfvTax = ({
                   <div className="flex-1 text-center py-1.5">Comprobante</div>
                   <div className="flex-1 text-center py-1.5">Monto (USD)</div>
                 </div>
-                <div className="flex-1 overflow-y-auto">
-                  {retencionesLista.map((ret, idx) => (
-                    <div key={idx} className="flex border-b border-gray-200 text-[12px] text-black">
-                      <div className="w-12 py-2 border-r border-gray-200"></div>
-                      <div className="flex-1 text-center py-2 border-r border-gray-200">{ret.comprobante}</div>
-                      <div className="flex-1 text-center py-2">{ret.monto}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                 <div className="flex-1 overflow-y-auto">
+                   {retencionesLista.map((ret, idx) => (
+                     <div key={idx} className="flex border-b border-gray-200 text-[12px] text-black">
+                       <div className="w-12 py-2 border-r border-gray-200"></div>
+                       <div className="flex-1 text-center py-2 border-r border-gray-200">{ret.comprobante}</div>
+                       <div className="flex-1 text-center py-2">{ret.monto}</div>
+                     </div>
+                   ))}
+                 </div>
+                 <div className="flex bg-[#d9d9d9] text-black font-bold text-[12px] border-t border-gray-400">
+                   <div className="w-12 py-1.5 border-r border-gray-200"></div>
+                   <div className="flex-1 text-center py-1.5 border-r border-gray-200">Total:</div>
+                   <div className="flex-1 text-center py-1.5">
+                     {retencionesLista.reduce((sum, r) => sum + parseFloat(String(r.monto).replace(',', '.')) || 0, 0).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                   </div>
+                 </div>
+               </div>
               <div className="flex gap-4 p-2 justify-center">
                 <button className="bg-[#e6e6e6] px-6 py-1.5 border border-gray-400 text-sm">ANULAR</button>
                 <button onClick={() => { setRetencionTipo(''); setPantalla('retencion_form'); }} className="bg-[#e6e6e6] px-6 py-1.5 border border-gray-400 text-sm">NUEVO</button>
@@ -164,86 +175,252 @@ export const AfvTax = ({
                 {/* ENCABEZADO TIPO ret1.jpeg */}
                 <div className="p-1 space-y-1.5 border-b border-gray-300">
                    {/* Fila 1 */}
-                   <div className="flex items-center gap-1">
-                      <label className="text-[10px] text-gray-500 w-[50px]">RIF:</label>
-                      <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[11px] font-bold text-black border-b border-gray-400">J312193697</div>
-                      <button onClick={() => {
-                        setRetencionesLista([...retencionesLista, { comprobante: retencionPeriodo + retencionSecuencia, fecha: retencionFecha, monto: totalUSD.toFixed(2) }]);
-                        setPantalla('retencion_list');
-                        setRetencionTipo('');
+                    <div className="flex items-center gap-1">
+                       <label className="text-[10px] text-gray-500 w-[50px]">RIF:</label>
+                       <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[11px] font-bold text-black border-b border-gray-400">J312193697</div>
+                       <button onClick={() => {
+                        const calculatedBase = (totalUSD / 1.16);
+                        const calculatedImpuesto = calculatedBase * 0.16;
+                        const calculatedRet = calculatedImpuesto * 0.75;
+                        setMontoRetencionEditado(calculatedRet.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                        setSubPantalla('detalle');
                       }} className="bg-[#e0e0e0] px-2 py-0.5 text-[9px] font-bold border border-gray-300 rounded">FIN</button>
-                      <button onClick={() => setRetencionTipo('')} className="bg-[#c0c0c0] w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center font-bold text-white shadow-inner text-[10px]">←</button>
-                   </div>
-                   {/* Fila 2 */}
-                   <div className="flex items-center gap-1">
-                      <label className="text-[10px] text-gray-500 w-[70px]">Razón Social:</label>
-                      <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[11px] text-black border-b border-gray-400 truncate">ALTAMIRA FERRE-INDUSTRIAL -</div>
-                   </div>
-                   {/* Fila 3 */}
-                   <div className="flex items-center gap-1">
-                      <label className="text-[10px] text-gray-500 w-[70px]">Fecha Comp:</label>
-                      <input type="date" value={retencionFecha} onChange={(e) => setRetencionFecha(e.target.value)} className="flex-1 bg-transparent border-b border-black py-0.5 text-[11px] font-bold outline-none text-black" />
-                   </div>
-                   {/* Fila 4 */}
-                   <div className="flex items-center gap-1">
-                      <label className="text-[10px] text-gray-500 w-[70px]">Comprobante:</label>
-                      <input type="text" value={retencionPeriodo} onChange={(e) => setRetencionPeriodo(e.target.value)} className="w-[70px] bg-[#c0c0c0] px-1 py-0.5 text-[11px] font-bold text-black border-b border-gray-400 outline-none" placeholder="Período" />
-                      <input type="text" value={retencionSecuencia} onChange={(e) => setRetencionSecuencia(e.target.value)} className="flex-1 bg-transparent border-b-2 border-blue-600 px-1 py-0.5 text-[11px] font-bold outline-none text-black" placeholder="Secuencia" />
-                   </div>
-                </div>
+                       <button onClick={() => setRetencionTipo('')} className="bg-[#c0c0c0] w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center font-bold text-white shadow-inner text-[10px]">←</button>
+                    </div>
+                    {/* Fila 2 */}
+                    <div className="flex items-center gap-1">
+                       <label className="text-[10px] text-gray-500 w-[70px]">Razón Social:</label>
+                       <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[11px] text-black border-b border-gray-400 truncate">ALTAMIRA FERRE-INDUSTRIAL -</div>
+                    </div>
+                    {/* Fila 3 */}
+                    <div className="flex items-center gap-1">
+                       <label className="text-[10px] text-gray-500 w-[70px]">Fecha Comp:</label>
+                       <input type="date" value={retencionFecha} onChange={(e) => setRetencionFecha(e.target.value)} className="flex-1 bg-transparent border-b border-black py-0.5 text-[11px] font-bold outline-none text-black" />
+                    </div>
+                    {/* Fila 4 */}
+                    <div className="flex items-center gap-1">
+                       <label className="text-[10px] text-gray-500 w-[70px]">Comprobante:</label>
+                       <input type="text" value={retencionPeriodo} onChange={(e) => setRetencionPeriodo(e.target.value)} className="w-[70px] bg-[#c0c0c0] px-1 py-0.5 text-[11px] font-bold text-black border-b border-gray-400 outline-none" placeholder="Período" />
+                       <input type="text" value={retencionSecuencia} onChange={(e) => setRetencionSecuencia(e.target.value)} className="flex-1 bg-transparent border-b-2 border-blue-600 px-1 py-0.5 text-[11px] font-bold outline-none text-black" placeholder="Secuencia" />
+                    </div>
+                 </div>
+ 
+                 {/* TABLA DE FACTURAS */}
+                 <div className="flex-1 flex flex-col min-h-0 bg-white">
+                    <div className="flex bg-[#a0a0a0] text-white text-[9px] font-bold border-b-2 border-gray-400 mt-1 mx-1">
+                       <div className="w-[30px] py-0.5 border-r border-gray-300"></div>
+                       <div className="w-[40px] text-center py-0.5 border-r border-gray-300">Tipo</div>
+                       <div className="flex-1 text-center py-0.5 border-r border-gray-300">No. Fiscal</div>
+                       <div className="w-[70px] text-center py-0.5">Monto (USD)</div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto mx-1 border-x border-b border-gray-300">
+                       {facturasDisponibles.map((f, idx) => {
+                          const isSelected = facturasSeleccionadas.includes(f.id);
+                          return (
+                            <div key={f.id} onClick={() => handleSelectFactura(f.id)} className={`flex items-center text-[10px] border-b border-gray-200 cursor-pointer ${isSelected ? 'bg-[#00b0f0] text-white' : 'text-black'}`}>
+                               <div className="w-[30px] flex justify-center py-1 border-r border-gray-200">
+                                  <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3 h-3 cursor-pointer" />
+                               </div>
+                               <div className="w-[40px] font-bold text-center py-1 border-r border-gray-200">FAC</div>
+                               <div className="flex-1 font-bold text-center py-1 border-r border-gray-200">{f.id}</div>
+                               <div className="w-[70px] font-bold text-right pr-1 py-0.5 flex items-center justify-end">
+                                 {isSelected ? (
+                                   <input 
+                                     type="text" 
+                                     value={getMontoStr(f)} 
+                                     onChange={(e) => handleMontoChange(f.id, e.target.value)}
+                                     onClick={(e) => e.stopPropagation()}
+                                     className="w-full bg-white text-black text-right border border-gray-400 px-0.5 py-0.5 rounded outline-none text-[10px]"
+                                   />
+                                 ) : (
+                                   f.monto.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+                                 )}
+                               </div>
+                            </div>
+                          );
+                       })}
+                    </div>
+                 </div>
+ 
+                 {/* FOOTER */}
+                 <div className="p-1 space-y-1.5 border-t border-gray-300">
+                    <div className="flex items-center gap-1.5">
+                       <input type="checkbox" id="selectAll" checked={facturasSeleccionadas.length === facturasDisponibles.length && facturasDisponibles.length > 0} onChange={handleSelectAll} className="w-3.5 h-3.5" />
+                       <label htmlFor="selectAll" className="text-[10px] text-gray-700">Seleccionar todo</label>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                       <label className="text-[10px] text-gray-500 w-[70px]">Monto VES:</label>
+                       <div className="flex-1 bg-[#c0c0c0] px-1.5 py-1 text-[12px] font-bold text-black border-b border-gray-400">{totalVES}</div>
+                    </div>
+                 </div>
+               </div>
+             )}
+           </div>
+         </div>
+       )}
 
-                {/* TABLA DE FACTURAS */}
-                <div className="flex-1 flex flex-col min-h-0 bg-white">
-                   <div className="flex bg-[#a0a0a0] text-white text-[9px] font-bold border-b-2 border-gray-400 mt-1 mx-1">
-                      <div className="w-[30px] py-0.5 border-r border-gray-300"></div>
-                      <div className="w-[40px] text-center py-0.5 border-r border-gray-300">Tipo</div>
-                      <div className="flex-1 text-center py-0.5 border-r border-gray-300">No. Fiscal</div>
-                      <div className="w-[70px] text-center py-0.5">Monto (USD)</div>
-                   </div>
-                   <div className="flex-1 overflow-y-auto mx-1 border-x border-b border-gray-300">
-                      {facturasDisponibles.map((f, idx) => {
-                         const isSelected = facturasSeleccionadas.includes(f.id);
-                         return (
-                           <div key={f.id} onClick={() => handleSelectFactura(f.id)} className={`flex items-center text-[10px] border-b border-gray-200 cursor-pointer ${isSelected ? 'bg-[#00b0f0] text-white' : 'text-black'}`}>
-                              <div className="w-[30px] flex justify-center py-1 border-r border-gray-200">
-                                 <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3 h-3 cursor-pointer" />
-                              </div>
-                              <div className="w-[40px] font-bold text-center py-1 border-r border-gray-200">FAC</div>
-                              <div className="flex-1 font-bold text-center py-1 border-r border-gray-200">{f.id}</div>
-                              <div className="w-[70px] font-bold text-right pr-1 py-0.5 flex items-center justify-end">
-                                {isSelected ? (
-                                  <input 
-                                    type="text" 
-                                    value={getMontoStr(f)} 
-                                    onChange={(e) => handleMontoChange(f.id, e.target.value)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-full bg-white text-black text-right border border-gray-400 px-0.5 py-0.5 rounded outline-none text-[10px]"
-                                  />
-                                ) : (
-                                  f.monto.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
-                                )}
-                              </div>
-                           </div>
-                         );
-                      })}
-                   </div>
-                </div>
-
-                {/* FOOTER */}
-                <div className="p-1 space-y-1.5 border-t border-gray-300">
-                   <div className="flex items-center gap-1.5">
-                      <input type="checkbox" id="selectAll" checked={facturasSeleccionadas.length === facturasDisponibles.length && facturasDisponibles.length > 0} onChange={handleSelectAll} className="w-3.5 h-3.5" />
-                      <label htmlFor="selectAll" className="text-[10px] text-gray-700">Seleccionar todo</label>
-                   </div>
-                   <div className="flex items-center gap-1.5 mt-1">
-                      <label className="text-[10px] text-gray-500 w-[70px]">Monto VES:</label>
-                      <div className="flex-1 bg-[#c0c0c0] px-1.5 py-1 text-[12px] font-bold text-black border-b border-gray-400">{totalVES}</div>
-                   </div>
-                </div>
+      {/* OVERLAY: 098 - Detalle Retencion */}
+      {subPantalla === 'detalle' && (
+        <div className="absolute inset-0 bg-[#f0f0f0] mt-8 rounded-t-2xl flex flex-col z-40 overflow-hidden font-sans text-xs">
+          <div className="bg-[#00b0f0] p-2 flex items-center justify-between text-black border-b border-gray-200">
+            <span className="font-bold text-[11px] text-black">098 - Detalle Retencion</span>
+            <button onClick={() => setSubPantalla('')} className="text-gray-600 hover:text-black font-bold text-[14px] w-6 h-6 rounded-full flex items-center justify-center bg-white border border-gray-300">✕</button>
+          </div>
+          <div className="flex-1 p-3 space-y-1.5 bg-[#f4f4f4] overflow-y-auto">
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Comprobante:</span>
+              <div className="flex-1 bg-[#c0c0c0] px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm">
+                {retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000')}
               </div>
-            )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Tipo Doc:</span>
+              <div className="flex-1 bg-[#c0c0c0] px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm text-right">FAC</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Nro. Doc:</span>
+              <div className="flex-1 bg-[#c0c0c0] px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm text-right">
+                {facturasSeleccionadas[0] || '06980336'}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Nro. Control:</span>
+              <div className="flex-1 bg-[#c0c0c0] h-5 px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm"></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Alicuota (%):</span>
+              <div className="flex-1 bg-[#c0c0c0] px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm">
+                16,00% Ret: 75.0%
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Base:</span>
+              <div className="flex-1 bg-[#c0c0c0] px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm text-right">
+                {(totalUSD / 1.16).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Impuesto:</span>
+              <div className="flex-1 bg-[#c0c0c0] px-2 py-0.5 text-[10px] font-bold text-black border border-gray-300 rounded shadow-sm text-right">
+                {((totalUSD / 1.16) * 0.16).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-24 text-gray-500 text-[10px]">Retención:</span>
+              <div onClick={() => setSubPantalla('keypad')} className="flex-1 bg-white border border-blue-400 px-2 py-0.5 text-[11px] font-bold text-black rounded shadow-inner text-right cursor-pointer">
+                {montoRetencionEditado}
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4 justify-center">
+              <button onClick={() => setMostrarConfirmacion(true)} className="bg-[#e0e0e0] border border-gray-400 px-4 py-1 text-[10px] font-bold shadow rounded">OK</button>
+              <button onClick={() => setSubPantalla('')} className="bg-[#e0e0e0] border border-gray-400 px-4 py-1 text-[10px] font-bold shadow rounded">Cancelar</button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* OVERLAY: KEYPAD (Introduzca el número) */}
+      {subPantalla === 'keypad' && (
+        <div className="absolute inset-0 bg-[#f4f4f4] mt-8 rounded-t-2xl flex flex-col z-50 overflow-hidden font-sans">
+          <div className="p-3 bg-white border-b border-gray-200">
+             <span className="text-[11px] font-bold text-gray-700 block">Introduzca el número:</span>
+             <div className="text-[16px] font-bold text-right text-black mt-1 pr-1 border-b border-gray-400">
+                {montoRetencionEditado || '0'}
+             </div>
+          </div>
+
+          <div className="flex-1 p-2 flex flex-col justify-between bg-gray-200">
+             {/* Keypad Grid */}
+             <div className="grid grid-cols-3 gap-1.5 flex-1 justify-center items-center py-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, ',', 0].map((num) => (
+                   <button 
+                      key={num} 
+                      onClick={() => {
+                        if (num === ',') {
+                          if (!montoRetencionEditado.includes(',')) {
+                            setMontoRetencionEditado(montoRetencionEditado + ',');
+                          }
+                        } else {
+                          setMontoRetencionEditado(montoRetencionEditado + num);
+                        }
+                      }} 
+                      className="bg-white hover:bg-gray-100 active:bg-gray-200 py-2.5 rounded text-sm font-bold text-gray-700 shadow border border-gray-300"
+                   >
+                      {num}
+                   </button>
+                ))}
+                <button 
+                   onClick={() => setMontoRetencionEditado(montoRetencionEditado.slice(0, -1))}
+                   className="bg-white hover:bg-gray-100 py-2.5 rounded text-sm font-bold text-gray-700 shadow border border-gray-300"
+                >
+                   &lt;-
+                </button>
+             </div>
+
+             {/* Action buttons */}
+             <div className="flex gap-3 pt-1">
+                <button 
+                   onClick={() => setSubPantalla('detalle')}
+                   className="flex-1 bg-[#e0e0e0] border border-gray-400 py-2 rounded text-[10px] font-bold shadow text-black"
+                >
+                   ACEPTAR
+                </button>
+                <button 
+                   onClick={() => {
+                     // Discard and restore
+                     const calculatedBase = (totalUSD / 1.16);
+                     const calculatedImpuesto = calculatedBase * 0.16;
+                     const calculatedRet = calculatedImpuesto * 0.75;
+                     setMontoRetencionEditado(calculatedRet.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                     setSubPantalla('detalle');
+                   }}
+                   className="flex-1 bg-[#e0e0e0] border border-gray-400 py-2 rounded text-[10px] font-bold shadow text-black"
+                >
+                   CANCELAR
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* DIALOG: Confirmación Grabar */}
+      {mostrarConfirmacion && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-6 font-sans">
+           <div className="bg-[#f0f0f0] w-full max-w-[240px] rounded shadow-2xl overflow-hidden">
+              <div className="p-2.5 border-b border-gray-300 text-gray-800 font-bold text-[11px] flex items-center gap-1">
+                 Confirmación
+              </div>
+              <div className="p-4 text-[10px] text-gray-800 leading-relaxed text-center">
+                 ¿Confirma que desea grabar la retención?
+              </div>
+              <div className="flex border-t border-gray-300 bg-white text-[10px] font-bold">
+                 <button 
+                    onClick={() => setMostrarConfirmacion(false)} 
+                    className="flex-1 py-2 hover:bg-gray-100 border-r border-gray-300 text-blue-600"
+                 >
+                    NO
+                 </button>
+                 <button 
+                    onClick={() => {
+                      setRetencionesLista([...retencionesLista, { 
+                        comprobante: retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000'), 
+                        fecha: retencionFecha, 
+                        monto: montoRetencionEditado 
+                      }]);
+                      setMostrarConfirmacion(false);
+                      setSubPantalla('');
+                      setPantalla('retencion_list');
+                      setRetencionTipo('');
+                    }} 
+                    className="flex-1 py-2 hover:bg-gray-100 text-blue-600"
+                 >
+                    SI
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}>
       )}
     </>
   );
