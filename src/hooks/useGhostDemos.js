@@ -956,58 +956,42 @@ export function useGhostDemos({
     setFacturasSeleccionadas(['06980336']);
     await sleep(1500);
 
-    await decir("10.- Ajustamos el monto a 63,90.");
+    await decir("10.- Hacemos clic en el monto para ajustarlo con el teclado numérico.");
     setCursorPos({ x: 275, y: 380, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setMontosEditables({ '06980336': '63,90' });
-    await sleep(1500);
-
-    await decir("11.- Pulsamos FIN para ver el detalle calculado.");
-    setCursorPos({ x: 250, y: 50, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    // Calcular el monto de retención basado en 63.90
-    const montoBase = 63.90 / 1.16;
-    const impuesto = montoBase * 0.16;
-    const retencion = impuesto * 0.75;
-    setMontoRetencionEditado(retencion.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    setSubPantalla('detalle');
-    await sleep(2000);
-
-    await decir("12.- Pantalla 098: vemos el desglose. Editamos la retención.");
-    setCursorPos({ x: 200, y: 320, visible: true });
     await sleep(1200);
     await triggerClick();
     setSubPantalla('keypad');
     await sleep(1500);
 
-    await decir("13.- Introducimos el nuevo monto: 63,90.");
+    await decir("11.- Introducimos el monto de retención: 63,90.");
     setCursorPos({ x: 160, y: 350, visible: true });
     await sleep(800);
     setMontoRetencionEditado('63,90');
     await sleep(1500);
 
-    await decir("14.- Aceptamos y volvemos al detalle.");
+    await decir("12.- Aceptamos el nuevo monto.");
     setCursorPos({ x: 100, y: 500, visible: true });
     await sleep(1200);
     await triggerClick();
-    setSubPantalla('detalle');
+    setMontosEditables({ '06980336': '63,90' });
+    setSubPantalla('');
     await sleep(1500);
 
-    await decir("15.- Pulsamos OK para confirmar la grabación.");
-    setCursorPos({ x: 140, y: 430, visible: true });
+    await decir("13.- Pulsamos FIN para finalizar la precarga de la retención.");
+    setCursorPos({ x: 250, y: 50, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarConfirmacion(true);
-    await sleep(2000);
+    await sleep(1500);
 
-    await decir("16.- Confirmamos pulsando SÍ.");
-    setCursorPos({ x: 220, y: 480, visible: true });
+    await decir("14.- Confirmamos con SI para guardar la retención.");
+    setCursorPos({ x: 140, y: 430, visible: true });
     await sleep(1200);
     await triggerClick();
-    setRetencionesLista([{ 
-      comprobante: '202603' + '00001234', 
+    
+    // Simular el clic en SI que graba la retencion y vuelve a la 061
+    setRetencionesLista(prev => [...prev, { 
+      comprobante: '20260300001234', 
       fecha: '2026-03-27', 
       monto: '63,90' 
     }]);
@@ -1015,6 +999,7 @@ export function useGhostDemos({
     setSubPantalla('');
     setPantalla('retencion_list');
     setRetencionTipo('');
+    await sleep(2000);
     setFacturasSeleccionadas([]);
     setMontosEditables({});
     await sleep(2000);

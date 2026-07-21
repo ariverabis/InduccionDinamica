@@ -228,13 +228,16 @@ export const AfvTax = ({
                                <div className="flex-1 font-bold text-center py-1 border-r border-gray-200">{f.id}</div>
                                <div className="w-[70px] font-bold text-right pr-1 py-0.5 flex items-center justify-end">
                                  {isSelected ? (
-                                   <input 
-                                     type="text" 
-                                     value={getMontoStr(f)} 
-                                     onChange={(e) => handleMontoChange(f.id, e.target.value)}
-                                     onClick={(e) => e.stopPropagation()}
-                                     className="w-full bg-white text-black text-right border border-gray-400 px-0.5 py-0.5 rounded outline-none text-[10px]"
-                                   />
+                                   <div
+                                     onClick={(e) => { 
+                                       e.stopPropagation(); 
+                                       setMontoRetencionEditado(getMontoStr(f));
+                                       setSubPantalla('keypad'); 
+                                     }}
+                                     className="w-full bg-white text-black text-right border border-gray-400 px-0.5 py-0.5 rounded text-[10px] cursor-pointer"
+                                   >
+                                     {getMontoStr(f)}
+                                   </div>
                                  ) : (
                                    f.monto.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
                                  )}
@@ -367,19 +370,18 @@ export const AfvTax = ({
             {/* Botones ACEPTAR / CANCELAR */}
             <div className="flex gap-3 px-3 pb-3">
               <button 
-                onClick={() => setSubPantalla('detalle')}
+                onClick={() => {
+                  if (facturasSeleccionadas.length > 0) {
+                    setMontosEditables(prev => ({ ...prev, [facturasSeleccionadas[0]]: montoRetencionEditado }));
+                  }
+                  setSubPantalla('');
+                }}
                 className="flex-1 bg-[#e8e8e8] border border-gray-400 py-2 rounded text-[11px] font-bold shadow text-black hover:bg-[#ddd]"
               >
                 ACEPTAR
               </button>
               <button 
-                onClick={() => {
-                  const calculatedBase = (totalUSD / 1.16);
-                  const calculatedImpuesto = calculatedBase * 0.16;
-                  const calculatedRet = calculatedImpuesto * 0.75;
-                  setMontoRetencionEditado(calculatedRet.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                  setSubPantalla('detalle');
-                }}
+                onClick={() => setSubPantalla('')}
                 className="flex-1 bg-[#e8e8e8] border border-gray-400 py-2 rounded text-[11px] font-bold shadow text-black hover:bg-[#ddd]"
               >
                 CANCELAR
