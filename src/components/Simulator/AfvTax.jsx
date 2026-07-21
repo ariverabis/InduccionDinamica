@@ -91,7 +91,7 @@ export const AfvTax = ({
             <div className="flex items-center justify-between bg-[#f0f0f0] px-2 py-2 mb-1">
               <div className="bg-[#b3b3b3] px-3 py-1 flex-1 shadow-sm border border-gray-400 flex items-center h-8 text-[14px]">
                 <span className="bg-[#b3b3b3] text-black font-sans font-medium uppercase truncate">
-                  {empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A. - 2503001' : 'GRUPO ISO HOME, C.A - 2531318'}
+                  {empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A. - 2503001' : 'ALTAMIRA FERRE-INDUSTRIAL - 2131133'}
                 </span>
               </div>
               <button onClick={() => setPantalla('recibo_menu')} className="w-8 h-8 ml-2 bg-[#e6e6e6] rounded-full flex items-center justify-center border border-gray-400">←</button>
