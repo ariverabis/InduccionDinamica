@@ -49,67 +49,91 @@ export const AfvCollections = ({
       {/* PANTALLA: RECIBO CLIENTE */}
       {pantalla === 'recibo_cliente' && (
         <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-          <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                <span className="text-[8px] font-bold text-gray-800">f</span>
+          {/* Top Bar */}
+          <div className="bg-[#00b0f0] p-2 flex items-center justify-between text-black border-b border-[#0092c8] shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <span className="text-[7px] font-bold text-gray-800 font-sans">f</span>
               </div>
-              <span className="text-[13px] font-normal font-sans">080 - Recibo Cliente - {empresaSeleccionada}</span>
+              <span className="text-[10px] font-bold font-sans text-black">088 - Clientes</span>
             </div>
-            <button onClick={() => setPantalla('menu')} className="text-xl leading-none">←</button>
+            <button className="text-[12px] font-bold">⋮</button>
           </div>
-          
-          <div className="flex-1 flex flex-col p-2 bg-gray-100 overflow-hidden">
-             <div className="bg-[#d3d3d3] py-2 px-2 mb-2 border border-gray-300">
-                <span className="text-[12px] font-bold text-gray-800 font-sans">FM IMPORT PARTS, C.A. - 2535</span>
+
+          <div className="flex-1 flex flex-col p-1.5 bg-gray-100 overflow-hidden">
+             {/* Ruta */}
+             <div className="flex items-center mb-1 gap-1">
+                <span className="text-[9px] font-bold text-gray-700 w-[35px]">Ruta:</span>
+                <select className="flex-1 bg-transparent border border-gray-300 text-[9px] py-0.5 px-0.5 font-sans text-gray-600 outline-none">
+                  <option>--- Todas ---</option>
+                </select>
+                <button onClick={() => setPantalla('menu')} className="bg-[#c0c0c0] w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center font-bold text-white shadow-inner text-[9px] ml-0.5">←</button>
              </div>
-             
-             <div className="flex-1 border border-gray-400 bg-white overflow-hidden flex flex-col">
-                <div className="bg-[#a6a6a6] text-white font-bold text-[11px] grid grid-cols-4 py-1 text-center">
-                   <div className="border-r border-gray-300">Doc</div>
-                   <div className="border-r border-gray-300">Número</div>
-                   <div className="border-r border-gray-300">Saldo</div>
-                   <div>Abono</div>
+
+             {/* Cliente Search */}
+             <div className="flex items-center mb-1 gap-1">
+                <span className="text-[9px] font-bold text-gray-700 w-[35px]">Cliente:</span>
+                <div className="flex-1 bg-[#c0c0c0] px-1 py-0.5 text-[10px] font-bold text-black border-b border-gray-400">2131133</div>
+                <button className="bg-[#e0e0e0] border border-gray-300 px-0.5 py-0.5 text-[8px] font-bold">O.P.</button>
+                <button className="bg-[#e0e0e0] border border-gray-300 px-0.5 py-0.5 text-[8px] font-bold">B.</button>
+                <button className="bg-[#e0e0e0] border border-gray-300 px-0.5 py-0.5 text-[8px] font-bold">CONSUL.</button>
+             </div>
+
+             {/* Client List */}
+             <div className="flex-1 border border-gray-400 bg-white overflow-y-auto">
+                <div className="bg-white border-b border-gray-300 px-1 py-0.5 text-[9px] font-bold text-black">
+                   ALTAMIRA FERRE-INDUSTRIAL - 2131133
                 </div>
-                <div className="flex-1">
-                   <div className="grid grid-cols-4 text-[11px] font-bold text-black border-b border-gray-200 py-2 px-1 bg-[#00b0f0]">
-                      <div>FAC</div>
-                      <div>102553</div>
-                      <div className="text-right">452.20</div>
-                      <div className="text-right">452.20</div>
+                
+                <div className="divide-y divide-gray-200">
+                   <div className="px-1.5 py-1 text-[9px] font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer">
+                      A-40, C.A - 2565065
                    </div>
+                   <div onClick={() => setPantalla('recibo_menu')} className="px-1.5 py-1 text-[9px] font-bold text-white bg-[#00b0f0] cursor-pointer shadow-sm">
+                      ALTAMIRA FERRE-INDUSTRIAL - 2131133
+                   </div>
+                   {[
+                      'BIKE MARKET REPUESTOS & ACCESORIOS, C.A. - 2531304',
+                      'BIUKOR MARKET, C.A -',
+                      'BLOQUERA CONSTRUCCIONES Y MATERIALES COFALCA, C.A. -',
+                      'COLORMAR C.A. - 2541013',
+                      'COMERCIAL EL SAMAN 2007, C.A. - 2532008',
+                      'COMERCIALIZADORA M.A.J.G, C.A -',
+                      'COMERCIALIZADORA Y SUPLIDORA POVINSTAR ASIA, C.A - 25',
+                      'CONCRETERA Y FERRETERIA DON JULIO SANCHEZ C.A. - 2565',
+                      'DISMARKET EXPRESS, C.A -',
+                      'DISTORMAR C.A - 2541132',
+                      'DISTRIBUIDORA S.C GUACARA, C.A. - 2531122',
+                      'EMPACADURAS INDUSTRIALES DEL CENTRO, C.A -',
+                      'EMPRENDIMIENTO DORIS DURAN -',
+                      'FERRE CHURRO 2025, C.A -',
+                      'FERRE COMERC DE LA CHIQ C.A - 2531019'
+                   ].map((cli, idx) => (
+                      <div key={idx} onClick={() => setPantalla('recibo_menu')} className="px-1.5 py-1 text-[9px] font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer">
+                         {cli}
+                      </div>
+                   ))}
                 </div>
              </div>
 
-             <div className="mt-2 space-y-1">
-                <div className="flex justify-between items-center text-[11px] font-bold text-gray-700">
-                   <span>Total Abono (USD):</span>
-                   <div className="w-32 bg-[#b3b3b3] text-right px-2">452.20</div>
+             {/* Keyboard visual mockup */}
+             <div className="mt-1 flex flex-col gap-0.5 bg-gray-200 p-1 rounded">
+                <div className="flex justify-center gap-0.5">
+                   {'ABCDEFGHIJKLM'.split('').map(letter => (
+                      <span key={letter} className="bg-white border border-gray-300 w-4 py-0.5 text-[7px] font-bold text-gray-700 rounded shadow-sm text-center select-none">
+                         {letter}
+                      </span>
+                   ))}
                 </div>
-                <div className="flex justify-between items-center text-[11px] font-bold text-gray-700">
-                   <span>Diferencia (USD):</span>
-                   <div className="w-32 bg-[#b3b3b3] text-right px-2">0.00</div>
+                <div className="flex justify-center gap-0.5">
+                   {'NOPQRSTUVWXYZ'.split('').map(letter => (
+                      <span key={letter} className="bg-white border border-gray-300 w-4 py-0.5 text-[7px] font-bold text-gray-700 rounded shadow-sm text-center select-none">
+                         {letter}
+                      </span>
+                   ))}
                 </div>
-             </div>
-
-             <div className="mt-4 flex gap-2">
-                <button onClick={() => setPantalla('formas_pago_recibo')} className="flex-1 bg-[#e6e6e6] py-2 text-[12px] font-bold border border-gray-400 shadow-sm">FORMAS PAGO</button>
-                <button onClick={() => setMostrarModalRecibo(true)} className="flex-1 bg-[#e6e6e6] py-2 text-[12px] font-bold border border-gray-400 shadow-sm">FINALIZAR</button>
              </div>
           </div>
-
-          {mostrarModalRecibo && (
-            <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-               <div className="bg-[#f0f0f0] w-full rounded shadow-2xl overflow-hidden">
-                  <div className="p-3 border-b-2 border-blue-500 text-blue-500 font-bold">Confirmación</div>
-                  <div className="p-4 text-sm text-gray-800">¿Desea guardar y cerrar el recibo?</div>
-                  <div className="flex border-t border-gray-300">
-                     <button onClick={() => setMostrarModalRecibo(false)} className="flex-1 py-3 hover:bg-gray-200 border-r border-gray-300">No</button>
-                     <button onClick={() => { setMostrarModalRecibo(false); setPantalla('menu'); }} className="flex-1 py-3 hover:bg-gray-200">Si</button>
-                  </div>
-               </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -184,7 +208,7 @@ export const AfvCollections = ({
           </div>
           <div className="flex flex-col flex-1">
             <div className="flex items-center justify-between bg-[#c0c0c0] px-3 py-1.5 shadow-inner">
-              <span className="text-[12px] font-bold text-gray-800 font-sans truncate">{empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A.' : 'GRUPO ISO HOME, C.A'}</span>
+              <span className="text-[12px] font-bold text-gray-800 font-sans truncate">{empresaSeleccionada === 'Beval' ? 'AGRO FERRETERIA CAMPANARIO C.A.' : 'ALTAMIRA FERRE-INDUSTRIAL -'}</span>
               <button onClick={() => setPantalla('recibo_cliente')} className="w-6 h-6 bg-[#f0f0f0] rounded-full flex items-center justify-center border-2 border-gray-400">←</button>
             </div>
             <div className="flex-1 flex flex-col items-center pt-8 gap-3.5 px-6">
