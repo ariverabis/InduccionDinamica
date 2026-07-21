@@ -776,21 +776,32 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           try {
             const parsed = JSON.parse(notaExistente.comentario);
             if (parsed.detalle_evaluacion) {
-              detalleTexto = Object.entries(parsed.detalle_evaluacion)
-                .map(([act, d]) => `${act}: ${d.np ? 'NP' : (d.nota || 0) + '/10'}`)
-                .join(', ');
+              // Solo mostrar actividades que tengan NP=true o nota > 0 (significativas)
+              const lineas = Object.entries(parsed.detalle_evaluacion)
+                .filter(([act, d]) => d.np === true || (d.nota && parseFloat(d.nota) > 0))
+                .map(([act, d]) => `${act}: ${d.np ? 'NP' : (d.nota || 0) + '/10'}`);
+              detalleTexto = lineas.join(' | ');
+              // Solo agregar observación si tiene texto real
               if (parsed.texto && parsed.texto.trim() !== '') {
-                detalleTexto += ` | <strong>Obs:</strong> ${parsed.texto}`;
+                detalleTexto += (detalleTexto ? ' | ' : '') + `<strong>Obs:</strong> ${parsed.texto.trim()}`;
               }
-            } else if (parsed.texto) {
-              detalleTexto = parsed.texto;
+            } else if (parsed.texto && parsed.texto.trim() !== '') {
+              // Solo texto libre, sin variables técnicas
+              detalleTexto = parsed.texto.trim();
+            }
+            // Si no_presento global, indicarlo limpiamente
+            if (parsed.no_presento && !detalleTexto) {
+              detalleTexto = 'No presentó';
             }
           } catch (e) {
-            detalleTexto = notaExistente.comentario;
+            // Si el JSON está corrupto, no mostrar nada en lugar de JSON crudo
+            detalleTexto = '';
           }
-        } else {
-          detalleTexto = notaExistente?.comentario || 'Sin observaciones.';
+        } else if (notaExistente?.comentario && !notaExistente.comentario.startsWith('{')) {
+          // Texto plano (registros viejos sin JSON)
+          detalleTexto = notaExistente.comentario;
         }
+
 
         return `
           <tr>
