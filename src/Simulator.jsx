@@ -169,6 +169,10 @@ function App() {
   const [invoiceChecked, setInvoiceChecked] = useState(false);
   const [mostrarModalOtorgar, setMostrarModalOtorgar] = useState(false);
   const [condicionPedido, setCondicionPedido] = useState('0% de descuento a 30');
+  // Sub-estados de AfvTax elevados para control desde demo
+  const [subPantalla, setSubPantalla] = useState('');
+  const [montoRetencionEditado, setMontoRetencionEditado] = useState('');
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
 
   // --- BUSQUEDA PRODUCTOS ---
   const [busquedaProducto, setBusquedaProducto] = useState('');
@@ -220,7 +224,8 @@ function App() {
     setInvoiceChecked, setMostrarDetalleRetencion, setRetencionMonto, setRetencionFecha,
     setRetencionPeriodo, setRetencionSecuencia, setRetencionTipo, setRetencionMetodo,
     setMostrarComboRetencion, setMostrarCalendario, setRetencionesLista, 
-    setFacturasSeleccionadas, setMontosEditables, MOCK_PRODUCTOS
+    setFacturasSeleccionadas, setMontosEditables, setSubPantalla,
+    setMontoRetencionEditado, setMostrarConfirmacion, MOCK_PRODUCTOS
   });
 
 
@@ -459,6 +464,12 @@ function App() {
           setFacturasSeleccionadas={setFacturasSeleccionadas}
           montosEditables={montosEditables}
           setMontosEditables={setMontosEditables}
+          subPantalla={subPantalla}
+          setSubPantalla={setSubPantalla}
+          montoRetencionEditado={montoRetencionEditado}
+          setMontoRetencionEditado={setMontoRetencionEditado}
+          mostrarConfirmacion={mostrarConfirmacion}
+          setMostrarConfirmacion={setMostrarConfirmacion}
         />
 
         {/* BARRA SAMSUNG DE NAVEGACIÓN */}

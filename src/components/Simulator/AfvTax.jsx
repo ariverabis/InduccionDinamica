@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export const AfvTax = ({ 
   theme, 
@@ -24,11 +24,14 @@ export const AfvTax = ({
   facturasSeleccionadas,
   setFacturasSeleccionadas,
   montosEditables,
-  setMontosEditables
+  setMontosEditables,
+  subPantalla,
+  setSubPantalla,
+  montoRetencionEditado,
+  setMontoRetencionEditado,
+  mostrarConfirmacion,
+  setMostrarConfirmacion
 }) => {
-  const [subPantalla, setSubPantalla] = useState(''); // '', 'detalle', 'keypad'
-  const [montoRetencionEditado, setMontoRetencionEditado] = useState('');
-  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
 
   const facturasDisponibles = [
     { id: '06980316', monto: 8.87 },

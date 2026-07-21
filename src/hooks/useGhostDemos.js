@@ -57,6 +57,9 @@ export function useGhostDemos({
   setRetencionesLista,
   setFacturasSeleccionadas,
   setMontosEditables,
+  setSubPantalla,
+  setMontoRetencionEditado,
+  setMostrarConfirmacion,
   MOCK_PRODUCTOS
 }) {
   const sleep = (ms) => new Promise((resolve, reject) => {
@@ -857,6 +860,7 @@ export function useGhostDemos({
   };
 
   const runDemoRetencion = async () => {
+    // Reset todo
     setInvoiceChecked(false);
     setFacturasSeleccionadas([]);
     setMontosEditables({});
@@ -865,6 +869,9 @@ export function useGhostDemos({
     setRetencionFecha('');
     setRetencionPeriodo('');
     setRetencionSecuencia('');
+    setSubPantalla('');
+    setMontoRetencionEditado('');
+    setMostrarConfirmacion(false);
 
     await decir("1.- Ingrese Módulo de cobranza.");
     setCursorPos({ x: 290, y: 60, visible: true });
@@ -880,7 +887,7 @@ export function useGhostDemos({
     setMostrarSubmenu(false);
     await sleep(800);
 
-    await decir("2.- Seleccione al cliente.");
+    await decir("2.- Seleccione al cliente ALTAMIRA FERRE-INDUSTRIAL.");
     setCursorPos({ x: 160, y: 180, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -923,51 +930,97 @@ export function useGhostDemos({
     setRetencionTipo('Manual');
     await sleep(1500);
 
-    await decir("7.- Colocamos la fecha en el campo.");
-    setCursorPos({ x: 200, y: 150, visible: true }); // Ajustado a la fila 3
+    await decir("7.- Colocamos la fecha.");
+    setCursorPos({ x: 200, y: 150, visible: true });
     await sleep(1200);
     await triggerClick();
     setRetencionFecha('2026-03-27');
     await sleep(1200);
 
-    await decir("8.- Llenamos el comprobante (Período y Secuencia).");
-    setCursorPos({ x: 150, y: 200, visible: true }); // Período
+    await decir("8.- Llenamos el comprobante.");
+    setCursorPos({ x: 150, y: 200, visible: true });
     await sleep(800);
     await triggerClick();
     setRetencionPeriodo('202603');
     await sleep(1000);
-    setCursorPos({ x: 250, y: 200, visible: true }); // Secuencia
+    setCursorPos({ x: 250, y: 200, visible: true });
     await sleep(800);
     await triggerClick();
     setRetencionSecuencia('00001234');
     await sleep(1500);
 
-    await decir("9.- Marcamos el check de la factura aplicable (06980336).");
-    setCursorPos({ x: 40, y: 380, visible: true }); // Checkbox en la tabla de 06980336 (aprox)
+    await decir("9.- Marcamos la factura 06980336.");
+    setCursorPos({ x: 40, y: 380, visible: true });
     await sleep(1200);
     await triggerClick();
     setFacturasSeleccionadas(['06980336']);
     await sleep(1500);
 
-    await decir("10.- Ajustamos el monto de la retención de 63,87 a 63,90.");
-    setCursorPos({ x: 275, y: 380, visible: true }); // Campo de monto
+    await decir("10.- Ajustamos el monto a 63,90.");
+    setCursorPos({ x: 275, y: 380, visible: true });
     await sleep(1200);
     await triggerClick();
-    setMontosEditables({ '06980336': '63,9' });
-    await sleep(500);
     setMontosEditables({ '06980336': '63,90' });
     await sleep(1500);
 
-    await decir("11.- Finalizamos pulsando FIN.");
-    setCursorPos({ x: 250, y: 50, visible: true }); // Botón FIN en el encabezado
+    await decir("11.- Pulsamos FIN para ver el detalle calculado.");
+    setCursorPos({ x: 250, y: 50, visible: true });
     await sleep(1200);
     await triggerClick();
-    setRetencionesLista([{ comprobante: retencionPeriodo + (retencionSecuencia ? retencionSecuencia.padStart(8, '0') : '00000000'), fecha: retencionFecha, monto: '63.90' }]);
+    // Calcular el monto de retención basado en 63.90
+    const montoBase = 63.90 / 1.16;
+    const impuesto = montoBase * 0.16;
+    const retencion = impuesto * 0.75;
+    setMontoRetencionEditado(retencion.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setSubPantalla('detalle');
+    await sleep(2000);
+
+    await decir("12.- Pantalla 098: vemos el desglose. Editamos la retención.");
+    setCursorPos({ x: 200, y: 320, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setSubPantalla('keypad');
+    await sleep(1500);
+
+    await decir("13.- Introducimos el nuevo monto: 63,90.");
+    setCursorPos({ x: 160, y: 350, visible: true });
+    await sleep(800);
+    setMontoRetencionEditado('63,90');
+    await sleep(1500);
+
+    await decir("14.- Aceptamos y volvemos al detalle.");
+    setCursorPos({ x: 100, y: 500, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setSubPantalla('detalle');
+    await sleep(1500);
+
+    await decir("15.- Pulsamos OK para confirmar la grabación.");
+    setCursorPos({ x: 140, y: 430, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setMostrarConfirmacion(true);
+    await sleep(2000);
+
+    await decir("16.- Confirmamos pulsando SÍ.");
+    setCursorPos({ x: 220, y: 480, visible: true });
+    await sleep(1200);
+    await triggerClick();
+    setRetencionesLista([{ 
+      comprobante: '202603' + '00001234', 
+      fecha: '2026-03-27', 
+      monto: '63,90' 
+    }]);
+    setMostrarConfirmacion(false);
+    setSubPantalla('');
     setPantalla('retencion_list');
     setRetencionTipo('');
     setFacturasSeleccionadas([]);
     setMontosEditables({});
-    await sleep(1500);
+    await sleep(2000);
+
+    await decir("¡Retención precargada con éxito en la lista 061!");
+    await sleep(2000);
 
     setNarracionTexto("");
     setCursorPos({ x: -100, y: -100, visible: false });
