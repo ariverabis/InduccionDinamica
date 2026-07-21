@@ -303,7 +303,7 @@ export const AfvCollections = ({
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="w-24 text-right">Descuento (USD):</span>
-                    <input type="text" value={facturaSeleccionada ? "6,53" : "0,00"} readOnly className="flex-1 border-b border-gray-400 outline-none text-black px-1 mx-2" />
+                    <input type="text" value={facturaSeleccionada ? (formaPagoReciboSeleccionada.includes('BS') ? "5,88" : "6,53") : "0,00"} readOnly className="flex-1 border-b border-gray-400 outline-none text-black px-1 mx-2" />
                     <button className="bg-[#e0e0e0] px-2 py-0.5 border border-gray-300 text-black shadow-sm rounded-sm">+</button>
                  </div>
                  <div className="flex justify-between items-center">
@@ -411,7 +411,7 @@ export const AfvCollections = ({
               </div>
            )}
 
-           {/* MODAL DE DEPOSITO (Simplificado a Efectivo) */}
+           {/* MODAL DE DEPOSITO (Dinámico) */}
            {mostrarModalDeposito && (
              <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                 <div className="bg-white w-[90%] border-4 border-[#00b0f0] overflow-hidden flex flex-col shadow-2xl">
@@ -425,10 +425,40 @@ export const AfvCollections = ({
                          <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full bg-white border border-gray-400 py-2 font-bold text-lg text-center outline-none px-2 shadow-inner" />
                       </div>
                       
+                      {formaPagoReciboSeleccionada === 'TRANSFERENCIA BS' && (
+                        <>
+                          <div>
+                             <label className="text-[11px] font-bold text-gray-700">Referencia / Recibo:</label>
+                             <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} className="w-full bg-white border border-gray-400 py-1 font-bold text-sm text-center outline-none px-2 shadow-inner" />
+                          </div>
+                          <div className="relative">
+                             <label className="text-[11px] font-bold text-gray-700">Banco Receptor:</label>
+                             <div onClick={() => setMostrarComboBanco(!mostrarComboBanco)} className="w-full bg-white border border-gray-400 py-1 font-bold text-xs outline-none px-2 cursor-pointer flex justify-between shadow-inner">
+                                <span>{bancoDeposito || 'Seleccione Banco'}</span>
+                                <span className="text-gray-400">▼</span>
+                             </div>
+                             {mostrarComboBanco && (
+                               <div className="absolute top-full left-0 right-0 bg-white shadow-xl border border-gray-200 z-10 max-h-40 overflow-y-auto">
+                                  {['Banco Mercantil', 'Banco Provincial', 'Banesco', 'Banco de Venezuela'].map(b => (
+                                    <div key={b} onClick={() => { setBancoDeposito(b); setMostrarComboBanco(false); }} className="p-2 text-xs hover:bg-blue-50 border-b border-gray-100">{b}</div>
+                                  ))}
+                               </div>
+                             )}
+                          </div>
+                          <div>
+                             <label className="text-[11px] font-bold text-gray-700">Fecha Depósito:</label>
+                             <input type="date" value={fechaDeposito} onChange={(e) => setFechaDeposito(e.target.value)} className="w-full bg-white border border-gray-400 py-1 font-bold text-sm outline-none px-2 shadow-inner" />
+                          </div>
+                        </>
+                      )}
+
                       <div className="flex gap-2 mt-2">
                         <button onClick={() => { 
                           setMontoAbono(montoDeposito); 
                           setMontoDeposito('0,00'); 
+                          setReferenciaDeposito('');
+                          setBancoDeposito('');
+                          setFechaDeposito('');
                           setMontoResta('0,00');
                         }} className="flex-1 bg-[#e0e0e0] border border-gray-400 text-black font-bold py-2 shadow-sm text-[11px] uppercase">
                           OK
