@@ -103,13 +103,27 @@ export const AfvMenu = ({
       </div>
 
       {mostrarSubmenu && (
-        <div className="absolute right-2 top-12 bg-white shadow-2xl rounded border border-gray-200 z-50 w-48 overflow-hidden">
-          {(import.meta.env.VITE_APP_MODE === 'todos' || import.meta.env.VITE_APP_MODE === 'ventas') && (
-            <button onClick={() => { setMostrarSubmenu(false); setPantalla('menu'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 border-b border-gray-100">Ventas</button>
-          )}
-          {(import.meta.env.VITE_APP_MODE === 'todos' || import.meta.env.VITE_APP_MODE === 'cobranza') && (
-            <button onClick={() => { setMostrarSubmenu(false); setPantalla('recibo_cliente'); }} className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-700 hover:bg-gray-100">Cobranza</button>
-          )}
+        <div className="absolute right-2 top-12 bg-white shadow-2xl z-50 w-52 overflow-hidden border border-gray-200 rounded-lg">
+          {/* Triángulo apuntando hacia arriba */}
+          <div className="absolute -top-2 right-3 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white drop-shadow-sm" />
+          
+          {/* Opción Ventas - siempre visible */}
+          <button
+            onClick={() => { setMostrarSubmenu(false); setPantalla('menu'); }}
+            className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-800 hover:bg-blue-50 border-b border-gray-100 flex items-center gap-2"
+          >
+            <span className="text-base">🛒</span>
+            Ventas
+          </button>
+
+          {/* Opción Cobranza - siempre visible */}
+          <button
+            onClick={() => { setMostrarSubmenu(false); setPantalla('recibo_cliente'); }}
+            className="w-full text-left px-4 py-3 text-[13px] font-semibold text-gray-800 hover:bg-blue-50 flex items-center gap-2"
+          >
+            <span className="text-base">💰</span>
+            Cobranza
+          </button>
         </div>
       )}
 
