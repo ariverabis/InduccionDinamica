@@ -564,11 +564,20 @@ export function useGhostDemos({
   };
 
   const runDemoCobranza = async () => {
-    await decir("1.- Ingrese Módulo de cobranza.");
+    // RESET STATE
+    setMostrarSubmenu(false);
+    setFacturaSeleccionada(false);
+    setMostrarModalFormasPagoRecibo(false);
+    setFormaPagoReciboSeleccionada('');
+    setMontoAbono('0,00');
+    setMontoResta('58,87');
+    setMontoDeposito('0,00');
+    setMostrarModalDeposito(false);
+
+    await decir("1.- Ingrese Módulo de cobranza y seleccione cliente.");
     setCursorPos({ x: 290, y: 60, visible: true });
     await sleep(1000);
     await triggerClick();
-
     setMostrarSubmenu(true);
     await sleep(800);
     setCursorPos({ x: 200, y: 155, visible: true });
@@ -577,108 +586,85 @@ export function useGhostDemos({
     setPantalla('recibo_cliente');
     setMostrarSubmenu(false);
     await sleep(800);
-
-    await decir("2.- Seleccione el cliente.");
-    setCursorPos({ x: 160, y: 180, visible: true });
+    setCursorPos({ x: 160, y: 180, visible: true }); // Selecciona ALTAMIRA
     await sleep(1200);
     await triggerClick();
-    setPantalla('recibo_menu');
-    setFacturaSeleccionada(false);
-    await sleep(800);
+    setPantalla('recibo_menu'); // 044
+    await sleep(1500);
 
-    await decir("3.- Seleccione Recibo de cobro.");
-    setCursorPos({ x: 160, y: 340, visible: true });
+    await decir("2.- Seleccionar RECIBOS DE COBRO en el menú.");
+    setCursorPos({ x: 160, y: 220, visible: true }); // Boton Recibos de cobro (4to boton)
     await sleep(1200);
     await triggerClick();
-    setPantalla('recibo_index');
-    await sleep(800);
+    setMostrarModalFormasPagoRecibo(true); // Popup forma de pago
+    await sleep(1500);
 
-    await decir("4.- Nuevo Recibo de cobro.");
-    setCursorPos({ x: 160, y: 120, visible: true });
+    await decir("3.- Seleccionar forma de pago: DEPÓSITO EN TRÁNSITO.");
+    setCursorPos({ x: 160, y: 250, visible: true }); // Opcion de deposito en transito
     await sleep(1200);
     await triggerClick();
-    setPantalla('recibo_sel_factura');
-    setMostrarModalFormasPagoRecibo(true);
-    await sleep(1000);
-
-    await decir("5.- Seleccione la forma de pago (Depósito en tránsito).");
-    setCursorPos({ x: 160, y: 300, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setFormaPagoReciboSeleccionada('DEPOSITO $');
+    setFormaPagoReciboSeleccionada('DEPOSITO EN TRANSITO');
     setMostrarModalFormasPagoRecibo(false);
-    await sleep(800);
+    setPantalla('recibo_sel_factura'); // 056
+    await sleep(1500);
 
-    await decir("6.- Seleccione la factura en el check.");
-    setCursorPos({ x: 25, y: 160, visible: true });
+    await decir("4.- Marcar el check de la factura pendiente y pulsar INCLUIR.");
+    setCursorPos({ x: 30, y: 190, visible: true }); // Checkbox
     await sleep(1200);
     await triggerClick();
     setFacturaSeleccionada(true);
-    await sleep(800);
-
-    await decir("7.- Pulse al botón incluir.");
-    setCursorPos({ x: 280, y: 30, visible: true });
+    await sleep(1000);
+    setCursorPos({ x: 280, y: 30, visible: true }); // Botón Incluir
     await sleep(1200);
     await triggerClick();
-    setPantalla('recibo_incluidas');
-    setMontoResta('43,59');
-    await sleep(800);
+    setPantalla('recibo_incluidas'); // 047
+    await sleep(1500);
 
-    await decir("8.- Mantenga Pulsada la barra azul. Cambiar el monto (abono).");
-    setCursorPos({ x: 160, y: 90, visible: true });
-    await sleep(1200);
-    await triggerClick();
-    setPantalla('recibo_abono');
-    await sleep(800);
-
-    setCursorPos({ x: 160, y: 140, visible: true });
-    await sleep(1000);
-    await triggerClick();
-    setMontoAbono('40');
-    await sleep(800);
-
-    await decir("9.- Regresar en la flecha.");
-    setCursorPos({ x: 290, y: 30, visible: true });
-    await sleep(1000);
-    await triggerClick();
-    setPantalla('recibo_incluidas');
-    setMontoResta('40');
-    await sleep(800);
-
-    await decir("10.- Seleccione Simbolo (+).");
-    setCursorPos({ x: 280, y: 480, visible: true });
+    await decir("5.- Seleccionar el símbolo PLUS (+) para registrar pago.");
+    setCursorPos({ x: 280, y: 480, visible: true }); // Plus button
     await sleep(1200);
     await triggerClick();
     setMostrarModalDeposito(true);
+    await sleep(1500);
+
+    await decir("6.- Introducir el monto en efectivo y pulsar OK.");
+    setCursorPos({ x: 160, y: 180, visible: true }); // Input de monto
     await sleep(800);
-
-    await decir("11.- Validar monto.");
-    setCursorPos({ x: 50, y: 150, visible: true });
-    await sleep(1000);
+    setMontoDeposito('58,87');
+    await sleep(1500);
+    setCursorPos({ x: 80, y: 260, visible: true }); // Botón OK
+    await sleep(1200);
     await triggerClick();
-    setMontoDeposito('40');
-    await sleep(500);
+    setMontoAbono('58,87');
+    setMontoDeposito('0,00');
+    setMontoResta('0,00');
+    await sleep(1500);
 
-    await decir("13.- Pulse ok.");
-    setCursorPos({ x: 160, y: 400, visible: true });
-    await sleep(1000);
-    await triggerClick();
-    setMontoDeposito('0');
-    await sleep(800);
-
-    await decir("14.- Cerrar en la x.");
-    setCursorPos({ x: 280, y: 80, visible: true });
+    await decir("7.- Cerrar la ventana de pago pulsando la X.");
+    setCursorPos({ x: 280, y: 90, visible: true }); // Botón X
     await sleep(1200);
     await triggerClick();
     setMostrarModalDeposito(false);
-    setPantalla('recibo_pagado');
-    await sleep(800);
+    await sleep(1500);
 
-    await decir("15.- Finalizar recibo.");
-    setCursorPos({ x: 160, y: 400, visible: true });
+    await decir("8.- Pulsar FIN y confirmar el cierre del recibo.");
+    setCursorPos({ x: 280, y: 30, visible: true }); // Boton FIN
     await sleep(1200);
     await triggerClick();
-    setPantalla('recibo_listo');
+    setPantalla('recibo_confirmacion'); // Diálogo de cierre
+    await sleep(1500);
+    setCursorPos({ x: 110, y: 420, visible: true }); // Boton SI
+    await sleep(1200);
+    await triggerClick();
+    setPantalla('recibo_listo'); // Pantalla final
+    await sleep(1500);
+
+    await decir("9.- Enviar el recibo por email.");
+    setCursorPos({ x: 160, y: 380, visible: true }); // Boton ENVIAR EMAIL
+    await sleep(1200);
+    await triggerClick();
+    await sleep(1000);
+    setPantalla('menu');
     await sleep(1500);
 
     setNarracionTexto('');

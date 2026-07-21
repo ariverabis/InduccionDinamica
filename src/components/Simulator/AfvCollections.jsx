@@ -215,7 +215,7 @@ export const AfvCollections = ({
               <button className="w-full bg-[#e6e6e6] text-black font-bold py-1.5 border border-white shadow-sm">ESTADO DE CUENTA</button>
               <button className="w-full bg-[#e6e6e6] text-black font-bold py-1.5 border border-white shadow-sm">ANÁLISIS DE DEUDORES</button>
               <button onClick={() => setPantalla('retencion_list')} className="w-full bg-[#e6e6e6] text-black font-bold py-1.5 border border-white shadow-sm">RETENCIONES DE IVA</button>
-              <button onClick={() => setPantalla('recibo_index')} className="w-full bg-[#e6e6e6] text-black font-bold py-1.5 border border-white shadow-sm">RECIBOS DE COBRO</button>
+              <button onClick={() => setMostrarModalFormasPagoRecibo(true)} className="w-full bg-[#e6e6e6] text-black font-bold py-1.5 border border-white shadow-sm">RECIBOS DE COBRO</button>
             </div>
             <div className="mt-auto pb-2 text-center text-[8px] text-gray-500">© 2014 Wholesale World</div>
           </div>
@@ -241,87 +241,144 @@ export const AfvCollections = ({
       {/* PANTALLA: SELECCION DE FACTURAS */}
       {pantalla === 'recibo_sel_factura' && (
         <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-           <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
+           <div className="p-2 flex items-center justify-between border-b bg-[#00b0f0] border-[#0092c8] shadow-sm">
               <div className="flex items-center gap-2">
-                <button onClick={() => setPantalla('recibo_index')} className="text-lg leading-none">← </button>
-                <span className="text-[13px] font-bold">046 - Selección de Facturas</span>
+                <span className="text-[13px] font-bold text-black font-sans uppercase">056 - Por Cobrar</span>
               </div>
-              <button onClick={() => setPantalla('recibo_incluidas')} className="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold shadow">Incluir</button>
+              <div className="text-[14px] font-bold text-black">⋮</div>
            </div>
-           <div className="flex-1 p-2 bg-gray-100 flex flex-col">
-              <div className="bg-white border border-gray-300 p-2 text-xs font-bold text-gray-700 flex justify-between items-center mb-2">
-                 <span>Forma de Pago: {formaPagoReciboSeleccionada || 'NINGUNA'}</span>
-                 <button onClick={() => setMostrarModalFormasPagoRecibo(true)} className="bg-blue-500 text-white px-2 py-0.5 rounded text-[10px]">Cambiar</button>
-              </div>
-              <div className="flex-1 bg-white border border-gray-300 overflow-y-auto">
-                 <div className="flex bg-gray-300 text-xs font-bold p-2 border-b border-gray-400">
-                    <div className="w-8">Inc.</div>
-                    <div className="flex-1">Documento</div>
-                    <div className="flex-1 text-right">Saldo</div>
+           <div className="flex flex-col flex-1 p-1 bg-gray-100">
+              <div className="flex justify-between items-center bg-[#c0c0c0] px-1 py-1 shadow-inner text-[11px] font-bold mb-1">
+                 <span className="truncate flex-1">ALTAMIRA FERRE-INDL</span>
+                 <div className="flex gap-1">
+                    <button onClick={() => setPantalla('recibo_incluidas')} className="bg-[#e0e0e0] px-2 py-0.5 border border-gray-400 rounded shadow-sm">INCLUIR</button>
+                    <button className="bg-[#e0e0e0] w-5 h-5 rounded-full border border-gray-400 shadow-sm flex items-center justify-center">?</button>
+                    <button onClick={() => setPantalla('recibo_menu')} className="bg-[#e0e0e0] w-5 h-5 rounded-full border border-gray-400 shadow-sm flex items-center justify-center">←</button>
                  </div>
-                 <div className="flex items-center p-2 border-b border-gray-200 text-xs">
+              </div>
+              <div className="flex items-center justify-between text-[10px] mb-1 px-1">
+                 <span>Ordenar Por:</span>
+                 <select className="bg-transparent font-bold outline-none border-b border-gray-400 px-1 text-[10px]">
+                    <option>Fecha Vencimiento</option>
+                 </select>
+              </div>
+              <div className="flex-1 bg-white border border-gray-400 overflow-y-auto mb-1">
+                 <div className="flex bg-[#a0a0a0] text-white text-[10px] font-bold p-1 border-b border-gray-400">
+                    <div className="w-8 text-center">T</div>
+                    <div className="flex-1 text-center">No. Fiscal</div>
+                    <div className="flex-1 text-right pr-2">Importe USD</div>
+                 </div>
+                 <div className="flex items-center p-1 border-b border-gray-300 text-[10px] bg-[#00b0f0] text-white">
                     <div className="w-8 flex justify-center">
-                       <input type="checkbox" checked={facturaSeleccionada} onChange={(e) => setFacturaSeleccionada(e.target.checked)} className="w-4 h-4" />
+                       <input type="checkbox" checked={facturaSeleccionada} onChange={(e) => setFacturaSeleccionada(e.target.checked)} className="w-3 h-3" />
                     </div>
-                    <div className="flex-1 font-bold">FAC 102553</div>
-                    <div className="flex-1 text-right font-mono">43,59</div>
+                    <div className="w-6 text-center font-bold">A</div>
+                    <div className="flex-1 font-bold text-center">06948862</div>
+                    <div className="flex-1 text-right font-bold pr-2">58,87</div>
                  </div>
-                 <div className="flex items-center p-2 border-b border-gray-200 text-xs opacity-50">
-                    <div className="w-8 flex justify-center"><input type="checkbox" className="w-4 h-4" /></div>
-                    <div className="flex-1 font-bold">FAC 101999</div>
-                    <div className="flex-1 text-right font-mono">120,00</div>
+                 {[
+                    {id: '06956875', val: '46,86'},
+                    {id: '06956930', val: '850,79'},
+                    {id: '06965151', val: '955,43'},
+                    {id: '06965887', val: '122,95'},
+                    {id: '06966250', val: '122,13'}
+                 ].map((f, i) => (
+                    <div key={i} className="flex items-center p-1 border-b border-gray-200 text-[10px] text-black">
+                       <div className="w-8 flex justify-center"><input type="checkbox" className="w-3 h-3" /></div>
+                       <div className="w-6 text-center font-bold">A</div>
+                       <div className="flex-1 font-bold text-center">{f.id}</div>
+                       <div className="flex-1 text-right font-bold pr-2">{f.val}</div>
+                    </div>
+                 ))}
+                 <div className="bg-[#c0c0c0] h-4 mt-2 mx-2"></div>
+              </div>
+              <div className="flex flex-col gap-1 text-[10px] font-bold text-gray-700 bg-white p-1 border border-gray-300 shadow-sm">
+                 <div className="flex items-center gap-1">
+                    <input type="checkbox" className="w-3 h-3" />
+                    <span>Seleccionar todo</span>
+                 </div>
+                 <div className="flex justify-between items-center mt-1">
+                    <span className="w-24 text-right">Sub-Total (USD):</span>
+                    <input type="text" value={facturaSeleccionada ? "58,87" : "0,00"} readOnly className="flex-1 border-b border-gray-400 outline-none text-black px-1 mx-2" />
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="w-24 text-right">Descuento (USD):</span>
+                    <input type="text" value={facturaSeleccionada ? "6,53" : "0,00"} readOnly className="flex-1 border-b border-gray-400 outline-none text-black px-1 mx-2" />
+                    <button className="bg-[#e0e0e0] px-2 py-0.5 border border-gray-300 text-black shadow-sm rounded-sm">+</button>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="w-24 text-right">Cargos (USD):</span>
+                    <input type="text" value="0,00" readOnly className="flex-1 border-b border-gray-400 outline-none text-black px-1 mx-2" />
+                    <button className="bg-[#e0e0e0] px-2 py-0.5 border border-gray-300 text-black shadow-sm rounded-sm">+</button>
+                 </div>
+                 <div className="flex justify-between items-center mb-1">
+                    <span className="w-24 text-right">Total (USD):</span>
+                    <input type="text" value={facturaSeleccionada ? "52,34" : "0,00"} readOnly className="flex-1 border-b border-gray-400 outline-none text-black px-1 mx-2" />
                  </div>
               </div>
            </div>
+        </div>
+      )}
 
-           {mostrarModalFormasPagoRecibo && (
-             <div className="absolute inset-0 bg-black/60 z-50 flex flex-col items-center justify-center p-4">
-                <div className="bg-white w-full rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80%]">
-                   <div className="p-3 border-b border-gray-200 font-bold text-sm bg-gray-50 flex justify-between">
-                     <span>Seleccione Forma de Pago</span>
-                     <button onClick={() => setMostrarModalFormasPagoRecibo(false)} className="text-gray-500 font-bold">X</button>
-                   </div>
-                   <div className="p-4 flex flex-col gap-3 overflow-y-auto">
-                     <button onClick={() => { setFormaPagoReciboSeleccionada('EFECTIVO $'); setMostrarModalFormasPagoRecibo(false); }} className="w-full text-left p-3 border border-gray-300 rounded hover:bg-blue-50 text-xs font-bold text-gray-700">Efectivo $</button>
-                     <button onClick={() => { setFormaPagoReciboSeleccionada('DEPOSITO $'); setMostrarModalFormasPagoRecibo(false); }} className="w-full text-left p-3 border border-gray-300 rounded hover:bg-blue-50 text-xs font-bold text-gray-700">Depósito en tránsito ($)</button>
-                     <button onClick={() => { setFormaPagoReciboSeleccionada('TRANSFERENCIA BS'); setMostrarModalFormasPagoRecibo(false); }} className="w-full text-left p-3 border border-gray-300 rounded hover:bg-blue-50 text-xs font-bold text-gray-700">Transferencia en Bs</button>
-                   </div>
-                </div>
-             </div>
-           )}
+      {/* POPUP: FORMAS DE PAGO */}
+      {mostrarModalFormasPagoRecibo && (
+        <div className="absolute inset-0 bg-black/60 z-50 flex flex-col items-center justify-center p-4">
+           <div className="bg-white w-[90%] border-4 border-[#00b0f0] overflow-hidden flex flex-col">
+              <div className="p-2 border-b border-[#00b0f0] font-bold text-[13px] bg-white text-[#00b0f0]">
+                Seleccione la forma de pago
+              </div>
+              <div className="flex flex-col">
+                <button onClick={() => { setFormaPagoReciboSeleccionada('DEPOSITO $'); setMostrarModalFormasPagoRecibo(false); setPantalla('recibo_sel_factura'); }} className="w-full text-left p-2 border-b border-gray-300 hover:bg-gray-100 text-[11px] font-bold text-black uppercase">DEPOSITO $</button>
+                <button onClick={() => { setFormaPagoReciboSeleccionada('DEPOSITO EN TRANSITO'); setMostrarModalFormasPagoRecibo(false); setPantalla('recibo_sel_factura'); }} className="w-full text-left p-2 border-b border-gray-300 hover:bg-gray-100 text-[11px] font-bold text-black uppercase">DEPOSITO EN TRANSITO</button>
+                <button onClick={() => { setFormaPagoReciboSeleccionada('TRANSFERENCIA $ INTERNACIONAL'); setMostrarModalFormasPagoRecibo(false); setPantalla('recibo_sel_factura'); }} className="w-full text-left p-2 border-b border-gray-300 hover:bg-gray-100 text-[11px] font-bold text-black uppercase">TRANSFERENCIA $ INTERNACION..</button>
+                <button onClick={() => { setFormaPagoReciboSeleccionada('TRANSFERENCIA BS'); setMostrarModalFormasPagoRecibo(false); setPantalla('recibo_sel_factura'); }} className="w-full text-left p-2 border-b border-gray-300 hover:bg-gray-100 text-[11px] font-bold text-black uppercase">TRANSFERENCIA BS</button>
+              </div>
+              <button onClick={() => setMostrarModalFormasPagoRecibo(false)} className="w-full bg-[#f0f0f0] p-2 text-center text-[11px] text-black font-bold uppercase hover:bg-gray-200">
+                 Cancelar
+              </button>
+           </div>
         </div>
       )}
 
       {/* PANTALLA: FACTURAS INCLUIDAS */}
       {pantalla === 'recibo_incluidas' && (
         <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-           <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
-              <span className="text-[13px] font-bold">047 - Inclusión de Abonos</span>
-              <button onClick={() => setPantalla('recibo_sel_factura')} className="text-lg leading-none">← </button>
+           <div className="p-2 flex items-center justify-between border-b bg-[#00b0f0] border-[#0092c8] shadow-sm">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPantalla('recibo_sel_factura')} className="text-lg leading-none">← </button>
+                <span className="text-[13px] font-bold text-black font-sans uppercase">047 - Inclusión de Abonos</span>
+              </div>
+              <button onClick={() => setPantalla('recibo_confirmacion')} className="bg-[#e0e0e0] text-black px-2 py-0.5 rounded shadow-sm border border-gray-400 font-bold text-[10px]">FIN</button>
            </div>
            <div className="flex-1 p-2 bg-gray-100 flex flex-col">
-              <div onClick={() => setPantalla('recibo_abono')} className="bg-blue-500 text-white font-bold p-3 rounded shadow-md text-sm text-center mb-4 cursor-pointer relative">
-                 Monto Abono: {montoAbono} {formaPagoReciboSeleccionada.includes('BS') ? 'Bs' : 'USD'}
-                 <span className="absolute right-3 top-3 text-xs bg-white/20 px-2 py-0.5 rounded">Editar</span>
+              <div className="text-[12px] font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">
+                 Factura(s) Incluida(s)
               </div>
-              <div className="flex-1 bg-white border border-gray-300 overflow-y-auto mb-4 relative">
-                 <div className="flex bg-gray-200 text-[10px] font-bold p-2 border-b border-gray-300">
-                    <div className="flex-1">Doc</div>
-                    <div className="flex-1 text-center">Saldo</div>
-                    <div className="flex-1 text-right">Abono</div>
-                 </div>
-                 {facturaSeleccionada && (
-                   <div className="flex items-center p-2 border-b border-gray-100 text-[11px] font-mono font-bold text-gray-700">
-                      <div className="flex-1">FAC 102553</div>
-                      <div className="flex-1 text-center">43,59</div>
-                      <div className="flex-1 text-right text-blue-600">{montoAbono}</div>
+              <div className="flex-1 bg-white border border-gray-300 overflow-y-auto mb-4 relative p-2 shadow-inner">
+                 {facturaSeleccionada ? (
+                   <div className="flex flex-col gap-2 p-2 bg-[#f8f8f8] border border-gray-200 shadow-sm">
+                      <div className="font-bold text-[12px] text-black">A 06948862</div>
+                      <div className="flex justify-between items-center text-[11px] font-bold text-gray-600">
+                         <span>Monto Bs.</span>
+                         <span>2.158,35</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] font-bold text-gray-600">
+                         <span>Monto $</span>
+                         <span>58,87</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] font-bold text-black border-t border-gray-300 pt-1 mt-1">
+                         <span>Total Abonado</span>
+                         <span>{montoAbono}</span>
+                      </div>
                    </div>
+                 ) : (
+                   <div className="text-center text-[10px] text-gray-400 mt-10">No hay facturas incluidas</div>
                  )}
-                 <button onClick={() => setMostrarModalDeposito(true)} className="absolute bottom-4 right-4 w-12 h-12 bg-green-500 text-white rounded-full shadow-xl flex items-center justify-center text-3xl font-light hover:scale-105 transition-transform">+</button>
+                 <button onClick={() => setMostrarModalDeposito(true)} className="absolute bottom-4 right-4 w-12 h-12 bg-[#00b0f0] text-white rounded-full shadow-lg flex items-center justify-center text-3xl font-bold border-2 border-white hover:scale-105 transition-transform">+</button>
               </div>
-              <div className="bg-gray-800 text-white p-3 rounded text-xs flex justify-between font-bold">
+              <div className="bg-[#e0e0e0] text-black p-2 border border-gray-400 shadow-sm text-xs flex justify-between font-bold">
                  <span>Resta por Aplicar:</span>
-                 <span className="text-yellow-400">{montoResta}</span>
+                 <span className="text-black">{montoResta}</span>
               </div>
            </div>
 
@@ -354,43 +411,54 @@ export const AfvCollections = ({
               </div>
            )}
 
-           {/* MODAL DE DEPOSITO */}
+           {/* MODAL DE DEPOSITO (Simplificado a Efectivo) */}
            {mostrarModalDeposito && (
-             <div className="absolute inset-0 bg-black/80 z-50 flex items-end justify-center">
-                <div className="bg-gray-100 w-full rounded-t-3xl shadow-2xl overflow-hidden flex flex-col h-[90%]">
-                   <div className="p-3 border-b border-gray-300 font-bold text-sm bg-white flex justify-between items-center shadow-sm">
-                     <span className="text-blue-600">Registro de Pago</span>
-                     <button onClick={() => setMostrarModalDeposito(false)} className="text-gray-500 font-bold text-xl px-2">✕</button>
+             <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                <div className="bg-white w-[90%] border-4 border-[#00b0f0] overflow-hidden flex flex-col shadow-2xl">
+                   <div className="p-2 border-b border-[#00b0f0] font-bold text-[13px] bg-[#00b0f0] text-white flex justify-between items-center">
+                     <span>Registro de Pago</span>
+                     <button onClick={() => setMostrarModalDeposito(false)} className="text-white font-bold text-lg px-2">X</button>
                    </div>
-                   <div className="p-4 flex flex-col gap-4 overflow-y-auto flex-1">
+                   <div className="p-4 flex flex-col gap-4 flex-1 bg-gray-100">
                       <div>
-                         <label className="text-[10px] font-bold text-gray-500">MONTO ({formaPagoReciboSeleccionada})</label>
-                         <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full bg-white border-b-2 border-gray-300 py-2 font-mono font-bold text-sm outline-none px-2 rounded-t" />
-                      </div>
-                      <div>
-                         <label className="text-[10px] font-bold text-gray-500">REFERENCIA / RECIBO</label>
-                         <input type="text" value={referenciaDeposito} onChange={(e) => setReferenciaDeposito(e.target.value)} className="w-full bg-white border-b-2 border-gray-300 py-2 font-mono font-bold text-sm outline-none px-2 rounded-t" />
-                      </div>
-                      <div className="relative">
-                         <label className="text-[10px] font-bold text-gray-500">BANCO RECEPTOR</label>
-                         <div onClick={() => setMostrarComboBanco(!mostrarComboBanco)} className="w-full bg-white border-b-2 border-gray-300 py-2 font-bold text-xs outline-none px-2 rounded-t cursor-pointer flex justify-between">
-                            <span>{bancoDeposito || 'Seleccione Banco'}</span>
-                            <span className="text-gray-400">▼</span>
-                         </div>
-                         {mostrarComboBanco && (
-                           <div className="absolute top-full left-0 right-0 bg-white shadow-xl border border-gray-200 z-10 max-h-40 overflow-y-auto">
-                              {['Banco Mercantil', 'Banco Provincial', 'Banesco', 'Banco de Venezuela'].map(b => (
-                                <div key={b} onClick={() => { setBancoDeposito(b); setMostrarComboBanco(false); }} className="p-2 text-xs hover:bg-blue-50 border-b border-gray-100">{b}</div>
-                              ))}
-                           </div>
-                         )}
-                      </div>
-                      <div>
-                         <label className="text-[10px] font-bold text-gray-500">FECHA DEPÓSITO</label>
-                         <input type="date" value={fechaDeposito} onChange={(e) => setFechaDeposito(e.target.value)} className="w-full bg-white border-b-2 border-gray-300 py-2 font-mono font-bold text-sm outline-none px-2 rounded-t" />
+                         <label className="text-[11px] font-bold text-gray-700">Monto del Pago:</label>
+                         <input type="text" value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} className="w-full bg-white border border-gray-400 py-2 font-bold text-lg text-center outline-none px-2 shadow-inner" />
                       </div>
                       
-                      <button onClick={() => { setMostrarModalDeposito(false); setPantalla('recibo_pagado'); }} className="mt-4 w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md">CONFIRMAR PAGO</button>
+                      <div className="flex gap-2 mt-2">
+                        <button onClick={() => { 
+                          setMontoAbono(montoDeposito); 
+                          setMontoDeposito('0,00'); 
+                          setMontoResta('0,00');
+                        }} className="flex-1 bg-[#e0e0e0] border border-gray-400 text-black font-bold py-2 shadow-sm text-[11px] uppercase">
+                          OK
+                        </button>
+                        <button onClick={() => setMostrarModalDeposito(false)} className="flex-1 bg-[#e0e0e0] border border-gray-400 text-black font-bold py-2 shadow-sm text-[11px] uppercase">
+                          Cancelar
+                        </button>
+                      </div>
+                   </div>
+                </div>
+             </div>
+           )}
+
+           {/* DIALOG: CONFIRMACION DE CIERRE */}
+           {pantalla === 'recibo_confirmacion' && (
+             <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                <div className="bg-white w-[80%] rounded shadow-2xl overflow-hidden flex flex-col">
+                   <div className="p-2 border-b border-gray-300 font-bold text-[12px] bg-gray-100 text-black">
+                     Confirmación
+                   </div>
+                   <div className="p-4 text-[12px] text-center font-bold text-gray-800">
+                     ¿Desea cerrar el recibo?
+                   </div>
+                   <div className="flex gap-3 px-4 pb-4">
+                     <button onClick={() => setPantalla('recibo_listo')} className="flex-1 bg-[#e8e8e8] border border-gray-400 py-1.5 rounded text-[11px] font-bold shadow text-black hover:bg-[#ddd]">
+                       SI
+                     </button>
+                     <button onClick={() => setPantalla('recibo_incluidas')} className="flex-1 bg-[#e8e8e8] border border-gray-400 py-1.5 rounded text-[11px] font-bold shadow text-black hover:bg-[#ddd]">
+                       NO
+                     </button>
                    </div>
                 </div>
              </div>
@@ -432,15 +500,22 @@ export const AfvCollections = ({
       {/* PANTALLA: RECIBO LISTO */}
       {pantalla === 'recibo_listo' && (
         <div className="flex-1 bg-white mt-8 rounded-t-2xl flex flex-col relative overflow-hidden">
-           <div className="p-2.5 flex items-center justify-between border-b" style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}>
-              <span className="text-[13px] font-bold">Recibo Emitido</span>
-              <button onClick={() => setPantalla('recibo_index')} className="text-lg leading-none">✕</button>
+           <div className="p-2 flex items-center justify-between border-b bg-[#00b0f0] border-[#0092c8] shadow-sm">
+              <span className="text-[13px] font-bold text-black font-sans uppercase">Recibo Generado</span>
+              <button onClick={() => setPantalla('recibo_index')} className="text-lg leading-none text-black font-bold">✕</button>
            </div>
-           <div className="flex-1 p-6 bg-blue-50 flex flex-col items-center justify-center gap-4">
-              <div className="w-16 h-16 text-blue-600 text-5xl">📄</div>
-              <h3 className="font-bold text-lg text-gray-800">Recibo RC-9923 Generado</h3>
-              <p className="text-xs text-gray-500 text-center">El recibo ha sido guardado y sincronizado con el servidor central.</p>
-              <button onClick={() => setPantalla('recibo_index')} className="mt-8 px-8 bg-gray-800 text-white font-bold py-2 rounded shadow-md">Volver al Menú</button>
+           <div className="flex-1 p-4 bg-gray-100 flex flex-col items-center justify-center gap-6">
+              <div className="bg-white p-6 rounded shadow-md text-center border border-gray-300 w-full">
+                <div className="w-16 h-16 text-blue-600 text-5xl mx-auto mb-4">📄</div>
+                <h3 className="font-bold text-lg text-gray-800 border-b border-gray-200 pb-2 mb-2">Recibo RC-9923</h3>
+                <p className="text-sm font-bold text-gray-600 mb-1">Cliente: ALTAMIRA FERRE-INDL</p>
+                <p className="text-sm font-bold text-gray-600 mb-4">Total: $58.87</p>
+                <div className="flex flex-col gap-3">
+                  <button onClick={() => setPantalla('recibo_index')} className="w-full bg-[#00b0f0] text-white font-bold py-2 shadow-sm rounded-sm uppercase text-xs">ENVIAR EMAIL</button>
+                  <button onClick={() => setPantalla('recibo_index')} className="w-full bg-[#25D366] text-white font-bold py-2 shadow-sm rounded-sm uppercase text-xs">COMPARTIR POR WHATSAPP</button>
+                </div>
+              </div>
+              <button onClick={() => setPantalla('menu')} className="mt-auto px-8 bg-gray-300 text-black font-bold py-2 rounded shadow-sm border border-gray-400 text-[10px] uppercase">VOLVER AL MENÚ PRINCIPAL</button>
            </div>
         </div>
       )}
