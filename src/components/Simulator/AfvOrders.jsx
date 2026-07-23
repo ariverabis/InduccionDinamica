@@ -257,38 +257,38 @@ export const AfvOrders = ({
             </div>
             <textarea value={textoObservaciones} onChange={(e) => setTextoObservaciones(e.target.value)} className="w-full h-24 border border-transparent bg-white shadow-inner resize-none text-[12px] p-2 outline-none" style={{ borderLeft: '2px solid #00b0f0' }}></textarea>
 
-            {/* MODAL DE OBSERVACIONES */}
-            {mostrarModalObservaciones && (
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center p-2 z-50">
-                <div className="bg-white w-full border border-gray-400 shadow-2xl relative">
-                  <div className="flex justify-between items-center bg-white p-3 border-b border-gray-300">
-                    <span className="text-[15px] font-sans text-black">022 - Observaciones del Pedido</span>
-                    <button onClick={() => setMostrarModalObservaciones(false)} className="w-7 h-7 bg-[#b3b3b3] rounded-full text-white flex items-center justify-center font-bold text-lg shadow-sm border-2 border-gray-400 leading-none pb-1">x</button>
-                  </div>
-                  <div className="p-4 flex flex-col bg-white">
-                    <div className="font-bold text-[14px] mb-3 font-sans text-black">NEGOCIACION ESPECIAL</div>
-                    <div className="flex gap-2 mb-2 items-center">
-                      <div className="relative flex-[2]">
-                        <div onClick={() => setMostrarComboObservaciones(!mostrarComboObservaciones)} className="bg-white border-b-2 border-gray-400 h-9 flex items-center justify-between px-2 cursor-pointer text-[13px] bg-gray-50">
-                          <span>{observacionActiva || 'NEGOCIACION ESPECIAL'}</span>
-                          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-t-[6px] border-t-gray-600"></div>
-                        </div>
-                        {mostrarComboObservaciones && (
-                          <div className="absolute top-9 left-0 right-0 bg-white border border-gray-300 shadow-xl z-10 text-[13px]">
-                            <div className="p-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer text-black" onClick={() => { setObservacionActiva('NEGOCIACION ESPECIAL'); setMostrarComboObservaciones(false); }}>NEGOCIACION ESPECIAL</div>
-                          </div>
-                        )}
+          </div>
+
+          {/* MODAL DE OBSERVACIONES (FUERA DEL CONTENEDOR CON SCROLL) */}
+          {mostrarModalObservaciones && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-2 z-[60]">
+              <div className="bg-white w-full border border-gray-400 shadow-2xl relative z-50">
+                <div className="flex justify-between items-center bg-[#f0f0f0] p-3 border-b border-gray-300">
+                  <span className="text-[15px] font-sans text-black">022 - Observaciones del Pedido</span>
+                  <button onClick={() => setMostrarModalObservaciones(false)} className="w-7 h-7 bg-[#b3b3b3] rounded-full text-white flex items-center justify-center font-bold text-lg shadow-sm border-2 border-gray-400 leading-none pb-1">x</button>
+                </div>
+                <div className="p-4 flex flex-col bg-[#f0f0f0]">
+                  <div className="font-bold text-[14px] mb-3 font-sans text-black">NEGOCIACION ESPECIAL</div>
+                  <div className="flex gap-2 mb-2 items-center">
+                    <div className="relative flex-[2]">
+                      <div onClick={() => setMostrarComboObservaciones(!mostrarComboObservaciones)} className="bg-white border-b-2 border-gray-400 h-9 flex items-center justify-between px-2 cursor-pointer text-[13px] shadow-sm">
+                        <span>{observacionActiva || 'NEGOCIACION ESPECIAL'}</span>
+                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-t-[6px] border-t-gray-600"></div>
                       </div>
-                      <button onClick={() => { if(observacionActiva) setTextoObservaciones(observacionActiva); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans">OK</button>
-                      <button onClick={() => { setObservacionActiva(''); setTextoObservaciones(''); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans">Eliminar</button>
+                      {mostrarComboObservaciones && (
+                        <div className="absolute top-9 left-0 right-0 bg-white border border-gray-300 shadow-xl z-10 text-[13px]">
+                          <div className="p-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer text-black" onClick={() => { setObservacionActiva('NEGOCIACION ESPECIAL'); setMostrarComboObservaciones(false); }}>NEGOCIACION ESPECIAL</div>
+                        </div>
+                      )}
                     </div>
-                    <textarea value={observacionActiva} readOnly className="w-full h-28 border border-black p-2 text-[13px] resize-none outline-none bg-white mt-1 shadow-sm"></textarea>
+                    <button onClick={() => { if(observacionActiva) setTextoObservaciones(observacionActiva); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">OK</button>
+                    <button onClick={() => { setObservacionActiva(''); setTextoObservaciones(''); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">Eliminar</button>
                   </div>
+                  <textarea value={observacionActiva} readOnly className="w-full h-28 border border-gray-400 p-2 text-[13px] resize-none outline-none bg-white mt-1 shadow-inner"></textarea>
                 </div>
               </div>
-            )}
-
-          </div>
+            </div>
+          )}
         </div>
       )}
     </>
