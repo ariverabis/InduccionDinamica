@@ -401,30 +401,77 @@ export function useGhostDemos({
     await sleep(1200);
     await triggerClick();
     setMostrarComboNivel(true);
-    await sleep(1000);
+    await sleep(1500);
+
+    await decir("14.- Al seleccionar MAYOREOB, la condicion cambia a 10% hasta 7 días.");
     setCursorPos({ x: 200, y: 240, visible: true });
     await sleep(800);
     await triggerClick();
     setNivelSeleccionado('MAYOREOB');
+    setCondicionPedido('10% hasta 7 días');
     setMostrarComboNivel(false);
+    await sleep(2500);
+
+    await decir("15.- Al seleccionar MAYOREOD, la condicion queda en blanco.");
+    setCursorPos({ x: 200, y: 200, visible: true });
     await sleep(800);
-
-    await decir("11.- Valida escala de flete.");
-    setCursorPos({ x: 160, y: 440, visible: true });
+    await triggerClick();
+    setMostrarComboNivel(true);
+    await sleep(1500);
+    setCursorPos({ x: 200, y: 220, visible: true });
+    await sleep(800);
+    await triggerClick();
+    setNivelSeleccionado('MAYOREOD');
+    setCondicionPedido('');
+    setMostrarComboNivel(false);
     await sleep(2000);
 
-    await decir("12.- Visualice las etiquetas de negociacion especial.");
-    setCursorPos({ x: 270, y: 430, visible: true });
-    await sleep(2000);
+    await decir("16.- Visualice las Etiquetas de Negociacion Especial.");
+    setCursorPos({ x: 270, y: 430, visible: true }); // click en '+'
+    await sleep(1200);
+    await triggerClick();
+    setMostrarModalObservaciones(true);
+    await sleep(1500);
 
-    await decir("13.- Cierre en el boton Fin.");
-    setCursorPos({ x: 270, y: 430, visible: true });
+    await decir("17.- Seleccione la etiqueta NEGOCIACION ESPECIAL y presione OK.");
+    setCursorPos({ x: 160, y: 220, visible: true }); // Click en el combo
+    await sleep(1000);
+    await triggerClick();
+    setMostrarComboObservaciones(true);
+    await sleep(1000);
+    setCursorPos({ x: 160, y: 260, visible: true }); // Click en la opción
+    await sleep(1000);
+    await triggerClick();
+    setObservacionActiva('NEGOCIACION ESPECIAL');
+    setMostrarComboObservaciones(false);
+    await sleep(1000);
+    setCursorPos({ x: 250, y: 220, visible: true }); // Click en OK
+    await sleep(1000);
+    await triggerClick();
+    setMostrarModalObservaciones(false);
+    await sleep(1000);
+
+    await decir("18.- El asesor ingresa una observación manual en el pedido.");
+    setCursorPos({ x: 160, y: 600, visible: true });
+    await sleep(800);
+    await triggerClick();
+    const mensajeObs = "descto autorizado del 2% clave 1001";
+    let textoActual = "";
+    for (let i = 0; i < mensajeObs.length; i++) {
+      textoActual += mensajeObs[i];
+      setTextoObservaciones(textoActual);
+      await sleep(50);
+    }
+    await sleep(1500);
+
+    await decir("19.- Cierre en el boton Fin.");
+    setCursorPos({ x: 280, y: 700, visible: true }); // Click FIN
     await sleep(1200);
     await triggerClick();
     setModalCierraGV1(true);
     await sleep(800);
 
-    await decir("14.- Responda NO.");
+    await decir("20.- Responda NO.");
     setCursorPos({ x: 110, y: 400, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -432,20 +479,21 @@ export function useGhostDemos({
     setModalCierraGV2(true);
     await sleep(800);
 
-    await decir("15.- Responda SI.");
+    await decir("21.- Responda SI.");
     setCursorPos({ x: 210, y: 380, visible: true });
     await sleep(1200);
     await triggerClick();
     setModalCierraGV2(false);
+    setPantalla('pedido_cerrado_gv');
+    await sleep(2000);
 
-    await decir("16.- Fin");
+    await decir("22.- Fin");
     setPantalla('consulta_pedidos');
     await sleep(2000);
 
     setNarracionTexto("");
     setCursorPos({ x: -100, y: -100, visible: false });
   };
-
   const runDemo080 = async () => {
     setCursorPos({ x: 160, y: 600, visible: true });
     await sleep(300);

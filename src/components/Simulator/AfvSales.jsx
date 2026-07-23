@@ -33,12 +33,14 @@ export const AfvSales = ({
   setNivelSeleccionado,
   mostrarComboNivel,
   setMostrarComboNivel,
-  mostrarObservaciones,
-  setMostrarObservaciones,
-  observacionTipo,
-  setObservacionTipo,
-  observacionTexto,
-  setObservacionTexto,
+  mostrarModalObservaciones,
+  setMostrarModalObservaciones,
+  mostrarComboObservaciones,
+  setMostrarComboObservaciones,
+  observacionActiva,
+  setObservacionActiva,
+  textoObservaciones,
+  setTextoObservaciones,
   modalCierraGV1,
   setModalCierraGV1,
   modalCierraGV2,
@@ -701,39 +703,44 @@ export const AfvSales = ({
               <button onClick={() => setModalCierraGV1(true)} className="bg-[#e6e6e6] text-black font-bold font-sans text-[11px] px-3 py-1 border border-[#a6a6a6] shadow-sm active:bg-[#d4d4d4] ml-2">FIN</button>
             </div>
 
-            <div className="flex items-center">
-              <span className="text-[11px] font-bold text-gray-700 font-sans">Observaciones:</span>
-              <span className="flex-1 text-[10px] font-bold text-blue-700 font-sans ml-2 truncate">{observacionTipo}</span>
-              <button onClick={() => setMostrarObservaciones(true)} className="w-6 h-6 bg-[#e6e6e6] border border-gray-400 text-black font-bold text-[14px] leading-none flex items-center justify-center">+</button>
+            <div className="mt-4 flex items-center justify-between mb-1">
+              <span className="text-[12px] font-bold text-gray-700">Observaciones:</span>
+              <button onClick={() => setMostrarModalObservaciones(true)} className="bg-[#e0e0e0] border border-gray-300 text-black w-6 h-6 flex items-center justify-center font-bold shadow-sm active:bg-gray-300 text-sm">+</button>
             </div>
+            <textarea value={textoObservaciones} onChange={(e) => setTextoObservaciones(e.target.value)} className="w-full h-24 border border-transparent bg-white shadow-inner resize-none text-[12px] p-2 outline-none" style={{ borderLeft: '2px solid #00b0f0' }}></textarea>
 
-            {/* Modal Observaciones */}
-            {mostrarObservaciones && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg shadow-2xl w-[280px] overflow-hidden border border-gray-300">
-                  <div className="bg-[#00b0f0] px-3 py-2 flex items-center justify-between">
-                    <span className="text-[12px] font-bold text-black font-sans">016 - Toma de Observación</span>
-                    <button onClick={() => setMostrarObservaciones(false)} className="text-black font-bold text-lg leading-none">✕</button>
-                  </div>
-                  <div className="p-4 flex flex-col gap-3">
-                    <select
-                      value={observacionTipo}
-                      onChange={(e) => { setObservacionTipo(e.target.value); setObservacionTexto(e.target.value); }}
-                      className="w-full border border-gray-400 text-[12px] font-bold px-2 py-1.5 outline-none bg-white text-black"
-                    >
-                      <option value="">-- Seleccione --</option>
-                      <option value="Negociación Especial">Negociación Especial</option>
-                      <option value="Pedido Urgente">Pedido Urgente</option>
-                    </select>
-                    <textarea value={observacionTexto} onChange={(e) => setObservacionTexto(e.target.value)} rows={3} className="w-full border border-gray-400 text-[11px] px-2 py-1 outline-none resize-none font-sans" />
-                    <div className="flex gap-2 justify-end pt-1">
-                      <button onClick={() => setMostrarObservaciones(false)} className="bg-[#00b0f0] text-black font-bold px-4 py-1.5 border border-[#0092c8] text-[11px]">Aceptar</button>
+          </div>
+
+          {/* MODAL DE OBSERVACIONES (FUERA DEL CONTENEDOR CON SCROLL) */}
+          {mostrarModalObservaciones && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-2 z-[60]">
+              <div className="bg-white w-full border border-gray-400 shadow-2xl relative z-50">
+                <div className="flex justify-between items-center bg-[#f0f0f0] p-3 border-b border-gray-300">
+                  <span className="text-[15px] font-sans text-black">022 - Observaciones del Pedido</span>
+                  <button onClick={() => setMostrarModalObservaciones(false)} className="w-7 h-7 bg-[#b3b3b3] rounded-full text-white flex items-center justify-center font-bold text-lg shadow-sm border-2 border-gray-400 leading-none pb-1">x</button>
+                </div>
+                <div className="p-4 flex flex-col bg-[#f0f0f0]">
+                  <div className="font-bold text-[14px] mb-3 font-sans text-black">NEGOCIACION ESPECIAL</div>
+                  <div className="flex gap-2 mb-2 items-center">
+                    <div className="relative flex-[2]">
+                      <div onClick={() => setMostrarComboObservaciones(!mostrarComboObservaciones)} className="bg-white border-b-2 border-gray-400 h-9 flex items-center justify-between px-2 cursor-pointer text-[13px] shadow-sm">
+                        <span>{observacionActiva || 'NEGOCIACION ESPECIAL'}</span>
+                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-t-[6px] border-t-gray-600"></div>
+                      </div>
+                      {mostrarComboObservaciones && (
+                        <div className="absolute top-9 left-0 right-0 bg-white border border-gray-300 shadow-xl z-10 text-[13px]">
+                          <div className="p-3 border-b border-gray-100 hover:bg-gray-100 cursor-pointer text-black" onClick={() => { setObservacionActiva('NEGOCIACION ESPECIAL'); setMostrarComboObservaciones(false); }}>NEGOCIACION ESPECIAL</div>
+                        </div>
+                      )}
                     </div>
+                    <button onClick={() => { setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">OK</button>
+                    <button onClick={() => { setObservacionActiva(''); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">Eliminar</button>
                   </div>
+                  <textarea value={observacionActiva} readOnly className="w-full h-28 border border-gray-400 p-2 text-[13px] resize-none outline-none bg-white mt-1 shadow-inner"></textarea>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Modal Confirmación 1 */}
           {modalCierraGV1 && (
