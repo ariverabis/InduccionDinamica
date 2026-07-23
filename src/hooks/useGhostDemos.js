@@ -32,6 +32,7 @@ export function useGhostDemos({
   setAfvCalcPrecio,
   setAfvCalcNombre,
   setAfvDctoComercial,
+  setMostrarComboDsctoPromoCalc,
   setAfvDctoFP,
   setMostrarComboFormaPagoCalc,
   setMostrarSubmenu,

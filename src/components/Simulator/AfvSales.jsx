@@ -52,10 +52,13 @@ export const AfvSales = ({
   setMostrarAfvCalc
 }) => {
   
-  // Logic from Simulator.jsx
-  const productosFiltrados = MOCK_PRODUCTOS.filter(p => 
-    p.cod.includes(busquedaProducto) || p.desc.toLowerCase().includes(busquedaProducto.toLowerCase())
-  );
+  // Keep full product list visible during code search; filter only when using name search modal (B. button)
+  const productosFiltrados = busquedaNombre.trim()
+    ? MOCK_PRODUCTOS.filter(p =>
+        p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
+        p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
+      )
+    : MOCK_PRODUCTOS;
   
   const productoActivo = productosFiltrados[productoActivoIndex] || productosFiltrados[0];
 

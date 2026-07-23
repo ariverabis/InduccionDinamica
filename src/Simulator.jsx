@@ -75,6 +75,7 @@ function App() {
   const [afvDctoComercial, setAfvDctoComercial] = useState('');
   const [afvDctoFP, setAfvDctoFP] = useState('');
   const [mostrarComboFormaPagoCalc, setMostrarComboFormaPagoCalc] = useState(false);
+  const [mostrarComboDsctoPromoCalc, setMostrarComboDsctoPromoCalc] = useState(false);
 
   // --- COBRANZA STATES ---
   const [montoAbono, setMontoAbono] = useState('84,46');
@@ -231,7 +232,7 @@ function App() {
     setGrupoSeleccionado, setMostrarComboGrupo, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
     setBusquedaProducto, setBusquedaNombre, setProductoActivoIndex,
     setMostrarBuscaNombre, setMostrarAfvCalc, setAfvCalcPrecio, setAfvCalcNombre,
-    setAfvDctoComercial, setAfvDctoFP, setMostrarComboFormaPagoCalc, setMostrarSubmenu, setFacturaSeleccionada,
+    setAfvDctoComercial, setMostrarComboDsctoPromoCalc, setAfvDctoFP, setMostrarComboFormaPagoCalc, setMostrarSubmenu, setFacturaSeleccionada,
     setMostrarModalFormasPagoRecibo, setFormaPagoReciboSeleccionada, setMontoResta,
     setMontoAbono, setMostrarModalDeposito, setMontoDeposito, setReferenciaDeposito,
     setMostrarComboBanco, setBancoDeposito, setFechaDeposito, setMostrarLupaMontos,
@@ -648,25 +649,33 @@ function App() {
                   </div>
 
                   {/* Dscto. Promoción (dropdown) */}
-                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
-                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Promocin:</span>
-                    <select
-                      value={afvDctoComercial}
-                      onChange={(e) => setAfvDctoComercial(e.target.value)}
-                      className="flex-1 bg-white border border-gray-400 text-[11px] font-bold px-1 py-0.5 outline-none text-black appearance-none"
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300 relative">
+                    <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Dscto. Promoción:</span>
+                    <div
+                      onClick={() => setMostrarComboDsctoPromoCalc(!mostrarComboDsctoPromoCalc)}
+                      className="flex-1 bg-white border border-gray-400 text-[11px] font-bold px-2 py-0.5 cursor-pointer flex justify-between items-center text-black"
                     >
-                      <option value="0">0,00</option>
-                      <option value="1">1,00</option>
-                      <option value="2">2,00</option>
-                      <option value="3">3,00</option>
-                      <option value="4">4,00</option>
-                      <option value="5">5,00</option>
-                      <option value="7">7,00</option>
-                      <option value="10">10,00</option>
-                      <option value="12">12,00</option>
-                      <option value="15">15,00</option>
-                    </select>
+                      <span>{afvDctoComercial ? `${afvDctoComercial},00` : '0,00'}</span>
+                      <span className="text-[8px]">▼</span>
+                    </div>
                     <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+
+                    {mostrarComboDsctoPromoCalc && (
+                      <div className="absolute left-0 right-0 top-7 bg-white border border-gray-400 shadow-2xl z-[350] rounded overflow-hidden max-h-36 overflow-y-auto">
+                        {['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((d) => (
+                          <div
+                            key={d}
+                            onClick={() => {
+                              setAfvDctoComercial(d);
+                              setMostrarComboDsctoPromoCalc(false);
+                            }}
+                            className="px-3 py-1.5 text-[11px] font-sans text-black border-b border-gray-100 hover:bg-blue-100 active:bg-blue-200 cursor-pointer"
+                          >
+                            {d},00
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Otro Dscto. */}
