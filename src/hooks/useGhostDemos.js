@@ -248,14 +248,27 @@ export function useGhostDemos({
     setMostrarModalObservaciones(false);
     await sleep(1000);
 
-    await decir("14.- Cierre en el boton Fin.");
+    await decir("14.- El asesor ingresa una observación manual en el pedido.");
+    setCursorPos({ x: 160, y: 600, visible: true });
+    await sleep(800);
+    await triggerClick();
+    const mensajeObs = "descto autorizado del 2% clave 1001";
+    let textoActual = "";
+    for (let i = 0; i < mensajeObs.length; i++) {
+      textoActual += mensajeObs[i];
+      setTextoObservaciones(textoActual);
+      await sleep(50);
+    }
+    await sleep(1500);
+
+    await decir("15.- Cierre en el boton Fin.");
     setCursorPos({ x: 280, y: 350, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalCierra1(true);
     await sleep(800);
 
-    await decir("15.- Responda NO.");
+    await decir("16.- Responda NO.");
     setCursorPos({ x: 80, y: 390, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -263,13 +276,13 @@ export function useGhostDemos({
     setMostrarModalCierra2(true);
     await sleep(800);
 
-    await decir("16.- Responda SI.");
+    await decir("17.- Responda SI.");
     setCursorPos({ x: 240, y: 365, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalCierra2(false);
 
-    await decir("17.- Fin de la demostración.");
+    await decir("18.- Fin de la demostración.");
     setPantalla('consulta_pedidos');
     await sleep(1500);
 
