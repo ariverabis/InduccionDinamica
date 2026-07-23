@@ -20,6 +20,7 @@ export function useGhostDemos({
   setMostrarModalCierra1,
   setMostrarModalCierra2,
   setGrupoSeleccionado,
+  setMostrarComboGrupo,
   setCantidadProducto,
   setModalCierraGV1,
   setModalCierraGV2,

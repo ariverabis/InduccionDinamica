@@ -222,7 +222,7 @@ function App() {
     setMostrarModalObservaciones, setMostrarComboObservaciones, setObservacionActiva, setTextoObservaciones,
     setMostrarComboDescuentoPA, setDescuentoPA,
     setMostrarModalCierra1, setMostrarModalCierra2,
-    setGrupoSeleccionado, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
+    setGrupoSeleccionado, setMostrarComboGrupo, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
     setBusquedaProducto, setBusquedaNombre, setProductoActivoIndex,
     setMostrarBuscaNombre, setMostrarAfvCalc, setAfvCalcPrecio, setAfvCalcNombre,
     setAfvDctoComercial, setAfvDctoFP, setMostrarSubmenu, setFacturaSeleccionada,
