@@ -338,29 +338,56 @@ export function useGhostDemos({
     setMostrarComboGrupo(false);
     await sleep(800);
 
-    await decir("6.- Selecciona los artículos");
+    await decir("6.- Selecciona el botón buscar");
     setCursorPos({ x: 230, y: 540, visible: true });
     await sleep(1200);
     await triggerClick();
     setPantalla('resultados_busqueda');
-    setCantidadProducto('1');
+    setBusquedaProducto('');
+    setProductoActivoIndex(0);
+    setCantidadProducto('');
     await sleep(800);
 
-    await decir("7.- Coloca la cantidad solicitada");
+    await decir("7.- Ingrese el código del artículo a buscar.");
+    setCursorPos({ x: 120, y: 150, visible: true }); // Click en el input de Buscar
+    await sleep(800);
+    await triggerClick();
+    
+    const codigoBusqueda = "2213020";
+    let typedCode = "";
+    for (let i = 0; i < codigoBusqueda.length; i++) {
+      typedCode += codigoBusqueda[i];
+      setBusquedaProducto(typedCode);
+      await sleep(150);
+    }
+    await sleep(1000);
+
+    await decir("8.- Seleccione el artículo de la lista.");
+    setCursorPos({ x: 160, y: 220, visible: true }); // Click en el primer ítem
+    await sleep(800);
+    await triggerClick();
+    setProductoActivoIndex(0);
+    await sleep(1500);
+
+    await decir("9.- Visualice los datos actualizados en la parte inferior.");
+    setCursorPos({ x: 160, y: 450, visible: true }); // Mover cursor por la zona inferior
+    await sleep(2500);
+
+    await decir("10.- Ingrese la cantidad solicitada");
     setCursorPos({ x: 220, y: 530, visible: true });
     await sleep(1200);
     await triggerClick();
     setCantidadProducto('12');
     await sleep(800);
 
-    await decir("8.- pulsa ok");
+    await decir("11.- Pulsa ok");
     setCursorPos({ x: 280, y: 530, visible: true });
     await sleep(1000);
     await triggerClick();
     setPantalla('detalle_pedido_con_producto');
     await sleep(800);
 
-    await decir("9.- Devuélvete");
+    await decir("12.- Devuélvete");
     setCursorPos({ x: 230, y: 115, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -368,7 +395,7 @@ export function useGhostDemos({
     setNivelSeleccionado('MAYOREOD');
     await sleep(800);
 
-    await decir("10.- Selecciona nivel (lista de precios).");
+    await decir("13.- Selecciona nivel (lista de precios).");
     setCursorPos({ x: 200, y: 200, visible: true });
     await sleep(1200);
     await triggerClick();
