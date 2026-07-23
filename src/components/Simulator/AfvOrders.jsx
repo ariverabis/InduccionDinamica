@@ -182,18 +182,73 @@ export const AfvOrders = ({
             </div>
             <div className="flex items-center mb-2 border-b border-gray-400 pb-1 relative">
               <span className="w-[85px] text-[11px] text-gray-700">Nivel:</span>
-              <div className="flex-1 flex justify-between items-center text-[12px] text-black cursor-pointer mr-9" onClick={() => setMostrarComboNivel(!mostrarComboNivel)}>
+              <div className="flex-1 flex justify-between items-center text-[12px] text-black cursor-pointer mr-9 uppercase" onClick={() => setMostrarComboNivel(!mostrarComboNivel)}>
                 <span>{nivelSeleccionado}</span>
-                <div className="w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-gray-600"></div>
+                <div className="w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-gray-600"></div>
               </div>
               {mostrarComboNivel && (
-                <div className="absolute top-8 left-0 right-0 bg-white border border-gray-300 shadow-xl z-50">
+                <div className="absolute top-6 left-[85px] right-9 bg-white border border-gray-300 shadow-xl z-50">
                   {['MAYOREOB', 'MAYOREOD'].map(nivel => (
-                    <div key={nivel} className="p-3 border-b border-gray-100 active:bg-blue-100 text-[12px] text-black" onClick={() => { setNivelSeleccionado(nivel); setMostrarComboNivel(false); }}>{nivel}</div>
+                    <div key={nivel} className="p-2 border-b border-gray-100 active:bg-blue-100 text-[12px] text-black" onClick={() => { setNivelSeleccionado(nivel); setMostrarComboNivel(false); }}>{nivel}</div>
                   ))}
                 </div>
               )}
             </div>
+
+            <div className="flex items-center mb-2">
+              <span className="w-[85px] text-[11px] text-gray-700">Condición:</span>
+              <div className="flex-1 bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[12px] mr-9 h-6 flex items-center justify-end font-bold">
+                {nivelSeleccionado === 'MAYOREOB' ? '10% hasta 7 Días' : ''}
+              </div>
+            </div>
+
+            <div className="flex items-center mb-2">
+              <span className="w-[85px] text-[11px] text-gray-700">Flete (USD):</span>
+              <div className="flex-1 flex gap-2 mr-9">
+                 <div className="flex-[2] bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[13px] font-bold">0,00</div>
+                 <div className="flex-1 bg-transparent border-b border-gray-400 text-black flex justify-between items-center px-1 text-[13px]">
+                   <span>0</span>
+                   <span className="text-[10px]">▼</span>
+                 </div>
+                 <span className="text-[11px] text-gray-700 flex items-center">(%)</span>
+              </div>
+            </div>
+
+            <div className="flex items-center mb-2">
+              <span className="w-[85px] text-[11px] text-gray-700">Subtotal (USD):</span>
+              <div className="flex-1 bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[13px] mr-9 font-bold">11,03</div>
+            </div>
+
+            <div className="flex items-center mb-2">
+              <span className="w-[85px] text-[11px] text-gray-700">IVA Ret. 12% :</span>
+              <div className="flex-1 bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[13px] mr-9 font-bold">1,76</div>
+            </div>
+
+            <div className="flex items-center mb-2">
+              <span className="w-[85px] text-[11px] text-gray-700">IVA Rest. 4% :</span>
+              <div className="flex-1 bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[13px] mr-9 font-bold">0,44</div>
+            </div>
+
+            <div className="flex items-center mb-2">
+              <span className="w-[85px] text-[11px] text-gray-700">Total (USD):</span>
+              <div className="flex-1 bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[13px] mr-2 font-bold">12,79</div>
+              <button onClick={() => setPantalla('pedidos_catalogo')} className="w-10 bg-[#e0e0e0] border border-gray-400 text-[11px] font-bold text-black py-0.5 shadow-sm active:bg-gray-300">FIN</button>
+            </div>
+
+            <div className="border border-black mt-2 bg-white">
+              <div className="flex bg-[#a6a6a6] text-white text-[11px] font-bold font-sans">
+                <div className="flex-1 text-center py-1 border-r border-white border-opacity-50">Monto Pedido (USD)</div>
+                <div className="flex-1 text-center py-1">% Desc</div>
+              </div>
+              <div className="h-14"></div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between mb-1">
+              <span className="text-[12px] font-bold text-gray-700">Observaciones:</span>
+              <button className="bg-[#e0e0e0] border border-gray-300 text-black w-6 h-6 flex items-center justify-center font-bold shadow-sm active:bg-gray-300 text-sm">+</button>
+            </div>
+            <textarea className="w-full h-24 border border-transparent bg-white shadow-inner resize-none text-[12px] p-2 outline-none" style={{ borderLeft: '2px solid #00b0f0' }}></textarea>
+
           </div>
         </div>
       )}
