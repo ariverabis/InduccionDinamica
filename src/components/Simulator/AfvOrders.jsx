@@ -22,7 +22,11 @@ export const AfvOrders = ({
   mostrarModalCierra1,
   setMostrarModalCierra1,
   mostrarModalCierra2,
-  setMostrarModalCierra2
+  setMostrarModalCierra2,
+  mostrarComboDescuentoPA,
+  setMostrarComboDescuentoPA,
+  descuentoPA,
+  setDescuentoPA
 }) => {
   return (
     <>
@@ -152,8 +156,24 @@ export const AfvOrders = ({
                 </div>
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gray-500 border-t border-gray-600">
-              <button onClick={() => setMostrarModalOtorgar(true)} className="w-full bg-[#808080] text-black py-2 text-[13px] font-sans border border-gray-600 shadow-sm active:bg-gray-400">Otorgar</button>
+            <div className="absolute bottom-0 left-0 right-0 bg-gray-500 border-t border-gray-600">
+              <div className="flex items-center px-4 py-3 relative">
+                <span className="text-black font-bold text-[13px] mr-4">Descuento (%):</span>
+                <div className="flex items-center gap-1 border-b border-gray-600 pb-0.5 flex-1 relative cursor-pointer" onClick={() => setMostrarComboDescuentoPA(!mostrarComboDescuentoPA)}>
+                  <span className="text-[14px] text-gray-800">{descuentoPA}</span>
+                  <div className="absolute right-0 bottom-1 w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-gray-800"></div>
+                </div>
+                {mostrarComboDescuentoPA && (
+                  <div className="absolute left-[130px] right-4 bottom-10 bg-white border border-gray-400 shadow-2xl z-50 max-h-40 overflow-y-auto">
+                    {[1, 2, 3, 4, 5, 6, 7].map(d => (
+                      <div key={d} className="p-2 border-b border-gray-200 hover:bg-gray-100 active:bg-blue-100 text-[14px] text-black cursor-pointer" onClick={() => { setDescuentoPA(d.toString()); setMostrarComboDescuentoPA(false); }}>{d}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end px-3 pb-3 bg-gray-500">
+                <button onClick={() => setMostrarModalOtorgar(true)} className="bg-[#808080] text-black py-1.5 px-4 text-[13px] font-sans border border-gray-600 shadow-sm active:bg-gray-400">Otorgar</button>
+              </div>
             </div>
             {mostrarModalOtorgar && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 pb-20 z-10">

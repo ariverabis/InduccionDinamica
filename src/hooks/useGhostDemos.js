@@ -163,16 +163,29 @@ export function useGhostDemos({
     await decir("6.- Visualice los descuentos asociados a los productos escogidos. Esta pantalla muestra los descuentos, los haya cumplido o no.");
     await sleep(2500);
 
-    await decir("7.- Pulse el boton Otorgar para aplicar el descuento.");
-    setCursorPos({ x: 260, y: 565, visible: true });
-    await sleep(1200);
+    await decir("7.- Seleccione el descuento a otorgar en la lista desplegable.");
+    setCursorPos({ x: 180, y: 530, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setMostrarComboDescuentoPA(true);
+    await sleep(1000);
+    setCursorPos({ x: 180, y: 450, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setDescuentoPA('7');
+    setMostrarComboDescuentoPA(false);
+    await sleep(1000);
+
+    await decir("8.- Pulse el boton Otorgar para aplicar el descuento.");
+    setCursorPos({ x: 280, y: 575, visible: true });
+    await sleep(1000);
     await triggerClick();
     setMostrarModalOtorgar(true);
     await sleep(800);
 
-    await decir("8.- Confirme el descuento pulsando SI.");
+    await decir("9.- Confirme el descuento pulsando SI.");
     setCursorPos({ x: 230, y: 375, visible: true });
-    await sleep(1200);
+    await sleep(1000);
     await triggerClick();
     setMostrarModalOtorgar(false);
     setPantalla('finalizar_pedido');
@@ -234,14 +247,14 @@ export function useGhostDemos({
     setMostrarModalObservaciones(false);
     await sleep(1000);
 
-    await decir("13.- Cierre en el boton Fin.");
+    await decir("14.- Cierre en el boton Fin.");
     setCursorPos({ x: 280, y: 350, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalCierra1(true);
     await sleep(800);
 
-    await decir("10, Responda NO.");
+    await decir("15.- Responda NO.");
     setCursorPos({ x: 80, y: 390, visible: true });
     await sleep(1200);
     await triggerClick();
@@ -249,13 +262,13 @@ export function useGhostDemos({
     setMostrarModalCierra2(true);
     await sleep(800);
 
-    await decir("11. Responda SI.");
+    await decir("16.- Responda SI.");
     setCursorPos({ x: 240, y: 365, visible: true });
     await sleep(1200);
     await triggerClick();
     setMostrarModalCierra2(false);
 
-    await decir("12 Fin");
+    await decir("17.- Fin de la demostración.");
     setPantalla('consulta_pedidos');
     await sleep(1500);
 

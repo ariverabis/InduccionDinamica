@@ -177,6 +177,8 @@ function App() {
   const [mostrarComboObservaciones, setMostrarComboObservaciones] = useState(false);
   const [observacionActiva, setObservacionActiva] = useState('');
   const [textoObservaciones, setTextoObservaciones] = useState('');
+  const [mostrarComboDescuentoPA, setMostrarComboDescuentoPA] = useState(false);
+  const [descuentoPA, setDescuentoPA] = useState('7');
 
 
   // --- BUSQUEDA PRODUCTOS ---
@@ -218,6 +220,7 @@ function App() {
     isPausedRef, setIsClicking, setPantalla, setMostrarModalOtorgar,
     setMostrarComboNivel, setNivelSeleccionado, setCondicionPedido,
     setMostrarModalObservaciones, setMostrarComboObservaciones, setObservacionActiva, setTextoObservaciones,
+    setMostrarComboDescuentoPA, setDescuentoPA,
     setMostrarModalCierra1, setMostrarModalCierra2,
     setGrupoSeleccionado, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
     setBusquedaProducto, setBusquedaNombre, setProductoActivoIndex,
@@ -363,6 +366,10 @@ function App() {
           setMostrarModalCierra1={setMostrarModalCierra1}
           mostrarModalCierra2={mostrarModalCierra2}
           setMostrarModalCierra2={setMostrarModalCierra2}
+          mostrarComboDescuentoPA={mostrarComboDescuentoPA}
+          setMostrarComboDescuentoPA={setMostrarComboDescuentoPA}
+          descuentoPA={descuentoPA}
+          setDescuentoPA={setDescuentoPA}
         />
 
         {/* PROCESO DE GESTIÓN DE VENTAS (Modularizado) */}
