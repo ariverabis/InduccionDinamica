@@ -15,6 +15,8 @@ export function useGhostDemos({
   setMostrarComboObservaciones,
   setObservacionActiva,
   setTextoObservaciones,
+  setMostrarComboDescuentoPA,
+  setDescuentoPA,
   setMostrarModalCierra1,
   setMostrarModalCierra2,
   setGrupoSeleccionado,
