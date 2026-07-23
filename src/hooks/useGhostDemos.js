@@ -11,7 +11,10 @@ export function useGhostDemos({
   setMostrarComboNivel,
   setNivelSeleccionado,
   setCondicionPedido,
-  setMostrarModalNegociacion,
+  setMostrarModalObservaciones,
+  setMostrarComboObservaciones,
+  setObservacionActiva,
+  setTextoObservaciones,
   setMostrarModalCierra1,
   setMostrarModalCierra2,
   setGrupoSeleccionado,
@@ -206,16 +209,30 @@ export function useGhostDemos({
     await sleep(2000);
 
     await decir("12.- Visualice las Etiquetas de Negociacion Especial.");
-    setCursorPos({ x: 290, y: 495, visible: true });
+    setCursorPos({ x: 300, y: 505, visible: true }); // click en '+'
     await sleep(1200);
     await triggerClick();
-    setMostrarModalNegociacion(true);
+    setMostrarModalObservaciones(true);
     await sleep(1500);
-    setCursorPos({ x: 270, y: 225, visible: true });
-    await sleep(1200);
+
+    await decir("13.- Seleccione la etiqueta NEGOCIACION ESPECIAL y presione OK.");
+    setCursorPos({ x: 160, y: 220, visible: true }); // Click en el combo
+    await sleep(1000);
     await triggerClick();
-    setMostrarModalNegociacion(false);
-    await sleep(800);
+    setMostrarComboObservaciones(true);
+    await sleep(1000);
+    setCursorPos({ x: 160, y: 260, visible: true }); // Click en la opción
+    await sleep(1000);
+    await triggerClick();
+    setObservacionActiva('NEGOCIACION ESPECIAL');
+    setMostrarComboObservaciones(false);
+    await sleep(1000);
+    setCursorPos({ x: 250, y: 220, visible: true }); // Click en OK
+    await sleep(1000);
+    await triggerClick();
+    setTextoObservaciones('NEGOCIACION ESPECIAL');
+    setMostrarModalObservaciones(false);
+    await sleep(1000);
 
     await decir("13.- Cierre en el boton Fin.");
     setCursorPos({ x: 280, y: 350, visible: true });

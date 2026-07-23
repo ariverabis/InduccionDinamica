@@ -173,6 +173,11 @@ function App() {
   const [subPantalla, setSubPantalla] = useState('');
   const [montoRetencionEditado, setMontoRetencionEditado] = useState('');
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [mostrarModalObservaciones, setMostrarModalObservaciones] = useState(false);
+  const [mostrarComboObservaciones, setMostrarComboObservaciones] = useState(false);
+  const [observacionActiva, setObservacionActiva] = useState('');
+  const [textoObservaciones, setTextoObservaciones] = useState('');
+
 
   // --- BUSQUEDA PRODUCTOS ---
   const [busquedaProducto, setBusquedaProducto] = useState('');
@@ -212,7 +217,8 @@ function App() {
     stopRequestedRef, setStopRequested, setCursorPos, setNarracionTexto, setIsPaused,
     isPausedRef, setIsClicking, setPantalla, setMostrarModalOtorgar,
     setMostrarComboNivel, setNivelSeleccionado, setCondicionPedido,
-    setMostrarModalNegociacion, setMostrarModalCierra1, setMostrarModalCierra2,
+    setMostrarModalObservaciones, setMostrarComboObservaciones, setObservacionActiva, setTextoObservaciones,
+    setMostrarModalCierra1, setMostrarModalCierra2,
     setGrupoSeleccionado, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
     setBusquedaProducto, setBusquedaNombre, setProductoActivoIndex,
     setMostrarBuscaNombre, setMostrarAfvCalc, setAfvCalcPrecio, setAfvCalcNombre,
@@ -345,6 +351,14 @@ function App() {
           setNivelSeleccionado={setNivelSeleccionado}
           mostrarComboNivel={mostrarComboNivel}
           setMostrarComboNivel={setMostrarComboNivel}
+          mostrarModalObservaciones={mostrarModalObservaciones}
+          setMostrarModalObservaciones={setMostrarModalObservaciones}
+          mostrarComboObservaciones={mostrarComboObservaciones}
+          setMostrarComboObservaciones={setMostrarComboObservaciones}
+          observacionActiva={observacionActiva}
+          setObservacionActiva={setObservacionActiva}
+          textoObservaciones={textoObservaciones}
+          setTextoObservaciones={setTextoObservaciones}
         />
 
         {/* PROCESO DE GESTIÓN DE VENTAS (Modularizado) */}
