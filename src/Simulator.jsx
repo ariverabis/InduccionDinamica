@@ -74,6 +74,7 @@ function App() {
   const [afvCalcNombre, setAfvCalcNombre] = useState('P1');
   const [afvDctoComercial, setAfvDctoComercial] = useState('');
   const [afvDctoFP, setAfvDctoFP] = useState('');
+  const [mostrarComboFormaPagoCalc, setMostrarComboFormaPagoCalc] = useState(false);
 
   // --- COBRANZA STATES ---
   const [montoAbono, setMontoAbono] = useState('84,46');
@@ -190,22 +191,27 @@ function App() {
 
   const MOCK_PRODUCTOS = empresaSeleccionada === 'Beval' ? PRODUCTOS_BEVAL : PRODUCTOS_FEBECA;
 
-  // Filter by code only (main input)
   // Filter by name or old code (B. button modal)
+  // For code-only search: do not clear the list, maintain full MOCK_PRODUCTOS display
   const productosFiltrados = (() => {
     if (busquedaNombre.trim()) {
-      // Name / old code search mode
       return MOCK_PRODUCTOS.filter(p =>
         p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
         p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
       );
     }
-    if (busquedaProducto.trim()) {
-      // Code-only search mode
-      return MOCK_PRODUCTOS.filter(p => p.cod.includes(busquedaProducto.trim()));
-    }
     return MOCK_PRODUCTOS;
   })();
+
+  // Auto-locate product in full list when typing code
+  React.useEffect(() => {
+    if (busquedaProducto.trim()) {
+      const idx = MOCK_PRODUCTOS.findIndex(p => p.cod.startsWith(busquedaProducto.trim()) || p.cod.includes(busquedaProducto.trim()));
+      if (idx !== -1) {
+        setProductoActivoIndex(idx);
+      }
+    }
+  }, [busquedaProducto, MOCK_PRODUCTOS]);
 
   const productoActivo = productosFiltrados[productoActivoIndex] || productosFiltrados[0] || null;
 
@@ -225,7 +231,7 @@ function App() {
     setGrupoSeleccionado, setMostrarComboGrupo, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
     setBusquedaProducto, setBusquedaNombre, setProductoActivoIndex,
     setMostrarBuscaNombre, setMostrarAfvCalc, setAfvCalcPrecio, setAfvCalcNombre,
-    setAfvDctoComercial, setAfvDctoFP, setMostrarSubmenu, setFacturaSeleccionada,
+    setAfvDctoComercial, setAfvDctoFP, setMostrarComboFormaPagoCalc, setMostrarSubmenu, setFacturaSeleccionada,
     setMostrarModalFormasPagoRecibo, setFormaPagoReciboSeleccionada, setMontoResta,
     setMontoAbono, setMostrarModalDeposito, setMontoDeposito, setReferenciaDeposito,
     setMostrarComboBanco, setBancoDeposito, setFechaDeposito, setMostrarLupaMontos,
@@ -671,20 +677,39 @@ function App() {
                   </div>
 
                   {/* Forma Pago */}
-                  <div className="flex items-center gap-1 py-1 border-b border-gray-300">
+                  <div className="flex items-center gap-1 py-1 border-b border-gray-300 relative">
                     <span className="text-[10px] text-gray-700 font-sans w-[110px] shrink-0">Forma Pago:</span>
-                    <select
-                      value={afvDctoFP}
-                      onChange={(e) => setAfvDctoFP(e.target.value)}
-                      className="flex-1 bg-white border border-gray-400 text-[9px] font-bold px-1 py-0.5 outline-none text-black"
+                    <div
+                      onClick={() => setMostrarComboFormaPagoCalc(!mostrarComboFormaPagoCalc)}
+                      className="flex-1 bg-white border border-gray-400 text-[9px] font-bold px-1 py-0.5 cursor-pointer flex justify-between items-center text-black"
                     >
-                      <option value="">SELECCIONE FORMA DE PAGO</option>
-                      <option value="DEPOSITO USD 13%">DEPOSITO USD 13%</option>
-                      <option value="DEPOSITO EN TRANSITO USD 13%">DEPOSITO EN TRANSITO USD 13%</option>
-                      <option value="TRANSFERENCIA VES 0%">TRANSFERENCIA VES 0%</option>
-                      <option value="TRANSFERENCIA INTERNACIONAL USD 15%">TRANSFERENCIA INTERNACIONAL USD 15%</option>
-                    </select>
+                      <span className="truncate">{afvDctoFP || 'SELECCIONE FORMA DE PAGO'}</span>
+                      <span className="text-[8px]">▼</span>
+                    </div>
                     <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
+
+                    {mostrarComboFormaPagoCalc && (
+                      <div className="absolute left-0 right-0 bottom-6 bg-white border border-gray-400 shadow-2xl z-[350] rounded overflow-hidden">
+                        {[
+                          'SELECCIONE FORMA DE PAGO',
+                          'DEPOSITO USD 13%',
+                          'DEPOSITO EN TRANSITO USD 13%',
+                          'TRANSFERENCIA VES 0%',
+                          'TRANSFERENCIA INTERNACIONAL USD 15%'
+                        ].map((fp) => (
+                          <div
+                            key={fp}
+                            onClick={() => {
+                              setAfvDctoFP(fp === 'SELECCIONE FORMA DE PAGO' ? '' : fp);
+                              setMostrarComboFormaPagoCalc(false);
+                            }}
+                            className="px-3 py-1.5 text-[10px] font-sans text-gray-800 border-b border-gray-200 hover:bg-blue-100 active:bg-blue-200 cursor-pointer"
+                          >
+                            {fp}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Precio sin IVA */}

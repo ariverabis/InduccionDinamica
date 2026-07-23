@@ -1,4 +1,5 @@
 export const PRODUCTOS_FEBECA = [
+  { cod: '2213020', old: 'CFLX-00', desc: 'Canilla flexible malla acero 1/2 x 1/2 x 40 cm', p1: '2,99', p2: '1,99', inv: '1 PZA', emp: '10', cmin: '0,00', dscto: '0,00', exist: '460,00' },
   { cod: '2213021', old: 'CFLX-01', desc: 'Canilla flexible malla acero 1/2 x 50 x 40 cm', p1: '15.500,00', p2: '12.800,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '500' },
   { cod: '2213005', old: 'CFLX-02', desc: 'Canilla flexible malla acero 1/2 x 1/2 x 120', p1: '16.200,00', p2: '13.500,00', inv: 'UND', emp: '12', cmin: '1', dscto: '0,00', exist: '420' },
   { cod: '2213001', old: 'CFLX-03', desc: 'Canilla flexible de lujo malla acero 1/2 x 1/2', p1: '18.000,00', p2: '15.000,00', inv: 'UND', emp: '12', cmin: '1', dscto: '5,00', exist: '150' },

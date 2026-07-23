@@ -33,6 +33,7 @@ export function useGhostDemos({
   setAfvCalcNombre,
   setAfvDctoComercial,
   setAfvDctoFP,
+  setMostrarComboFormaPagoCalc,
   setMostrarSubmenu,
   setFacturaSeleccionada,
   setMostrarModalFormasPagoRecibo,
@@ -363,32 +364,90 @@ export function useGhostDemos({
     }
     await sleep(1000);
 
-    await decir("8.- Seleccione el artículo de la lista.");
+    await decir("8.- El sistema ubica el artículo en la lista y actualiza la información inferior.");
     setCursorPos({ x: 160, y: 220, visible: true }); // Click en el primer ítem
     await sleep(800);
     await triggerClick();
     setProductoActivoIndex(0);
     await sleep(1500);
 
-    await decir("9.- Visualice los datos actualizados en la parte inferior.");
-    setCursorPos({ x: 160, y: 450, visible: true }); // Mover cursor por la zona inferior
-    await sleep(2500);
+    await decir("9.- Consulte la Calculadora de Precios 084 haciendo clic en P1.");
+    setCursorPos({ x: 100, y: 465, visible: true }); // Click en botón P1
+    await sleep(1000);
+    await triggerClick();
+    setAfvCalcPrecio('2,99');
+    setAfvCalcNombre('P1');
+    setAfvDctoComercial('0');
+    setAfvDctoFP('');
+    setMostrarAfvCalc(true);
+    await sleep(1500);
 
-    await decir("10.- Ingrese la cantidad solicitada");
-    setCursorPos({ x: 220, y: 530, visible: true });
+    await decir("10.- Despliegue y seleccione la Forma de Pago en la consulta 084.");
+    setCursorPos({ x: 180, y: 410, visible: true }); // Click combo Forma Pago
+    await sleep(1000);
+    await triggerClick();
+    setMostrarComboFormaPagoCalc(true);
+    await sleep(1200);
+    setCursorPos({ x: 180, y: 440, visible: true }); // Selecciona TRANSFERENCIA INTERNACIONAL USD 15%
+    await sleep(800);
+    await triggerClick();
+    setAfvDctoFP('TRANSFERENCIA INTERNACIONAL USD 15%');
+    setMostrarComboFormaPagoCalc(false);
+    await sleep(2000);
+
+    await decir("11.- Cierre la calculadora de precios P1.");
+    setCursorPos({ x: 275, y: 250, visible: true }); // Click ✕
+    await sleep(1000);
+    await triggerClick();
+    setMostrarAfvCalc(false);
+    await sleep(1000);
+
+    await decir("12.- Consulte la Calculadora de Precios 084 haciendo clic en P2.");
+    setCursorPos({ x: 220, y: 465, visible: true }); // Click botón P2
+    await sleep(1000);
+    await triggerClick();
+    setAfvCalcPrecio('1,99');
+    setAfvCalcNombre('P2');
+    setAfvDctoComercial('0');
+    setAfvDctoFP('');
+    setMostrarAfvCalc(true);
+    await sleep(1500);
+
+    await decir("13.- Visualice el precio ajustado P2 (~30% de diferencia con P1).");
+    setCursorPos({ x: 180, y: 410, visible: true });
+    await sleep(1000);
+    await triggerClick();
+    setMostrarComboFormaPagoCalc(true);
+    await sleep(1200);
+    setCursorPos({ x: 180, y: 380, visible: true }); // DEPOSITO USD 13%
+    await sleep(800);
+    await triggerClick();
+    setAfvDctoFP('DEPOSITO USD 13%');
+    setMostrarComboFormaPagoCalc(false);
+    await sleep(2000);
+
+    await decir("14.- Cierre la consulta de precios P2.");
+    setCursorPos({ x: 275, y: 250, visible: true }); // Click ✕
+    await sleep(1000);
+    await triggerClick();
+    setMostrarAfvCalc(false);
+    await sleep(1000);
+
+    await decir("15.- Ingrese la cantidad solicitada respetando el Empaque Comercial (Emp. C. = 10).");
+    setCursorPos({ x: 140, y: 515, visible: true });
     await sleep(1200);
     await triggerClick();
-    setCantidadProducto('12');
-    await sleep(800);
+    setCantidadProducto('10');
+    await sleep(1000);
 
-    await decir("11.- Pulsa ok");
-    setCursorPos({ x: 280, y: 530, visible: true });
+    await decir("16.- Pulsa OK.");
+    setCursorPos({ x: 240, y: 515, visible: true });
     await sleep(1000);
     await triggerClick();
     setPantalla('detalle_pedido_con_producto');
     await sleep(800);
 
-    await decir("12.- Devuélvete");
+    await decir("17.- Devuélvete");
     setCursorPos({ x: 230, y: 115, visible: true });
     await sleep(1200);
     await triggerClick();
