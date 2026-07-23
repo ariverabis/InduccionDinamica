@@ -245,7 +245,6 @@ export function useGhostDemos({
     setCursorPos({ x: 250, y: 220, visible: true }); // Click en OK
     await sleep(1000);
     await triggerClick();
-    setTextoObservaciones('NEGOCIACION ESPECIAL');
     setMostrarModalObservaciones(false);
     await sleep(1000);
 

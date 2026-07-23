@@ -305,8 +305,8 @@ export const AfvOrders = ({
                         </div>
                       )}
                     </div>
-                    <button onClick={() => { if(observacionActiva) setTextoObservaciones(observacionActiva); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">OK</button>
-                    <button onClick={() => { setObservacionActiva(''); setTextoObservaciones(''); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">Eliminar</button>
+                    <button onClick={() => { setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">OK</button>
+                    <button onClick={() => { setObservacionActiva(''); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">Eliminar</button>
                   </div>
                   <textarea value={observacionActiva} readOnly className="w-full h-28 border border-gray-400 p-2 text-[13px] resize-none outline-none bg-white mt-1 shadow-inner"></textarea>
                 </div>
@@ -322,7 +322,7 @@ export const AfvOrders = ({
                   Confirmación
                 </div>
                 <div className="p-4 border-b border-gray-300 text-gray-700 text-[14px] bg-gray-50">
-                  El monto de su pedido es 88,11 $ con un descuento de 0% en el monto del flete.<br/>
+                  El monto de su pedido es 12,79 $ con un descuento de 0% en el monto del flete.<br/>
                   ¿Desea añadir más articulos al pedido?
                 </div>
                 <div className="flex bg-[#f9f9f9]">
