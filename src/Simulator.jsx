@@ -359,6 +359,10 @@ function App() {
           setObservacionActiva={setObservacionActiva}
           textoObservaciones={textoObservaciones}
           setTextoObservaciones={setTextoObservaciones}
+          mostrarModalCierra1={mostrarModalCierra1}
+          setMostrarModalCierra1={setMostrarModalCierra1}
+          mostrarModalCierra2={mostrarModalCierra2}
+          setMostrarModalCierra2={setMostrarModalCierra2}
         />
 
         {/* PROCESO DE GESTIÓN DE VENTAS (Modularizado) */}

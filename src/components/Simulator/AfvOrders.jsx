@@ -18,7 +18,11 @@ export const AfvOrders = ({
   observacionActiva,
   setObservacionActiva,
   textoObservaciones,
-  setTextoObservaciones
+  setTextoObservaciones,
+  mostrarModalCierra1,
+  setMostrarModalCierra1,
+  mostrarModalCierra2,
+  setMostrarModalCierra2
 }) => {
   return (
     <>
@@ -240,7 +244,7 @@ export const AfvOrders = ({
             <div className="flex items-center mb-2">
               <span className="w-[85px] text-[11px] text-gray-700">Total (USD):</span>
               <div className="flex-1 bg-[#b3b3b3] text-black text-right pr-2 py-0.5 text-[13px] mr-2 font-bold">12,79</div>
-              <button onClick={() => setPantalla('pedidos_catalogo')} className="w-10 bg-[#e0e0e0] border border-gray-400 text-[11px] font-bold text-black py-0.5 shadow-sm active:bg-gray-300">FIN</button>
+              <button onClick={() => setMostrarModalCierra1(true)} className="w-10 bg-[#e0e0e0] border border-gray-400 text-[11px] font-bold text-black py-0.5 shadow-sm active:bg-gray-300">FIN</button>
             </div>
 
             <div className="border border-black mt-2 bg-white">
@@ -285,6 +289,43 @@ export const AfvOrders = ({
                     <button onClick={() => { setObservacionActiva(''); setTextoObservaciones(''); setMostrarModalObservaciones(false); }} className="bg-[#e0e0e0] border border-gray-400 text-black px-4 h-9 text-[13px] shadow-sm font-sans active:bg-gray-300">Eliminar</button>
                   </div>
                   <textarea value={observacionActiva} readOnly className="w-full h-28 border border-gray-400 p-2 text-[13px] resize-none outline-none bg-white mt-1 shadow-inner"></textarea>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL CIERRA 1 */}
+          {mostrarModalCierra1 && (
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center p-6 z-[70]">
+              <div className="bg-[#f0f0f0] w-full rounded shadow-xl overflow-hidden">
+                <div className="border-b-2 border-[#00b0f0] p-3 text-[#00b0f0] font-sans text-lg">
+                  Confirmación
+                </div>
+                <div className="p-4 border-b border-gray-300 text-gray-700 text-[14px] bg-gray-50">
+                  El monto de su pedido es 88,11 $ con un descuento de 0% en el monto del flete.<br/>
+                  ¿Desea añadir más articulos al pedido?
+                </div>
+                <div className="flex bg-[#f9f9f9]">
+                  <button onClick={() => { setMostrarModalCierra1(false); setMostrarModalCierra2(true); }} className="flex-1 py-3 text-[14px] border-r border-gray-300 active:bg-gray-200 text-gray-700">No</button>
+                  <button onClick={() => setMostrarModalCierra1(false)} className="flex-1 py-3 text-[14px] active:bg-gray-200 text-gray-700">Si</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL CIERRA 2 */}
+          {mostrarModalCierra2 && (
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center p-6 z-[70]">
+              <div className="bg-[#f0f0f0] w-full rounded shadow-xl overflow-hidden">
+                <div className="border-b-2 border-[#00b0f0] p-3 text-[#00b0f0] font-sans text-lg">
+                  Confirmación
+                </div>
+                <div className="p-4 border-b border-gray-300 text-gray-700 text-[15px] bg-gray-50">
+                  ¿Desea guardar los Datos y Cerrar el Pedido?
+                </div>
+                <div className="flex bg-[#f9f9f9]">
+                  <button onClick={() => setMostrarModalCierra2(false)} className="flex-1 py-3 text-[14px] border-r border-gray-300 active:bg-gray-200 text-gray-700">No</button>
+                  <button onClick={() => { setMostrarModalCierra2(false); setPantalla('pedidos_catalogo'); }} className="flex-1 py-3 text-[14px] active:bg-gray-200 text-gray-700">Si</button>
                 </div>
               </div>
             </div>
