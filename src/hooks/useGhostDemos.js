@@ -383,7 +383,20 @@ export function useGhostDemos({
     setMostrarAfvCalc(true);
     await sleep(1500);
 
-    await decir("10.- Despliegue y seleccione la Forma de Pago en la consulta 084.");
+    await decir("10.- En la calculadora 084, seleccione el máximo descuento de promoción (10%).");
+    setCursorPos({ x: 180, y: 375, visible: true }); // Click combo Dscto. Promoción
+    await sleep(1000);
+    await triggerClick();
+    setMostrarComboDsctoPromoCalc(true);
+    await sleep(1200);
+    setCursorPos({ x: 180, y: 440, visible: true }); // Selecciona 10,00
+    await sleep(800);
+    await triggerClick();
+    setAfvDctoComercial('10');
+    setMostrarComboDsctoPromoCalc(false);
+    await sleep(1800);
+
+    await decir("11.- Seleccione la Forma de Pago (TRANSFERENCIA INTERNACIONAL 15%).");
     setCursorPos({ x: 180, y: 410, visible: true }); // Click combo Forma Pago
     await sleep(1000);
     await triggerClick();
@@ -394,16 +407,16 @@ export function useGhostDemos({
     await triggerClick();
     setAfvDctoFP('TRANSFERENCIA INTERNACIONAL USD 15%');
     setMostrarComboFormaPagoCalc(false);
-    await sleep(2000);
+    await sleep(2200);
 
-    await decir("11.- Cierre la calculadora de precios P1.");
+    await decir("12.- Observe la reducción del Precio sin/con IVA y cierre P1.");
     setCursorPos({ x: 275, y: 250, visible: true }); // Click ✕
     await sleep(1000);
     await triggerClick();
     setMostrarAfvCalc(false);
     await sleep(1000);
 
-    await decir("12.- Consulte la Calculadora de Precios 084 haciendo clic en P2.");
+    await decir("13.- Consulte la Calculadora de Precios 084 para P2 (precio preferencial).");
     setCursorPos({ x: 220, y: 465, visible: true }); // Click botón P2
     await sleep(1000);
     await triggerClick();
@@ -414,41 +427,47 @@ export function useGhostDemos({
     setMostrarAfvCalc(true);
     await sleep(1500);
 
-    await decir("13.- Visualice el precio ajustado P2 (~30% de diferencia con P1).");
-    setCursorPos({ x: 180, y: 410, visible: true });
+    await decir("14.- Aplique descuento de promoción (10%) y forma de pago (DEPÓSITO 13%).");
+    setCursorPos({ x: 180, y: 375, visible: true }); // Click combo Dscto. Promoción
+    await sleep(1000);
+    await triggerClick();
+    setMostrarComboDsctoPromoCalc(true);
+    await sleep(1000);
+    setAfvDctoComercial('10');
+    setMostrarComboDsctoPromoCalc(false);
+    await sleep(1200);
+
+    setCursorPos({ x: 180, y: 410, visible: true }); // Click combo Forma Pago
     await sleep(1000);
     await triggerClick();
     setMostrarComboFormaPagoCalc(true);
-    await sleep(1200);
-    setCursorPos({ x: 180, y: 380, visible: true }); // DEPOSITO USD 13%
-    await sleep(800);
-    await triggerClick();
+    await sleep(1000);
     setAfvDctoFP('DEPOSITO USD 13%');
     setMostrarComboFormaPagoCalc(false);
-    await sleep(2000);
+    await sleep(2200);
 
-    await decir("14.- Cierre la consulta de precios P2.");
+    await decir("15.- Cierre la calculadora P2.");
     setCursorPos({ x: 275, y: 250, visible: true }); // Click ✕
     await sleep(1000);
     await triggerClick();
     setMostrarAfvCalc(false);
     await sleep(1000);
 
-    await decir("15.- Ingrese la cantidad solicitada respetando el Empaque Comercial (Emp. C. = 10).");
+    await decir("16.- Ingrese la cantidad solicitada respetando el Empaque Comercial (Emp. C. = 10).");
     setCursorPos({ x: 140, y: 515, visible: true });
     await sleep(1200);
     await triggerClick();
     setCantidadProducto('10');
     await sleep(1000);
 
-    await decir("16.- Pulsa OK.");
+    await decir("17.- Pulsa OK.");
     setCursorPos({ x: 240, y: 515, visible: true });
     await sleep(1000);
     await triggerClick();
     setPantalla('detalle_pedido_con_producto');
     await sleep(800);
 
-    await decir("17.- Devuélvete");
+    await decir("18.- Devuélvete");
     setCursorPos({ x: 230, y: 115, visible: true });
     await sleep(1200);
     await triggerClick();
