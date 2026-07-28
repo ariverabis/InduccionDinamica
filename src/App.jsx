@@ -1,8 +1,5 @@
 import React, { Component } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-
-// 1. Importamos la nueva pantalla
-import Bienvenida from './screens/Portal/Bienvenida';
 import PortalInicio from './screens/Portal/PortalInicio';
 import ConfiguracionSds from './screens/Portal/ConfiguracionSds';
 import Simulator from './Simulator';
@@ -36,14 +33,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 2. La ruta raíz "/" ahora RENDERIZA la nueva pantalla de Bienvenida */}
-        <Route path="/" element={<Bienvenida />} />
-
-        {/* 3. El Portal de Inicio ahora se RENDERIZA cuando la ruta sea "/portal" */}
-        <Route path="/portal" element={<PortalInicio />} />
-
+        <Route path="/" element={<PortalInicio />} />
         <Route path="/sds" element={<ConfiguracionSds />} />
-        
         <Route path="/simulador" element={
           <ErrorBoundary>
             <Simulator />
