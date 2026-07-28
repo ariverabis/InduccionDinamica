@@ -1,14 +1,7 @@
-import React from 'react';
-
-const MOCK_PRODUCTOS = [
-  { cod: '0101002', old: '7110502', desc: 'Receptáculo de pvc blanco con bornes automáticos Bticino', exist: '1.245', p1: '1,25', p2: '0,86', inv: 'UNI', emp: '12', cmin: '12', dscto: '13,00' },
-  { cod: '0101005', old: '7110505', desc: 'Interruptor sencillo de pvc blanco Bticino', exist: '850', p1: '2,10', p2: '1,45', inv: 'UNI', emp: '10', cmin: '10', dscto: '0,00' },
-  { cod: '0101010', old: '7110510', desc: 'Tomacorriente doble de pvc blanco Bticino', exist: '2.300', p1: '3,50', p2: '2,40', inv: 'UNI', emp: '10', cmin: '10', dscto: '5,00' },
-  { cod: '0205001', old: '8110201', desc: 'Canilla flexible de acero inoxidable 1/2 x 1/2 40cm', exist: '450', p1: '4,80', p2: '3,30', inv: 'UNI', emp: '5', cmin: '5', dscto: '10,00' },
-  { cod: '0205002', old: '8110202', desc: 'Canilla flexible de acero inoxidable 1/2 x 1/2 60cm', exist: '320', p1: '5,50', p2: '3,80', inv: 'UNI', emp: '5', cmin: '5', dscto: '10,00' },
-];
+import React, { useRef, useEffect } from 'react';
 
 export const AfvSales = ({
+  mockProductos = [],
   theme,
   empresaSeleccionada,
   pantalla,
@@ -49,18 +42,27 @@ export const AfvSales = ({
   setAfvCalcNombre,
   setAfvDctoComercial,
   setAfvDctoFP,
-  setMostrarAfvCalc
+  setMostrarAfvCalc,
+  setAfvDescuentoListaIndex
 }) => {
-  
+  const listaProductosRef = useRef(null);
+
   // Keep full product list visible during code search; filter only when using name search modal (B. button)
   const productosFiltrados = busquedaNombre.trim()
-    ? MOCK_PRODUCTOS.filter(p =>
+    ? mockProductos.filter(p =>
         p.desc.toLowerCase().includes(busquedaNombre.toLowerCase()) ||
         p.old.toLowerCase().includes(busquedaNombre.toLowerCase())
       )
-    : MOCK_PRODUCTOS;
-  
+    : mockProductos;
+
   const productoActivo = productosFiltrados[productoActivoIndex] || productosFiltrados[0];
+
+  useEffect(() => {
+    if (listaProductosRef.current && productoActivoIndex >= 0) {
+      const row = listaProductosRef.current.children[productoActivoIndex];
+      row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [productoActivoIndex, productosFiltrados.length]);
 
   return (
     <>
@@ -418,7 +420,6 @@ export const AfvSales = ({
                   onChange={(e) => {
                     setBusquedaProducto(e.target.value);
                     setBusquedaNombre('');
-                    setProductoActivoIndex(0);
                   }}
                   className="w-full bg-transparent text-black font-sans text-[14px] px-1 outline-none border-b border-gray-500 focus:border-blue-600"
                 />
@@ -434,7 +435,7 @@ export const AfvSales = ({
             </div>
 
             <div className="m-2 border border-black bg-white flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto" ref={listaProductosRef}>
                 {productosFiltrados.map((prod, i) => (
                   <div
                     key={i}
@@ -460,7 +461,14 @@ export const AfvSales = ({
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] italic text-gray-500 font-medium">P1</span>
                   <div
-                    onClick={() => { setAfvCalcPrecio(productoActivo?.p1); setAfvCalcNombre('P1'); setAfvDctoComercial(productoActivo?.dscto !== '0,00' ? productoActivo.dscto : '0'); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
+                    onClick={() => {
+                      setAfvCalcPrecio(productoActivo?.p1);
+                      setAfvCalcNombre('P1');
+                      setAfvDctoComercial('0');
+                      setAfvDctoFP('');
+                      setAfvDescuentoListaIndex?.(0);
+                      setMostrarAfvCalc(true);
+                    }}
                     className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[13px] font-bold text-gray-800 border border-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] cursor-pointer active:bg-blue-200"
                   >
                     {productoActivo?.p1}
@@ -469,7 +477,14 @@ export const AfvSales = ({
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] italic text-gray-500 font-medium">P2</span>
                   <div
-                    onClick={() => { setAfvCalcPrecio(productoActivo?.p2); setAfvCalcNombre('P2'); setAfvDctoComercial(productoActivo?.dscto !== '0,00' ? productoActivo.dscto : '0'); setAfvDctoFP(''); setMostrarAfvCalc(true); }}
+                    onClick={() => {
+                      setAfvCalcPrecio(productoActivo?.p2);
+                      setAfvCalcNombre('P2');
+                      setAfvDctoComercial('0');
+                      setAfvDctoFP('');
+                      setAfvDescuentoListaIndex?.(0);
+                      setMostrarAfvCalc(true);
+                    }}
                     className="flex-1 bg-[#c0c0c0] h-7 flex items-center justify-end px-2 text-[13px] font-bold text-gray-800 border border-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] cursor-pointer active:bg-blue-200"
                   >
                     {productoActivo?.p2}

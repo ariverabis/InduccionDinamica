@@ -17,6 +17,22 @@ import { AfvTax } from './components/Simulator/AfvTax';
 import CatalogApp from './components/Simulator/CatalogApp';
 import SdsApp from './components/Simulator/SdsApp';
 
+const LISTA_DESCUENTOS_CALC = [
+  { das: '0,00', descuento: 0 },
+  { das: '15,00', descuento: 3 },
+  { das: '30,00', descuento: 5 },
+  { das: '45,00', descuento: 7 },
+  { das: '60,00', descuento: 10 },
+];
+
+const FP_DESCUENTOS_CALC = {
+  '': 0,
+  'DEPOSITO USD 13%': 13,
+  'DEPOSITO EN TRANSITO USD 13%': 13,
+  'TRANSFERENCIA VES 0%': 0,
+  'TRANSFERENCIA INTERNACIONAL USD 15%': 15,
+};
+
 function App() {
   // Manejador de pantallas: 'inicio', 'escritorio', 'config', 'menu'
   const [pantalla, setPantalla] = useState('inicio');
@@ -76,6 +92,18 @@ function App() {
   const [afvDctoFP, setAfvDctoFP] = useState('');
   const [mostrarComboFormaPagoCalc, setMostrarComboFormaPagoCalc] = useState(false);
   const [mostrarComboDsctoPromoCalc, setMostrarComboDsctoPromoCalc] = useState(false);
+  const [afvDescuentoListaIndex, setAfvDescuentoListaIndex] = useState(0);
+
+  const seleccionarDescuentoLista = (index) => {
+    setAfvDescuentoListaIndex(index);
+    setAfvDctoComercial(String(LISTA_DESCUENTOS_CALC[index].descuento));
+  };
+
+  const seleccionarDescuentoPromo = (valor) => {
+    setAfvDctoComercial(valor);
+    const idx = LISTA_DESCUENTOS_CALC.findIndex((d) => d.descuento === parseInt(valor, 10));
+    setAfvDescuentoListaIndex(idx >= 0 ? idx : 0);
+  };
 
   // --- COBRANZA STATES ---
   const [montoAbono, setMontoAbono] = useState('84,46');
@@ -232,7 +260,8 @@ function App() {
     setGrupoSeleccionado, setMostrarComboGrupo, setCantidadProducto, setModalCierraGV1, setModalCierraGV2,
     setBusquedaProducto, setBusquedaNombre, setProductoActivoIndex,
     setMostrarBuscaNombre, setMostrarAfvCalc, setAfvCalcPrecio, setAfvCalcNombre,
-    setAfvDctoComercial, setMostrarComboDsctoPromoCalc, setAfvDctoFP, setMostrarComboFormaPagoCalc, setMostrarSubmenu, setFacturaSeleccionada,
+    setAfvDctoComercial, setMostrarComboDsctoPromoCalc, setAfvDctoFP, setMostrarComboFormaPagoCalc,
+    setAfvDescuentoListaIndex, setMostrarSubmenu, setFacturaSeleccionada,
     setMostrarModalFormasPagoRecibo, setFormaPagoReciboSeleccionada, setMontoResta,
     setMontoAbono, setMostrarModalDeposito, setMontoDeposito, setReferenciaDeposito,
     setMostrarComboBanco, setBancoDeposito, setFechaDeposito, setMostrarLupaMontos,
@@ -383,6 +412,7 @@ function App() {
         <AfvSales 
           theme={theme}
           empresaSeleccionada={empresaSeleccionada}
+          mockProductos={MOCK_PRODUCTOS}
           pantalla={pantalla}
           setPantalla={setPantalla}
           grupoSeleccionado={grupoSeleccionado}
@@ -422,6 +452,7 @@ function App() {
           setAfvDctoComercial={setAfvDctoComercial}
           setAfvDctoFP={setAfvDctoFP}
           setMostrarAfvCalc={setMostrarAfvCalc}
+          setAfvDescuentoListaIndex={setAfvDescuentoListaIndex}
         />
 
         {/* PROCESO DE COBRANZA (Modularizado) */}
@@ -556,21 +587,16 @@ function App() {
 
         {/* OVERLAY CALCULADORA AFV (084 - Consulta de Precios) */}
         {mostrarAfvCalc && (() => {
-          // Parse price: "15.500,00" -> 15500.00
           const precioBase = parseFloat(afvCalcPrecio.replace(/\./g, '').replace(',', '.')) || 0;
           const dctoPromoNum = parseFloat(afvDctoComercial) || 0;
-          // Payment method discount percentages
-          const fpDescuentos = {
-            '': 0,
-            'DEPOSITO USD 13%': 13,
-            'DEPOSITO EN TRANSITO USD 13%': 13,
-            'TRANSFERENCIA VES 0%': 0,
-            'TRANSFERENCIA INTERNACIONAL USD 15%': 15,
-          };
-          const dctoFPNum = fpDescuentos[afvDctoFP] || 0;
+          const dctoFPNum = FP_DESCUENTOS_CALC[afvDctoFP] || 0;
           const precioSinIVA = precioBase * (1 - dctoPromoNum / 100) * (1 - dctoFPNum / 100);
           const precioConIVA = precioSinIVA * 1.16;
+          const precioConIVABase = precioBase * 1.16;
+          const ahorroTotal = precioConIVABase - precioConIVA;
+          const descuentoAplicado = dctoPromoNum > 0 || dctoFPNum > 0;
           const fmt = (n) => n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const fmtPct = (n) => n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           return (
             <div className="absolute inset-0 bg-black/50 z-[300] flex items-center justify-center">
               <div className="w-[300px] bg-[#f0f0f0] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-400">
@@ -590,24 +616,28 @@ function App() {
 
                 {/* Top section: table + tipo precio */}
                 <div className="flex bg-white border-b border-gray-300">
-                  {/* Das / Descuento table */}
+                  {/* Das / Descuento table — lista interactiva de descuentos */}
                   <div className="flex-1 border-r border-gray-300">
                     <div className="flex bg-[#595959] text-white text-[10px] font-bold">
                       <div className="flex-1 text-center py-1 border-r border-gray-500">Das</div>
                       <div className="flex-1 text-center py-1">Descuento</div>
                     </div>
-                    {/* Row 1 €” normal (not highlighted) */}
-                    <div className="flex text-[11px] font-sans border-b border-gray-200">
-                      <div className="flex-1 text-center py-1 border-r border-gray-200 text-gray-700">0,00</div>
-                      <div className="flex-1 text-center py-1 text-gray-700">{fmt(dctoPromoNum)}</div>
-                    </div>
-                    {/* Row 2 €” highlighted blue (active) */}
-                    <div className="flex text-[11px] font-bold bg-[#00b0f0]">
-                      <div className="flex-1 text-center py-1 border-r border-[#0092c8]">30,00</div>
-                      <div className="flex-1 text-center py-1">{fmt(dctoFPNum)}</div>
-                    </div>
-                    {/* Empty rows to fill space */}
-                    <div className="h-16 bg-white"></div>
+                    {LISTA_DESCUENTOS_CALC.map((fila, idx) => (
+                      <div
+                        key={fila.das}
+                        onClick={() => seleccionarDescuentoLista(idx)}
+                        className={`flex text-[11px] font-sans border-b border-gray-200 cursor-pointer ${
+                          idx === afvDescuentoListaIndex
+                            ? 'bg-[#00b0f0] text-black font-bold'
+                            : 'bg-white text-gray-700 hover:bg-blue-50'
+                        }`}
+                      >
+                        <div className={`flex-1 text-center py-1 border-r ${idx === afvDescuentoListaIndex ? 'border-[#0092c8]' : 'border-gray-200'}`}>
+                          {fila.das}
+                        </div>
+                        <div className="flex-1 text-center py-1">{fmtPct(fila.descuento)}</div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Tipo Precio + back arrow */}
@@ -661,12 +691,12 @@ function App() {
                     <span className="text-[10px] text-gray-600 ml-1 w-8 text-right">(%)</span>
 
                     {mostrarComboDsctoPromoCalc && (
-                      <div className="absolute left-0 right-0 top-7 bg-white border border-gray-400 shadow-2xl z-[350] rounded overflow-hidden max-h-36 overflow-y-auto">
-                        {['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((d) => (
+                      <div className="absolute left-[110px] right-8 bottom-6 bg-white border border-gray-400 shadow-2xl z-[350] rounded overflow-hidden max-h-36 overflow-y-auto">
+                        {[...['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']].reverse().map((d) => (
                           <div
                             key={d}
                             onClick={() => {
-                              setAfvDctoComercial(d);
+                              seleccionarDescuentoPromo(d);
                               setMostrarComboDsctoPromoCalc(false);
                             }}
                             className="px-3 py-1.5 text-[11px] font-sans text-black border-b border-gray-100 hover:bg-blue-100 active:bg-blue-200 cursor-pointer"
@@ -724,16 +754,35 @@ function App() {
                   {/* Precio sin IVA */}
                   <div className="flex items-center gap-1 py-1.5 border-b border-gray-300 mt-1">
                     <span className="text-[11px] text-gray-800 font-bold font-sans w-[110px] shrink-0">Precio sin IVA:</span>
-                    <div className="flex-1 bg-[#b3b3b3] text-black text-[13px] font-bold px-2 py-0.5 text-right">{fmt(precioSinIVA)}</div>
+                    <div className={`flex-1 text-[13px] font-bold px-2 py-0.5 text-right transition-colors ${descuentoAplicado ? 'bg-green-100 text-green-800' : 'bg-[#b3b3b3] text-black'}`}>
+                      {descuentoAplicado && (
+                        <span className="text-[9px] text-gray-500 line-through block">{fmt(precioBase)}</span>
+                      )}
+                      {fmt(precioSinIVA)}
+                    </div>
                     <span className="text-[10px] text-gray-600 ml-1 w-8 text-right font-bold">USD</span>
                   </div>
 
                   {/* Precio con IVA */}
-                  <div className="flex items-center gap-1 py-1.5">
+                  <div className="flex items-center gap-1 py-1.5 border-b border-gray-300">
                     <span className="text-[11px] text-gray-800 font-bold font-sans w-[110px] shrink-0">Precio con IVA:</span>
-                    <div className="flex-1 bg-[#b3b3b3] text-black text-[13px] font-bold px-2 py-0.5 text-right">{fmt(precioConIVA)}</div>
+                    <div className={`flex-1 text-[13px] font-bold px-2 py-0.5 text-right transition-colors ${descuentoAplicado ? 'bg-green-100 text-green-800' : 'bg-[#b3b3b3] text-black'}`}>
+                      {descuentoAplicado && (
+                        <span className="text-[9px] text-gray-500 line-through block">{fmt(precioConIVABase)}</span>
+                      )}
+                      {fmt(precioConIVA)}
+                    </div>
                     <span className="text-[10px] text-gray-600 ml-1 w-8 text-right font-bold">USD</span>
                   </div>
+
+                  {descuentoAplicado && (
+                    <div className="flex items-center gap-1 py-1 bg-blue-50 border border-blue-200 rounded px-1">
+                      <span className="text-[9px] text-blue-700 font-bold font-sans w-[110px] shrink-0">Ahorro total:</span>
+                      <div className="flex-1 text-[11px] font-bold text-blue-800 text-right">
+                        -{fmt(ahorroTotal)} USD ({dctoPromoNum > 0 ? `Promo ${dctoPromoNum}%` : ''}{dctoPromoNum > 0 && dctoFPNum > 0 ? ' + ' : ''}{dctoFPNum > 0 ? `FP ${dctoFPNum}%` : ''})
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer note */}
