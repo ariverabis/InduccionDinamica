@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ResumenEvaluaciones } from './ResumenEvaluaciones';
 import ReporteNotas from './ReporteNotas';
+import AsignacionActividadesCalleModal from '../../components/Acompanamiento/AsignacionActividadesCalleModal';
+import FormularioAcompanamientoCalle from '../../components/Acompanamiento/FormularioAcompanamientoCalle';
+import GestionBuddiesYActividades from '../../components/Acompanamiento/GestionBuddiesYActividades';
 
 const DISPONIBLE_SKILLS_TAGS = [
   { category: 'Ventas y Comercial', icon: '💼', tags: ['Ventas de Campo', 'Televentas', 'Ventas B2B', 'Ventas de Consumo Masivo', 'Negociación Comercial'] },
@@ -207,6 +210,11 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [itinerarioConfig, setItinerarioConfig] = useState([]);
   const [motivoReinicio, setMotivoReinicio] = useState('');
   const [esReintento, setEsReintento] = useState(false);
+  
+  // Estados para Módulo de Acompañamiento en Calle
+  const [showAsignacionCalleModal, setShowAsignacionCalleModal] = useState(false);
+  const [showFormularioCalleModal, setShowFormularioCalleModal] = useState(false);
+  const [showGestionCalleModal, setShowGestionCalleModal] = useState(false);
   
   const [masterEscenarios, setMasterEscenarios] = useState({});
   const [activeCompanyEscenarios, setActiveCompanyEscenarios] = useState('Febeca');
@@ -2006,6 +2014,9 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                 <button onClick={() => setViewMode('reportes')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'reportes' ? 'bg-slate-950 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
                     📈 Reporte de Notas
                 </button>
+                <button onClick={() => setShowGestionCalleModal(true)} className="px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all bg-indigo-900 text-white shadow-lg hover:bg-indigo-800">
+                    🚗 Gestor Acompañamiento
+                </button>
                 <button onClick={() => { setViewMode('responsables'); fetchResponsables(); }} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'responsables' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
                     👨‍💼 Responsables
                 </button>
@@ -2186,6 +2197,18 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                                             className="bg-white/10 hover:bg-white text-white hover:text-slate-950 border border-white/20 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer"
                                         >
                                             📄 Emitir Reporte PDF
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowAsignacionCalleModal(true)}
+                                            className="bg-blue-500/20 hover:bg-blue-500 text-blue-200 hover:text-white border border-blue-400/40 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer"
+                                        >
+                                            🎯 Asignar Calle
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowFormularioCalleModal(true)}
+                                            className="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-200 hover:text-white border border-emerald-400/40 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
+                                        >
+                                            <span>🚗</span> Reporte Acompañamiento en Calle
                                         </button>
                                         {user.rol === 'admin' && (
                                             <>
@@ -3944,10 +3967,30 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           </div>
         )}
 
+        {showGestionCalleModal && (
+          <GestionBuddiesYActividades onClose={() => setShowGestionCalleModal(false)} />
+        )}
+
+        {showAsignacionCalleModal && selectedAsesor && (
+          <AsignacionActividadesCalleModal
+            asesor={selectedAsesor}
+            onClose={() => setShowAsignacionCalleModal(false)}
+            onSaved={() => fetchInitialData()}
+          />
+        )}
+
+        {showFormularioCalleModal && selectedAsesor && (
+          <FormularioAcompanamientoCalle
+            asesor={selectedAsesor}
+            onClose={() => setShowFormularioCalleModal(false)}
+          />
+        )}
+
         {message && <div className="fixed bottom-10 right-10 bg-slate-900 text-white px-10 py-5 rounded-3xl shadow-2xl animate-in slide-in-from-right font-black uppercase text-[10px] z-[200] border-2 border-slate-700">{message}</div>}
       </div>
     </div>
   );
 };
+
 
 export default ConsolaEvaluacion;
