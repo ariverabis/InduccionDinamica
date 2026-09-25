@@ -1,0 +1,42 @@
+<!-- @dsCard group="Portal Mayorista" viewport="1280x760" name="Panel de comercios" subtitle="Dashboard B2B — login, panel, catálogo y pedidos, navegables" -->
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><title>Prisma · Portal Mayorista</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>body{margin:0;background:var(--gray-50);font-family:var(--font-body);color:var(--color-text-primary)}a{color:var(--black)}a:hover{color:var(--gray-600)}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head><body>
+<div id="root"></div>
+<script type="text/babel" src="Shell.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="Catalog.jsx"></script>
+<script type="text/babel" src="Orders.jsx"></script>
+<script type="text/babel" src="Login.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App(){
+  const [logged,setLogged]=React.useState(true);
+  const [view,setView]=React.useState('Panel');
+  const [cart,setCart]=React.useState(3);
+  if(!logged) return <Login onEnter={()=>setLogged(true)} />;
+  const screens={Panel:<Dashboard/>,Catálogo:<Catalog onAdd={()=>setCart(c=>c+1)} />,Pedidos:<Orders/>};
+  return (
+    <div style={{display:'flex',minHeight:'100vh'}}>
+      <Sidebar view={view} setView={setView} />
+      <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0}}>
+        <Topbar title={view} cart={cart} onCart={()=>setView('Pedidos')} />
+        <main style={{padding:'var(--space-6) var(--space-6)',flex:1}}>
+          {screens[view] || (
+            <div style={{display:'grid',placeItems:'center',height:320,textAlign:'center',color:'var(--color-text-muted)',fontSize:'var(--fs-body)'}}>
+              <div><div style={{fontWeight:600,color:'var(--color-text-primary)',fontSize:'var(--fs-body-lg)',marginBottom:6}}>{view}</div>Esta vista no está definida en las fuentes entregadas.</div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body></html>

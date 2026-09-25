@@ -29,19 +29,34 @@ class ErrorBoundary extends Component {
   }
 }
 
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import Login from './pages/Login';
+import DashboardSeguimiento from './pages/DashboardSeguimiento';
+import EvaluacionMensual from './pages/EvaluacionMensual';
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<PortalInicio />} />
-        <Route path="/sds" element={<ConfiguracionSds />} />
-        <Route path="/simulador" element={
-          <ErrorBoundary>
-            <Simulator />
-          </ErrorBoundary>
-        } />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<PortalInicio />} />
+          <Route path="/sds" element={<ConfiguracionSds />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/simulador" element={
+            <ErrorBoundary>
+              <Simulator />
+            </ErrorBoundary>
+          } />
+          
+          {/* Rutas protegidas para evaluación */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard-seguimiento" element={<DashboardSeguimiento />} />
+            <Route path="/evaluacion/:advisorId/mes/:month" element={<EvaluacionMensual />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

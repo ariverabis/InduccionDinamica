@@ -1,0 +1,36 @@
+<!-- @dsCard group="Components" viewport="700x360" name="Fields" subtitle="Campos con etiqueta encima, control segmentado y radios" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<div id="root" style="padding:28px;background:var(--white);box-sizing:border-box"></div>
+<script type="text/babel">
+const { Input, Textarea, SegmentedControl, Radio, Button, Icon } = window.PrismaDesignSystem_5fbffe;
+function Demo(){
+  const [vista,setVista]=React.useState('grid');
+  const [ap,setAp]=React.useState('todas');
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:22,fontFamily:'var(--font-body)'}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:28}}>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <Input label="Nombre de la lista" value="Surtido de septiembre" />
+          <Textarea label="Notas" rows={3} value="Entregar antes del mediodía; el depósito cierra a la 1." />
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <SegmentedControl label="Vista" value={vista} onChange={setVista}
+            options={[{value:'grid',label:'Cuadrícula',icon:<Icon name={12} size={16} />},{value:'list',label:'Lista',icon:<Icon name={200} size={16} />},{value:'board',label:'Tablero'}]} />
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <span style={{fontSize:'var(--fs-body)',fontWeight:600}}>Aplicar a</span>
+            <Radio label="Todas las sucursales" checked={ap==='todas'} onChange={()=>setAp('todas')} />
+            <Radio label="Sólo las nuevas" checked={ap==='nuevas'} onChange={()=>setAp('nuevas')} />
+            <Radio label="Preguntar cada vez" checked={ap==='preguntar'} onChange={()=>setAp('preguntar')} />
+          </div>
+        </div>
+      </div>
+      <div><Button variant="primary">Guardar cambios</Button></div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>

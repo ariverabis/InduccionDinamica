@@ -1,0 +1,14 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Status en tabla" subtitle="Aplicación en filas de datos: cápsula, punto y valor destacado" -->
+<link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;font-family:var(--font-body);color:var(--color-text-primary);background:var(--white)}.wrap{padding:22px 24px;box-sizing:border-box}table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;color:var(--gray-500);font-weight:400;padding:0 0 9px;border-bottom:1px solid var(--color-border)}td{padding:11px 0;border-bottom:1px solid var(--color-border)}.pill{display:inline-flex;align-items:center;gap:7px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600}.dot{width:7px;height:7px;border-radius:50%}a{color:var(--black)}a:hover{color:var(--gray-600)}</style>
+<div class="wrap">
+<table>
+<thead><tr><th>Centro de distribución</th><th>Cumplimiento</th><th>Estado</th></tr></thead>
+<tbody>
+<tr><td>Bodega norte</td><td style="color:var(--status-good);font-weight:600">98%</td><td><span class="pill" style="border:1px solid rgba(56,142,60,.4);color:var(--status-good)"><span class="dot" style="background:var(--status-good)"></span>Operativo</span></td></tr>
+<tr><td>Bodega centro</td><td style="color:var(--status-regular);font-weight:600">84%</td><td><span class="pill" style="border:1px solid rgba(245,127,23,.45);color:var(--status-regular)"><span class="dot" style="background:var(--status-regular)"></span>En revisión</span></td></tr>
+<tr><td>Bodega sur</td><td style="color:var(--status-bad);font-weight:600">61%</td><td><span class="pill" style="border:1px solid rgba(211,47,47,.4);color:var(--status-bad)"><span class="dot" style="background:var(--status-bad)"></span>Crítico</span></td></tr>
+</tbody>
+</table>
+<p style="margin:14px 0 0;font-size:12px;color:var(--gray-600)">El color vive en la cápsula y en la cifra; la fila y el fondo se mantienen neutros.</p>
+</div>

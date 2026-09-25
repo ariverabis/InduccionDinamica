@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Corporate Deck (23 láminas)" description="Visor de las 23 maquetas maestras Prisma en 16:9: encabezado flex con isotipo a la izquierda, título 22 y subtítulo 18 alineados a la derecha, paleta de grises, iconos lineales y sin mayúsculas sostenidas." -->
+<helmet><style>*{box-sizing:border-box}body{margin:0}</style><script src="./ds-base.js"></script></helmet>
+<div style="display:flex;height:100vh;overflow:hidden;background:var(--gray-100);font-family:var(--font-body);color:var(--black)">
+<aside style="width:clamp(196px,21vw,296px);flex:0 0 clamp(196px,21vw,296px);background:var(--white);border-right:1px solid var(--color-border);overflow-y:auto;display:flex;flex-direction:column">
+<div style="padding:20px;border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--white);z-index:10;display:flex;flex-direction:column;gap:6px">
+<img src="../../assets/logo/logotipo.png" alt="Prisma" style="height:22px;width:auto;object-fit:contain;align-self:flex-start">
+<span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;color:var(--gray-500)">Maquetas maestras · 23 láminas</span>
+</div>
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+<div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;color:var(--gray-500);margin:22px 16px 8px">{{ g.label }}</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 16px">
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="6">
+<button onClick="{{ it.go }}" style-hover="border-color:var(--gray-400)" style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;text-align:left;font-family:var(--font-body);font-size:13px;cursor:pointer;border:1px solid var(--color-border);border-radius:4px;transition:all .18s ease;background:{{ it.bg }};color:{{ it.fg }}">
+<span style="flex:0 0 20px;height:20px;border-radius:50%;background:var(--gray-200);color:var(--black);display:flex;align-items:center;justify-content:center;font-size:12px;font-family:var(--font-cond);font-weight:700">{{ it.n }}</span>{{ it.title }}</button>
+</sc-for>
+</div>
+</sc-for>
+<div style="margin:26px 16px 22px;padding:12px 14px;background:var(--gray-50);border:1px solid var(--color-border);border-radius:4px;font-size:12px;line-height:1.55;color:var(--gray-600)">Encabezado estándar: contenedor flex con isotipo a la izquierda y bloque de texto alineado a la derecha, título 22 en negrita oscura y subtítulo 18 regular en gris medio.</div>
+</aside><main style="flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:48px 32px 28px;position:relative;background:var(--gray-100)">
+<div style="position:absolute;top:18px;left:32px;font-family:var(--font-cond);font-size:12px;letter-spacing:.18em;color:var(--gray-500)">Pre-lanzamiento corporativo</div>
+<div style="position:absolute;top:18px;right:32px;font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;color:var(--gray-500)">{{ counter }}</div>
+<div style="width:min(1100px,100%,calc((100vh - 170px) * 16 / 9));aspect-ratio:16/9;overflow:hidden;background:var(--white);border:1px solid var(--color-border);box-shadow:0 18px 44px rgba(0,0,0,.16);container-type:inline-size">
+<div style="display:flex;height:100%;width:100%;transition:transform .4s cubic-bezier(.4,0,.2,1);transform:{{ track }}">
+
+<section data-screen-label="01" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+</div>
+
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1cqw;text-align:center;width:82%;max-width:82%;margin:0 auto">
+<h1 style="margin:0;font-family:var(--font-display);font-size:3.4cqw;line-height:1.25;font-weight:900">Propuesta comercial 2026</h1>
+<p style="margin:0;font-family:var(--font-body);font-size:1.7cqw;line-height:1.4;font-weight:400;color:var(--gray-500)">Distribución mayorista para el canal tradicional</p>
+</div>
+</section>
+
+<section data-screen-label="02" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Validación de mercado</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Demanda ya comprobada</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:2cqw 6cqw 5cqw;display:grid;grid-template-columns:1fr 1.2fr;gap:5cqw;align-items:center">
+<div style="display:flex;flex-direction:column;gap:2cqw">
+<div><div style="font-family:var(--font-display);font-size:4.4cqw;line-height:1;font-weight:900">+234</div><p style="margin:.5cqw 0 0;font-size:1.667cqw;line-height:1.5;color:var(--gray-700)">Detallistas activos en la red mayorista.</p></div>
+<div><div style="font-family:var(--font-display);font-size:4.4cqw;line-height:1;font-weight:900">+7.166</div><p style="margin:.5cqw 0 0;font-size:1.667cqw;line-height:1.5;color:var(--gray-700)">Pedidos procesados el último trimestre.</p></div>
+</div>
+<div style="height:100%;border:1px solid var(--color-border);background:var(--gray-50);display:flex;align-items:flex-end;justify-content:center;gap:2.4cqw;padding:2cqw">
+<div style="width:6cqw;height:70%;background:var(--gray-400)"></div>
+<div style="width:6cqw;height:44%;background:var(--gray-200)"></div>
+<div style="width:6cqw;height:88%;background:var(--gray-400)"></div>
+<div style="width:6cqw;height:62%;background:var(--gray-200)"></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="03" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Misión y visión</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Lo que nos mueve</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:2cqw 6cqw 5cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.6cqw">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6cqw;width:88%;text-align:center">
+<div style="display:flex;flex-direction:column;align-items:center;gap:1cqw"><img src="../../assets/icons/icon-04.png" alt="" style="width:4.4cqw;height:4.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><h2 style="margin:0;font-family:var(--font-display);font-size:2cqw;font-weight:900">Nuestra misión</h2><p style="margin:0;font-size:1.6cqw;line-height:1.5;color:var(--black)">Abastecer al detallista con surtido, precio y cumplimiento.</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:1cqw"><img src="../../assets/icons/icon-09.png" alt="" style="width:4.4cqw;height:4.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><h2 style="margin:0;font-family:var(--font-display);font-size:2cqw;font-weight:900">Nuestra visión</h2><p style="margin:0;font-size:1.6cqw;line-height:1.5;color:var(--black)">Ser el mayorista digital preferido de la región.</p></div>
+</div>
+<div style="width:70%;height:1px;background:var(--color-border)"></div>
+<p style="margin:0;width:74%;text-align:center;font-size:1.6cqw;line-height:1.55;color:var(--gray-600)">Un solo portal para cotizar, pedir y seguir cada despacho.</p>
+</div>
+</section>
+
+<section data-screen-label="04" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Nuestra historia</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Línea de tiempo ondulada</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center;justify-content:center">
+<div style="position:relative;width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:1cqw">
+<div style="position:absolute;top:2.5cqw;left:6%;right:6%;height:1px;background:var(--gray-300)"></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5cqw;height:5cqw;border-radius:50%;background:var(--gray-400);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.4cqw;font-weight:700">2018</div><p style="margin:0;font-size:1.35cqw;line-height:1.4"><b>Primer centro</b><br><span style="color:var(--gray-600)">Bodega propia</span></p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5cqw;height:5cqw;border-radius:50%;background:var(--gray-300);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.4cqw;font-weight:700">2020</div><p style="margin:0;font-size:1.35cqw;line-height:1.4"><b>Ruta regional</b><br><span style="color:var(--gray-600)">Cinco ciudades</span></p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5cqw;height:5cqw;border-radius:50%;background:var(--gray-400);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.4cqw;font-weight:700">2022</div><p style="margin:0;font-size:1.35cqw;line-height:1.4"><b>Catálogo digital</b><br><span style="color:var(--gray-600)">Precios al día</span></p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5cqw;height:5cqw;border-radius:50%;background:var(--gray-300);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.4cqw;font-weight:700">2024</div><p style="margin:0;font-size:1.35cqw;line-height:1.4"><b>Portal B2B</b><br><span style="color:var(--gray-600)">Pedido en línea</span></p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5cqw;height:5cqw;border-radius:50%;background:var(--gray-400);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.4cqw;font-weight:700">2026</div><p style="margin:0;font-size:1.35cqw;line-height:1.4"><b>Marca propia</b><br><span style="color:var(--gray-600)">Cuatro líneas</span></p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="05" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Solución integral</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Cuatro frentes, un portal</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center;justify-content:center">
+<div style="position:relative;width:78cqw;height:32cqw">
+<div style="position:absolute;left:39cqw;top:16cqw;width:17cqw;height:1px;background:var(--gray-300);transform-origin:0 0;transform:rotate(-33deg)"></div>
+<div style="position:absolute;left:39cqw;top:16cqw;width:17cqw;height:1px;background:var(--gray-300);transform-origin:0 0;transform:rotate(33deg)"></div>
+<div style="position:absolute;left:39cqw;top:16cqw;width:17cqw;height:1px;background:var(--gray-300);transform-origin:0 0;transform:rotate(147deg)"></div>
+<div style="position:absolute;left:39cqw;top:16cqw;width:17cqw;height:1px;background:var(--gray-300);transform-origin:0 0;transform:rotate(213deg)"></div>
+<div style="position:absolute;left:39cqw;top:16cqw;transform:translate(-50%,-50%);width:11.6cqw;height:11.6cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/logo/isotipo-blanco-fondo-negro.png" alt="" style="width:6.2cqw;height:6.2cqw;object-fit:contain"></div>
+<div style="position:absolute;left:24.7cqw;top:6.7cqw;transform:translate(-50%,-50%);width:4.6cqw;height:4.6cqw;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-12.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:24.7cqw;top:25.3cqw;transform:translate(-50%,-50%);width:4.6cqw;height:4.6cqw;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-18.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:53.3cqw;top:6.7cqw;transform:translate(-50%,-50%);width:4.6cqw;height:4.6cqw;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-24.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:53.3cqw;top:25.3cqw;transform:translate(-50%,-50%);width:4.6cqw;height:4.6cqw;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-31.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:0;top:6.7cqw;transform:translateY(-50%);width:20cqw;text-align:right"><b style="font-size:1.6cqw">Surtido</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">4.000 referencias</p></div>
+<div style="position:absolute;left:0;top:25.3cqw;transform:translateY(-50%);width:20cqw;text-align:right"><b style="font-size:1.6cqw">Precio</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Lista sincronizada</p></div>
+<div style="position:absolute;right:0;top:6.7cqw;transform:translateY(-50%);width:20cqw;text-align:left"><b style="font-size:1.6cqw">Logística</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Entrega en 48 horas</p></div>
+<div style="position:absolute;right:0;top:25.3cqw;transform:translateY(-50%);width:20cqw;text-align:left"><b style="font-size:1.6cqw">Crédito</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Cupo aprobado</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="06" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Etapas del servicio</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Línea temporal con iconos</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center">
+<div style="position:relative;width:100%;display:flex;justify-content:space-between">
+<div style="position:absolute;top:2.6cqw;left:0;right:0;height:1px;background:var(--gray-300)"></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5.2cqw;height:5.2cqw;background:var(--gray-400);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-04.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.6cqw">Alta</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Cuenta validada</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5.2cqw;height:5.2cqw;background:var(--gray-400);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-12.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.6cqw">Cotización</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Precio en firme</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5.2cqw;height:5.2cqw;background:var(--gray-400);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-24.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.6cqw">Despacho</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Ruta asignada</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1cqw"><div style="width:5.2cqw;height:5.2cqw;background:var(--gray-400);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-31.png" alt="" style="width:2.6cqw;height:2.6cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.6cqw">Recompra</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Pedido guardado</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="07" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Modelo de ingresos</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Tres fuentes de margen</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:2cqw 6cqw 5cqw;display:grid;grid-template-columns:1fr 1fr;gap:4cqw">
+<div style="background:var(--gray-50);border:1px solid var(--color-border);padding:2.6cqw;display:flex;flex-direction:column;justify-content:center;gap:2cqw">
+<div style="display:flex;gap:1.6cqw">
+<div style="width:7cqw;height:7cqw;border-radius:50%;border:1px solid var(--gray-500);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.8cqw;font-weight:700">54%</div>
+<div style="width:7cqw;height:7cqw;border-radius:50%;border:1px solid var(--gray-500);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.8cqw;font-weight:700">87%</div>
+<div style="width:7cqw;height:7cqw;border-radius:50%;border:1px solid var(--gray-500);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--font-cond);font-size:1.8cqw;font-weight:700">67%</div>
+</div>
+<p style="margin:0;font-size:1.6cqw;line-height:1.55;color:var(--gray-700)">Venta mayorista, marca propia y servicios logísticos sostienen el margen operativo.</p>
+</div>
+<div style="display:flex;align-items:center;justify-content:center">
+<div style="width:80%;height:62%;display:flex;align-items:flex-end;justify-content:center;gap:2cqw">
+<div style="width:5cqw;height:44%;background:var(--gray-200)"></div>
+<div style="width:5cqw;height:68%;background:var(--gray-300)"></div>
+<div style="width:5cqw;height:100%;background:var(--gray-400)"></div>
+</div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="08" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Tabla de contenido</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Seis bloques, 30 minutos</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:grid;grid-template-columns:repeat(3,1fr);gap:2.4cqw 4cqw;align-content:center;text-align:center">
+<div style="display:flex;flex-direction:column;align-items:center;gap:.7cqw"><img src="../../assets/icons/icon-04.png" alt="" style="width:3.4cqw;height:3.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.6cqw">Sobre Prisma</b><p style="margin:0;font-size:1.35cqw;color:var(--black)">Quiénes somos</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:.7cqw"><img src="../../assets/icons/icon-09.png" alt="" style="width:3.4cqw;height:3.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.6cqw">El equipo</b><p style="margin:0;font-size:1.35cqw;color:var(--black)">Quién responde</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:.7cqw"><img src="../../assets/icons/icon-12.png" alt="" style="width:3.4cqw;height:3.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.6cqw">Nuestras líneas</b><p style="margin:0;font-size:1.35cqw;color:var(--black)">El surtido</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:.7cqw"><img src="../../assets/icons/icon-18.png" alt="" style="width:3.4cqw;height:3.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.6cqw">El plan</b><p style="margin:0;font-size:1.35cqw;color:var(--black)">Cómo entramos</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:.7cqw"><img src="../../assets/icons/icon-24.png" alt="" style="width:3.4cqw;height:3.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.6cqw">Estadísticas</b><p style="margin:0;font-size:1.35cqw;color:var(--black)">Qué proyectamos</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:.7cqw"><img src="../../assets/icons/icon-31.png" alt="" style="width:3.4cqw;height:3.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.6cqw">Contáctanos</b><p style="margin:0;font-size:1.35cqw;color:var(--black)">Siguiente paso</p></div>
+</div>
+</section>
+
+<section data-screen-label="09" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Ciclo de abastecimiento</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Sección de diagrama</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center;justify-content:center">
+<div style="position:relative;width:78cqw;height:32cqw">
+<div style="position:absolute;left:39cqw;top:16cqw;transform:translate(-50%,-50%);width:22cqw;height:22cqw;border:1.4cqw solid var(--gray-200);border-radius:50%"></div>
+<div style="position:absolute;left:31.2cqw;top:8.2cqw;transform:translate(-50%,-50%);width:4.2cqw;height:4.2cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-04.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:46.8cqw;top:8.2cqw;transform:translate(-50%,-50%);width:4.2cqw;height:4.2cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-12.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:31.2cqw;top:23.8cqw;transform:translate(-50%,-50%);width:4.2cqw;height:4.2cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-18.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:46.8cqw;top:23.8cqw;transform:translate(-50%,-50%);width:4.2cqw;height:4.2cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-24.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<div style="position:absolute;left:0;top:8.2cqw;transform:translateY(-50%);width:22cqw;text-align:right"><b style="font-size:1.6cqw">Planeación</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Demanda por zona</p></div>
+<div style="position:absolute;left:0;top:23.8cqw;transform:translateY(-50%);width:22cqw;text-align:right"><b style="font-size:1.6cqw">Compra</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Negociación directa</p></div>
+<div style="position:absolute;right:0;top:8.2cqw;transform:translateY(-50%);width:22cqw;text-align:left"><b style="font-size:1.6cqw">Almacén</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Inventario en línea</p></div>
+<div style="position:absolute;right:0;top:23.8cqw;transform:translateY(-50%);width:22cqw;text-align:left"><b style="font-size:1.6cqw">Entrega</b><p style="margin:0;font-size:1.4cqw;line-height:1.45;color:var(--gray-600)">Ruta programada</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="10" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Cobertura del canal</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Dónde estamos hoy</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:2cqw 6cqw 5cqw;display:grid;grid-template-columns:1fr 1.7fr;gap:4cqw">
+<div style="background:var(--gray-50);border:1px solid var(--color-border);padding:2.4cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.2cqw">
+<div style="width:5cqw;height:5cqw;border-radius:50%;border:1px solid var(--gray-600);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-24.png" alt="" style="width:2.8cqw;height:2.8cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<h2 style="margin:0;font-family:var(--font-display);font-size:2cqw;font-weight:900">Red activa</h2>
+<p style="margin:0;font-size:1.5cqw;line-height:1.5;color:var(--gray-700)">Operamos en cinco ciudades con bodega y ruta propia.</p>
+</div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:2.6cqw">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:3cqw">
+<div><div style="font-family:var(--font-display);font-size:3.6cqw;line-height:1;font-weight:900">+50</div><p style="margin:.4cqw 0 0;font-size:1.45cqw;color:var(--gray-700)">Proveedores homologados</p></div>
+<div style="border-left:1px solid var(--color-border);padding-left:3cqw"><div style="font-family:var(--font-display);font-size:3.6cqw;line-height:1;font-weight:900">+173</div><p style="margin:.4cqw 0 0;font-size:1.45cqw;color:var(--gray-700)">Puntos de venta atendidos</p></div>
+</div>
+<div style="display:flex;gap:1cqw;align-items:flex-end">
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-400)"></div>
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-400)"></div>
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-400)"></div>
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-300)"></div>
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-300)"></div>
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-300)"></div>
+<div style="width:1.8cqw;height:4cqw;background:var(--gray-300)"></div>
+</div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="11" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Hitos por año</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Línea de tiempo con fechas</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;flex-direction:column;justify-content:center;gap:2cqw">
+<div style="display:flex;justify-content:space-between;gap:2cqw">
+<div style="width:30%;background:var(--gray-400);color:var(--black);padding:.9cqw 1.4cqw;font-family:var(--font-cond);font-size:1.6cqw;font-weight:700;clip-path:polygon(0% 0%,90% 0%,100% 50%,90% 100%,0% 100%)">2018</div>
+<div style="width:30%;background:var(--gray-400);color:var(--black);padding:.9cqw 1.4cqw;font-family:var(--font-cond);font-size:1.6cqw;font-weight:700;clip-path:polygon(0% 0%,90% 0%,100% 50%,90% 100%,0% 100%)">2019</div>
+<div style="width:30%;background:var(--gray-300);color:var(--black);padding:.9cqw 1.4cqw;font-family:var(--font-cond);font-size:1.6cqw;font-weight:700;clip-path:polygon(0% 0%,90% 0%,100% 50%,90% 100%,0% 100%)">2020</div>
+</div>
+<div style="display:flex;justify-content:space-between;gap:2cqw">
+<div style="width:30%"><b style="font-size:1.45cqw">Bodega propia</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Primer centro</p></div>
+<div style="width:30%"><b style="font-size:1.45cqw">Segunda ruta</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Cobertura urbana</p></div>
+<div style="width:30%"><b style="font-size:1.45cqw">Marca propia</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Primeras líneas</p></div>
+</div>
+<div style="display:flex;justify-content:space-between;gap:2cqw">
+<div style="width:30%;background:var(--gray-400);color:var(--black);padding:.9cqw 1.4cqw;font-family:var(--font-cond);font-size:1.6cqw;font-weight:700;clip-path:polygon(0% 0%,90% 0%,100% 50%,90% 100%,0% 100%)">2022</div>
+<div style="width:30%;background:var(--gray-400);color:var(--black);padding:.9cqw 1.4cqw;font-family:var(--font-cond);font-size:1.6cqw;font-weight:700;clip-path:polygon(0% 0%,90% 0%,100% 50%,90% 100%,0% 100%)">2024</div>
+<div style="width:30%;background:var(--gray-300);color:var(--black);padding:.9cqw 1.4cqw;font-family:var(--font-cond);font-size:1.6cqw;font-weight:700;clip-path:polygon(0% 0%,90% 0%,100% 50%,90% 100%,0% 100%)">2026</div>
+</div>
+<div style="display:flex;justify-content:space-between;gap:2cqw">
+<div style="width:30%"><b style="font-size:1.45cqw">Catálogo digital</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Precios al día</p></div>
+<div style="width:30%"><b style="font-size:1.45cqw">Portal B2B</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Pedido en línea</p></div>
+<div style="width:30%"><b style="font-size:1.45cqw">Cobertura regional</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Cinco ciudades</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="12" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Pilares corporativos</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Tres compromisos verificables</p>
+</div>
+</div><div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center;justify-content:center;gap:5cqw">
+<div style="flex:0 1 36cqw;display:flex;flex-direction:column;gap:1.4cqw">
+
+<h2 style="margin: 0; font-family: var(--font-display); font-size: 2.2cqw; line-height: 1.2; font-weight: 900; text-align: left">Valores de<br>nuestra operación</h2><p style="margin: 0; font-size: 1.5cqw; line-height: 1.55; color: var(--gray-700); text-align: left">Cumplimiento medido en cada pedido, no prometido en la propuesta.</p>
+<p style="margin: 0; font-size: 1.5cqw; line-height: 1.55; color: var(--gray-700); text-align: left">Cada indicador se revisa con el comprador al cierre de mes.</p>
+</div>
+<div style="flex:0 1 36cqw;display:flex;flex-direction:column;gap:2.2cqw">
+<div style="display: flex; gap: 1.6cqw; align-items: flex-start; text-align: left"><div style="flex: 0 0 4.4cqw; height: 4.4cqw; border-radius: 50%; background: var(--gray-300); display: flex; align-items: center; justify-content: center; text-align: left"><img src="../../assets/icons/icon-04.png" alt="" style="width: 2.4cqw; height: 2.4cqw; object-fit: contain; text-align: left;filter:brightness(0) saturate(0)"></div><div><b style="font-size: 1.6cqw; text-align: left">Disponibilidad</b><p style="margin: 0; font-size: 1.4cqw; line-height: 1.5; color: var(--black); text-align: left">98% de referencias en stock</p></div></div>
+<div style="display: flex; gap: 1.6cqw; align-items: flex-start; text-align: left"><div style="flex: 0 0 4.4cqw; height: 4.4cqw; border-radius: 50%; background: var(--gray-300); display: flex; align-items: center; justify-content: center; text-align: left"><img src="../../assets/icons/icon-18.png" alt="" style="width: 2.4cqw; height: 2.4cqw; object-fit: contain; text-align: left;filter:brightness(0) saturate(0)"></div><div><b style="font-size: 1.6cqw; text-align: left">Precio en firme</b><p style="margin: 0; font-size: 1.4cqw; line-height: 1.5; color: var(--black); text-align: left">Lista vigente 30 días</p></div></div><div style="display: flex; gap: 1.6cqw; align-items: flex-start; text-align: left"><div style="flex: 0 0 4.4cqw; height: 4.4cqw; border-radius: 50%; background: var(--gray-300); display: flex; align-items: center; justify-content: center; text-align: left"><img src="../../assets/icons/icon-24.png" alt="" style="width: 2.4cqw; height: 2.4cqw; object-fit: contain; text-align: left;filter:brightness(0) saturate(0)"></div><div><b style="font-size: 1.6cqw; text-align: left">Entrega puntual</b><p style="margin: 0; font-size: 1.4cqw; line-height: 1.5; color: var(--black); text-align: left">48 horas hábiles</p></div></div>
+
+</div>
+</div>
+
+</section>
+
+<section data-screen-label="13" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Cómo nos ven</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Tres atributos de marca</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:grid;grid-template-columns:repeat(3,1fr);gap:4cqw;align-content:center;text-align:center">
+<div style="display:flex;flex-direction:column;align-items:center;gap:1cqw"><img src="../../assets/icons/icon-04.png" alt="" style="width:4.4cqw;height:4.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.8cqw">Confiable</b><p style="margin:0;font-size:1.45cqw;line-height:1.5;color:var(--black)">Cumplimos la fecha pactada.</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:1cqw"><img src="../../assets/icons/icon-12.png" alt="" style="width:4.4cqw;height:4.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.8cqw">Innovador</b><p style="margin:0;font-size:1.45cqw;line-height:1.5;color:var(--black)">Portal propio de pedidos.</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:1cqw"><img src="../../assets/icons/icon-31.png" alt="" style="width:4.4cqw;height:4.4cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.8cqw">Profesional</b><p style="margin:0;font-size:1.45cqw;line-height:1.5;color:var(--black)">Un asesor por cuenta.</p></div>
+</div>
+</section>
+
+<section data-screen-label="14" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Beneficios del portal</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Lo que gana el detallista</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center;justify-content:center;gap:5cqw">
+<div style="flex:0 1 34cqw;display:flex;flex-direction:column;gap:1.4cqw">
+<h2 style="margin:0;font-family:var(--font-display);font-size:2.2cqw;line-height:1.2;font-weight:900">Menos fricción<br>en cada pedido</h2>
+<p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">El comprador arma su canasta sin llamadas ni listas en PDF.</p>
+</div>
+<div style="flex:0 1 34cqw;border-left:1px solid var(--color-border);padding-left:4cqw;display:flex;flex-direction:column;gap:2.2cqw">
+<div style="display:flex;gap:1.4cqw;align-items:flex-start"><span style="flex:0 0 3cqw;height:3cqw;border:1px solid var(--gray-400);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5cqw;color:var(--gray-600)">✓</span><div><b style="font-size:1.6cqw">Precio visible</b><p style="margin:0;font-size:1.4cqw;line-height:1.5;color:var(--gray-600)">Con su descuento aplicado</p></div></div>
+<div style="display:flex;gap:1.4cqw;align-items:flex-start"><span style="flex:0 0 3cqw;height:3cqw;border:1px solid var(--gray-400);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5cqw;color:var(--gray-600)">✓</span><div><b style="font-size:1.6cqw">Stock real</b><p style="margin:0;font-size:1.4cqw;line-height:1.5;color:var(--gray-600)">Sin pedidos incompletos</p></div></div>
+<div style="display:flex;gap:1.4cqw;align-items:flex-start"><span style="flex:0 0 3cqw;height:3cqw;border:1px solid var(--gray-400);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5cqw;color:var(--gray-600)">✓</span><div><b style="font-size:1.6cqw">Recompra en un clic</b><p style="margin:0;font-size:1.4cqw;line-height:1.5;color:var(--gray-600)">Historial siempre a mano</p></div></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="15" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto"><div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Nuestra forma de operar</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Operación propia de punta a punta</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;display:flex">
+
+<div style="flex:2;padding:0 5cqw;display:flex;flex-direction:column;justify-content:center;gap:1.6cqw">
+
+<h2 style="margin:0;font-family:var(--font-display);font-size:2.2cqw;line-height:1.2;font-weight:900">Un mayorista con<br>control de la cadena</h2><p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">Compra, bodega y ruta bajo el mismo control: menos intermediarios y menos quiebres.</p>
+<p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">El asesor conoce el inventario real antes de prometer una entrega.</p>
+</div><div style="flex:1;display:flex;flex-direction:column">
+
+<div style="flex:1;background:var(--gray-400);color:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8cqw"><img src="../../assets/icons/icon-09.png" alt="" style="width:3cqw;height:3cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size: 1.5cqw; color: var(--black)">Nuestro equipo</b></div><div style="flex: 1; background: var(--gray-300); color: var(--black); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8cqw; width: 375px; height: 195px"><img src="../../assets/icons/icon-12.png" alt="" style="width:3cqw;height:3cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.5cqw">Calidad</b></div>
+<div style="flex:1;background:var(--gray-200);color:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8cqw"><img src="../../assets/icons/icon-31.png" alt="" style="width:3cqw;height:3cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.5cqw">Confianza</b></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="16" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Ecosistema Prisma</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Cuatro actores, un centro</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:grid;grid-template-columns:1fr auto 1fr;gap:3cqw;align-items:center">
+<div style="display:flex;flex-direction:column;text-align:right;gap:3cqw">
+<div style="display:flex;align-items:center;gap:1.4cqw;flex-direction:row-reverse"><div style="flex:0 0 4cqw;height:4cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-09.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><div><b style="font-size:1.6cqw">Proveedores</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Homologados y auditados</p></div></div>
+<div style="display:flex;align-items:center;gap:1.4cqw;flex-direction:row-reverse"><div style="flex:0 0 4cqw;height:4cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-12.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><div><b style="font-size:1.6cqw">Marca propia</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Cuatro líneas activas</p></div></div>
+</div>
+<div style="width:16cqw;height:16cqw;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center"><img src="../../assets/logo/isotipo.png" alt="" style="width:9cqw;height:9cqw;object-fit:contain"></div>
+<div style="display:flex;flex-direction:column;text-align:left;gap:3cqw">
+<div style="display:flex;align-items:center;gap:1.4cqw"><div style="flex:0 0 4cqw;height:4cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-18.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><div><b style="font-size:1.6cqw">Detallistas</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Tiendas y minimercados</p></div></div>
+<div style="display:flex;align-items:center;gap:1.4cqw"><div style="flex:0 0 4cqw;height:4cqw;border-radius:50%;background:var(--gray-400);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-24.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><div><b style="font-size:1.6cqw">Operadores</b><p style="margin:0;font-size:1.4cqw;color:var(--black)">Ruta y última milla</p></div></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="17" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Líneas comerciales</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Cuatro categorías de surtido</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;display:flex">
+<div style="flex:1;display:flex;flex-direction:column">
+<div style="flex:1;background:var(--gray-400);color:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8cqw"><img src="../../assets/icons/icon-12.png" alt="" style="width:3cqw;height:3cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.5cqw;color:var(--black)">Aseo</b></div>
+
+<div style="flex:1;background:var(--gray-300);color:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8cqw"><img src="../../assets/icons/icon-18.png" alt="" style="width:3cqw;height:3cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.5cqw;color:var(--black)">Hogar</b></div><div style="flex:1;background:var(--gray-200);color:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8cqw"><img src="../../assets/icons/icon-24.png" alt="" style="width:3cqw;height:3cqw;object-fit:contain;filter:brightness(0) saturate(0)"><b style="font-size:1.5cqw;color:var(--black)">Empaque</b></div>
+</div><div style="flex:2;padding:0 5cqw;display:flex;flex-direction:column;justify-content:center;gap:1.6cqw">
+<h2 style="margin:0;font-family:var(--font-display);font-size:2.2cqw;line-height:1.2;font-weight:900">Surtido pensado<br>para la tienda</h2>
+<p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">Aseo, hogar, empaque y desechables: rotación alta y margen defendible.</p>
+<p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">Cada línea tiene su propio calendario de reposición.</p>
+</div>
+
+</div>
+</section>
+
+<section data-screen-label="18" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Roadmap de implementación</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Línea de tiempo chevron</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;flex-direction:column;justify-content:center;gap:2.4cqw">
+<div style="display:flex;justify-content:space-between;gap:2cqw">
+<div style="flex:1;background:var(--gray-400);color:var(--black);padding:1.2cqw 2cqw;font-family:var(--font-cond);font-size:1.5cqw;font-weight:700;clip-path:polygon(0% 0%,92% 0%,100% 50%,92% 100%,0% 100%)">Mes 1 · Alta y catálogo</div>
+<div style="flex:1;background:var(--gray-300);color:var(--black);padding:1.2cqw 2cqw;font-family:var(--font-cond);font-size:1.5cqw;font-weight:700;clip-path:polygon(0% 0%,92% 0%,100% 50%,92% 100%,0% 100%)">Mes 2 · Primer pedido</div>
+<div style="flex:1;background:var(--gray-200);color:var(--black);padding:1.2cqw 2cqw;font-family:var(--font-cond);font-size:1.5cqw;font-weight:700;clip-path:polygon(0% 0%,92% 0%,100% 50%,92% 100%,0% 100%)">Mes 3 · Recompra</div>
+</div>
+<div style="display:flex;justify-content:space-between;gap:2cqw">
+<div style="flex:1"><b style="font-size:1.45cqw">Cupo y lista</b><p style="margin:0;font-size:1.35cqw;color:var(--gray-600)">Cargados y aprobados</p></div>
+<div style="flex:1"><b style="font-size:1.45cqw">Ruta y despacho</b><p style="margin:0;font-size:1.35cqw;color:var(--gray-600)">Entrega en 48 horas</p></div>
+<div style="flex:1"><b style="font-size:1.45cqw">Pedido guardado</b><p style="margin:0;font-size:1.35cqw;color:var(--gray-600)">Recompra medida</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="19" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Trayectoria completa</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Línea de tiempo doble</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;flex-direction:column;justify-content:center;gap:4cqw">
+<div style="position:relative;display:flex;justify-content:space-between">
+<div style="position:absolute;top:.7cqw;left:0;right:0;border-top:1px dashed var(--gray-300)"></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--gray-400)"></div><b style="font-size:1.45cqw">2015</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Primera bodega</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--gray-400)"></div><b style="font-size:1.45cqw">2017</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Ruta urbana</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--gray-300)"></div><b style="font-size:1.45cqw">2019</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Marca propia</p></div>
+</div>
+<div style="position:relative;display:flex;justify-content:space-between">
+<div style="position:absolute;top:.7cqw;left:0;right:0;border-top:1px dashed var(--gray-300)"></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--gray-400)"></div><b style="font-size:1.45cqw">2021</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Catálogo digital</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--gray-400)"></div><b style="font-size:1.45cqw">2024</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Portal B2B</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--gray-300)"></div><b style="font-size:1.45cqw">2026</b><p style="margin:0;font-size:1.3cqw;color:var(--gray-600)">Cobertura regional</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="20" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Crecimiento proyectado</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Escenario conservador</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center">
+<div style="position:relative;width:100%;display:flex;justify-content:space-between">
+<div style="position:absolute;top:6.4cqw;left:0;right:0;height:1px;background:var(--gray-300)"></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:5cqw;height:6cqw;background:var(--gray-400);clip-path:polygon(50% 100%,0% 42%,8% 12%,50% 0%,92% 12%,100% 42%);display:flex;align-items:flex-start;justify-content:center;padding-top:1.2cqw"><img src="../../assets/icons/icon-04.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.45cqw">2026</b><p style="margin:0;font-size:1.3cqw;color:var(--black)">Base actual</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:5cqw;height:6cqw;background:var(--gray-400);clip-path:polygon(50% 100%,0% 42%,8% 12%,50% 0%,92% 12%,100% 42%);display:flex;align-items:flex-start;justify-content:center;padding-top:1.2cqw"><img src="../../assets/icons/icon-12.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.45cqw">2027</b><p style="margin:0;font-size:1.3cqw;color:var(--black)">+18% pedidos</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:5cqw;height:6cqw;background:var(--gray-300);clip-path:polygon(50% 100%,0% 42%,8% 12%,50% 0%,92% 12%,100% 42%);display:flex;align-items:flex-start;justify-content:center;padding-top:1.2cqw"><img src="../../assets/icons/icon-18.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.45cqw">2028</b><p style="margin:0;font-size:1.3cqw;color:var(--black)">Dos ciudades más</p></div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.6cqw"><div style="width:5cqw;height:6cqw;background:var(--gray-200);clip-path:polygon(50% 100%,0% 42%,8% 12%,50% 0%,92% 12%,100% 42%);display:flex;align-items:flex-start;justify-content:center;padding-top:1.2cqw"><img src="../../assets/icons/icon-24.png" alt="" style="width:2.2cqw;height:2.2cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.45cqw">2029</b><p style="margin:0;font-size:1.3cqw;color:var(--black)">Marca propia 30%</p></div>
+</div>
+</div>
+</section>
+
+<section data-screen-label="21" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Tres promesas al canal</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Lo que firmamos con cada cuenta</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr auto;gap:2.6cqw 2.6cqw;align-items:stretch">
+<div style="background:var(--gray-50);border:1px solid var(--color-border);padding:2.6cqw 2.2cqw;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.2cqw"><div style="width:5.4cqw;height:5.4cqw;border-radius:50%;background:var(--gray-300);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-04.png" alt="" style="width:2.8cqw;height:2.8cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.7cqw">Precio en firme</b><p style="margin:0;font-size:1.4cqw;line-height:1.55;color:var(--black)">La lista vigente no cambia dentro del mes acordado.</p></div>
+<div style="background:var(--gray-50);border:1px solid var(--color-border);padding:2.6cqw 2.2cqw;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.2cqw"><div style="width:5.4cqw;height:5.4cqw;border-radius:50%;background:var(--gray-300);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-09.png" alt="" style="width:2.8cqw;height:2.8cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.7cqw">Asesor asignado</b><p style="margin:0;font-size:1.4cqw;line-height:1.55;color:var(--black)">Una sola persona responde por su cuenta.</p></div>
+<div style="background:var(--gray-50);border:1px solid var(--color-border);padding:2.6cqw 2.2cqw;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.2cqw"><div style="width:5.4cqw;height:5.4cqw;border-radius:50%;background:var(--gray-300);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-31.png" alt="" style="width:2.8cqw;height:2.8cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div><b style="font-size:1.7cqw">Entrega medida</b><p style="margin:0;font-size:1.4cqw;line-height:1.55;color:var(--black)">Cada despacho se reporta con hora y estado.</p></div>
+<div style="grid-column:1 / -1;display:flex;align-items:center;justify-content:center;gap:2cqw;border-top:1px solid var(--color-border);padding-top:1.8cqw">
+<span style="font-size:1.3cqw;color:var(--gray-600)">Estado del servicio</span>
+<span style="display:inline-flex;align-items:center;gap:.7cqw;padding:.55cqw 1.4cqw;border-radius:999px;border:1px solid var(--status-good-border);color:var(--status-good);font-size:1.35cqw;font-weight:600"><span style="width:.8cqw;height:.8cqw;border-radius:50%;background:var(--status-good)"></span>Operativo</span>
+<span style="display:inline-flex;align-items:center;gap:.7cqw;padding:.55cqw 1.4cqw;border-radius:999px;border:1px solid var(--status-regular-border);color:var(--status-regular);font-size:1.35cqw;font-weight:600"><span style="width:.8cqw;height:.8cqw;border-radius:50%;background:var(--status-regular)"></span>En revisión</span>
+<span style="display:inline-flex;align-items:center;gap:.7cqw;padding:.55cqw 1.4cqw;border-radius:999px;border:1px solid var(--status-bad-border);color:var(--status-bad);font-size:1.35cqw;font-weight:600"><span style="width:.8cqw;height:.8cqw;border-radius:50%;background:var(--status-bad)"></span>Crítico</span>
+</div>
+</div>
+</section>
+
+<section data-screen-label="22" style="flex:0 0 100%;height:100%;position:relative;background:var(--gray-100);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Cita destacada</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Lo que nos guía</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2cqw">
+<div style="font-family:var(--font-display);font-size:6cqw;line-height:.5;color:var(--gray-300)">“</div>
+<h2 style="margin:0;max-width:80%;font-family:var(--font-display);font-size:2.4cqw;line-height:1.35;font-weight:400;color:var(--gray-700)">El diseño no es solo cómo se ve, sino cómo funciona para quien vende todos los días.</h2>
+<div style="width:26cqw;height:1px;background:var(--gray-300)"></div>
+<div style="display:flex;gap:1cqw"><span style="width:1cqw;height:1cqw;border-radius:50%;background:var(--gray-300)"></span><span style="width:1cqw;height:1cqw;border-radius:50%;background:var(--gray-300)"></span><span style="width:1cqw;height:1cqw;border-radius:50%;background:var(--gray-300)"></span></div>
+</div>
+</section>
+
+<section data-screen-label="23" style="flex:0 0 100%;height:100%;position:relative;background:var(--white);color:var(--black);display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:2.2cqw 6cqw 0;gap:4cqw">
+<img src="../../assets/logo/isotipo.png" alt="Prisma" style="width:17cqw;height:17cqw;object-fit:contain;flex:0 0 auto">
+<div style="text-align:right;flex:1;min-width:0">
+<h1 style="margin:0;font-family:var(--font-display);font-size:2.29cqw;line-height:1.2;font-weight:900">Acompañamiento comercial</h1>
+<p style="margin:.6cqw 0 0;font-size:1.875cqw;line-height:1.2;color:var(--gray-600)">Cómo trabajamos juntos</p>
+</div>
+</div>
+<div style="flex:1;min-height:0;padding:1cqw 6cqw 4cqw;display:flex;align-items:center;gap:4cqw">
+<div style="flex:1.5;display:flex;flex-direction:column;gap:1.4cqw;border-right:1px solid var(--color-border);padding-right:4cqw">
+<img src="../../assets/icons/icon-09.png" alt="" style="width:4cqw;height:4cqw;object-fit:contain;filter:brightness(0) saturate(0)">
+<h2 style="margin:0;font-family:var(--font-display);font-size:2.2cqw;line-height:1.2;font-weight:900">Asesoría por cuenta</h2>
+<p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">Un asesor asignado revisa surtido, rotación y cupo cada mes con el comprador.</p>
+<p style="margin:0;font-size:1.5cqw;line-height:1.55;color:var(--gray-700)">El acta del mes queda en el portal, con los acuerdos y las fechas.</p>
+</div>
+<div style="flex:1;height:80%;background:var(--gray-300);padding:3cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.2cqw">
+<div style="width:5cqw;height:5cqw;border-radius:50%;border:1px solid var(--gray-600);display:flex;align-items:center;justify-content:center"><img src="../../assets/icons/icon-31.png" alt="" style="width:2.8cqw;height:2.8cqw;object-fit:contain;filter:brightness(0) saturate(0)"></div>
+<h2 style="margin:0;font-family:var(--font-display);font-size:2cqw;font-weight:900">Siguiente paso</h2>
+<p style="margin:0;font-size:1.45cqw;line-height:1.5;color:var(--gray-700)">Activar la cuenta y cargar la primera lista de precios.</p>
+</div>
+</div>
+</section>
+
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:14px">
+<button onClick="{{ prev }}" style="padding:9px 18px;background:var(--white);color:var(--gray-700);border:1px solid var(--gray-300);border-radius:4px;font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="border-color:var(--black);color:var(--black)">Anterior</button>
+<button onClick="{{ next }}" style="padding:9px 18px;background:var(--gray-300);color:var(--black);border:1px solid var(--gray-300);border-radius:4px;font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="background:var(--gray-400);border-color:var(--gray-500);color:var(--black)">Siguiente</button>
+</div>
+</main>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+  state = { i: 0 };
+  static TITLES = [
+    ['1. Apertura', ['Portada','Validación de mercado','Misión y visión','Historia ondulada','Diagrama de nodos','Etapas del servicio']],
+    ['2. Negocio', ['Modelo de ingresos','Tabla de contenido','Ciclo de abastecimiento','Cobertura del canal','Hitos por año','Pilares corporativos']],
+    ['3. Propuesta', ['Cómo nos ven','Beneficios del portal','Forma de operar','Ecosistema Prisma','Líneas comerciales','Roadmap chevron']],
+    ['4. Cierre', ['Trayectoria doble','Crecimiento con pines','Tres promesas','Cita destacada','Acompañamiento comercial']]
+  ];
+  static LAST = 22;
+  go = (n) => this.setState({ i: n });
+  componentDidMount() {
+    this._k = (e) => {
+      if (e.key === 'ArrowRight') this.setState(s => ({ i: Math.min(Component.LAST, s.i + 1) }));
+      if (e.key === 'ArrowLeft') this.setState(s => ({ i: Math.max(0, s.i - 1) }));
+    };
+    window.addEventListener('keydown', this._k);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._k); }
+  renderVals() {
+    const cur = this.state.i;
+    let n = 0;
+    const groups = Component.TITLES.map(([label, titles]) => ({
+      label,
+      items: titles.map(title => {
+        const idx = n++;
+        const active = idx === cur;
+        return {
+          title, n: idx + 1,
+          bg: active ? 'var(--gray-100)' : 'var(--white)',
+          fg: active ? 'var(--black)' : 'var(--gray-600)',
+          go: () => this.go(idx)
+        };
+      })
+    }));
+    return {
+      groups,
+      track: 'translateX(' + (-cur * 100) + '%)',
+      counter: (cur + 1) + ' / 23',
+      prev: () => this.setState(s => ({ i: Math.max(0, s.i - 1) })),
+      next: () => this.setState(s => ({ i: Math.min(Component.LAST, s.i + 1) }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

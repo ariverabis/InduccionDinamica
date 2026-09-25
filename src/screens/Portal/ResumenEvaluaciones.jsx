@@ -34,10 +34,21 @@ export const ResumenEvaluaciones = ({ selectedAsesor, submodulos, notasGuardadas
       const notaObj = notasMap[sm.id];
       const nota = notaObj?.nota ?? '-';
       const noPresento = notaObj?.no_presento ?? false;
+      let skuInfo = '';
+      if (notaObj?.comentario?.startsWith('{')) {
+        try {
+          const p = JSON.parse(notaObj.comentario);
+          if (p.evaluacion_sku) {
+            skuInfo = `${p.evaluacion_sku.skus_aprendidos}/${p.evaluacion_sku.skus_evaluados} (${p.evaluacion_sku.porcentaje}%)`;
+          }
+        } catch(e) {}
+      }
+
       return {
         'Asesor': selectedAsesor.nombre || selectedAsesor.usuario || 'Asesor',
         'Evaluación': sm.nombre_tarea,
-        'Nota': noPresento ? 'No presentó' : nota
+        'Nota': noPresento ? 'No presentó' : nota,
+        'Detalle SKUs': skuInfo || '-'
       };
     });
 
@@ -65,11 +76,25 @@ export const ResumenEvaluaciones = ({ selectedAsesor, submodulos, notasGuardadas
           const notaObj = notasMap[sm.id];
           const nota = notaObj?.nota ?? '-';
           const noPresento = notaObj?.no_presento ?? false;
+          let parsedSku = null;
+          if (notaObj?.comentario?.startsWith('{')) {
+            try {
+              parsedSku = JSON.parse(notaObj.comentario).evaluacion_sku;
+            } catch(e) {}
+          }
+
           return (
             <div key={sm.id} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex justify-between items-center">
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-slate-600">{sm.nombre_tarea}</span>
-                <span className="text-sm font-black text-slate-800">Nota: {nota}</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-sm font-black text-slate-800">Nota: {nota}</span>
+                  {parsedSku && (
+                    <span className="text-[10px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded-md">
+                      🎯 {parsedSku.skus_aprendidos}/{parsedSku.skus_evaluados} ({parsedSku.porcentaje}%)
+                    </span>
+                  )}
+                </div>
               </div>
               {noPresento && (
                 <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 rounded">

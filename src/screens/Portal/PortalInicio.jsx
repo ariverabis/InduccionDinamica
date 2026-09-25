@@ -3,39 +3,40 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 import ConsolaEvaluacion from './ConsolaEvaluacion';
+import PlanFocalizadoWizard from '../../components/PlanFocalizado/PlanFocalizadoWizard';
 
 const BRAND_COLORS = {
-  'Febeca': { 
+  'Febeca': {
     primary: '#005596', secondary: '#003d6b', shadow: 'rgba(0, 85, 150, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1bmXEwn5RYCtweAnkaElork_ORQKS--Ai/view?usp=drive_link',
     examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/febeca.png'
   },
-  'Beval': { 
+  'Beval': {
     primary: '#6a9d2d', secondary: '#4d7320', shadow: 'rgba(106, 157, 45, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1uksY-240gWs2UVVLQGQ_b9Km-QdL4i6b/view?usp=drive_link',
     examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/beval.png'
   },
-  'Sillaca': { 
+  'Sillaca': {
     primary: '#c40062', secondary: '#94004a', shadow: 'rgba(196, 0, 98, 0.2)',
     manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1uSRtt0xtMxRyvcMWONYxKr4fY8Oaba3U/view?usp=sharing',
     examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/sillaca.png'
   },
-  'Cofersa': { 
+  'Cofersa': {
     primary: '#0078ae', secondary: '#005a83', shadow: 'rgba(0, 120, 174, 0.2)',
-    manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link', 
+    manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/11UjAtuypjiA5hcUM7Er-pctDKFnvDNX5/view?usp=sharing',
     examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScN1ud6O_gCqbJJWbLcBkf25twr_4g3WGgiGsIffnsP-ELdMQ/viewform',
     logo: '/img/Cofersa.png'
   },
-  'Mundial de Partes': { 
+  'Mundial de Partes': {
     primary: '#74a431', secondary: '#567a24', shadow: 'rgba(116, 164, 49, 0.2)',
-    manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link', 
+    manualLink: 'https://drive.google.com/file/d/13ZlnXlcEhPAt6mU-vH_r0a0BJQ1RJBxB/view?usp=drive_link',
     escenarioLink: 'https://drive.google.com/file/d/1EtfklDhUbHA1kvU_Xxf-GBxLBDI9a1-c/view?usp=sharing',
     examenAfvLink: 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform',
     logo: '/img/Mundial.png'
@@ -54,7 +55,8 @@ const PortalInicio = () => {
   const [showRoleplayModal, setShowRoleplayModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedEscenario, setSelectedEscenario] = useState(null);
-  
+  const [showPlanFocalizado, setShowPlanFocalizado] = useState(false);
+
   const handleSubmitRoleplay = async () => {
     console.log('🔘 [DEBUG-CLICK] Botón de enviar presionado');
     if (!selectedEscenario || !speechVentas || !fileCatalogo) {
@@ -132,7 +134,7 @@ const PortalInicio = () => {
   useEffect(() => {
     const savedCompany = localStorage.getItem('selectedCompany');
     const savedUser = localStorage.getItem('portalUser');
-    
+
     if (savedCompany) setSelectedCompany(savedCompany);
     if (savedUser) setUserSession(JSON.parse(savedUser));
   }, []);
@@ -155,16 +157,16 @@ const PortalInicio = () => {
     setLoadingScenarios(true);
     const { data, error } = await supabase.schema('portal_afv').from('maestro_escenarios')
       .select('*').eq('empresa', selectedCompany).order('numero_escenario', { ascending: true });
-    
+
     let evidenciasData = [];
     if (userSession && userSession.rol === 'asesor') {
       const { data: ev } = await supabase.schema('portal_afv').from('ejercicios_evidencias')
         .select('*').eq('id_asesor', userSession.id);
       evidenciasData = ev || [];
     }
-    
+
     if (error) console.error('❌ [DEBUG] Error cargando escenarios:', error);
-    
+
     setScenariosList(data || []);
     setMisEvidencias(evidenciasData);
     setLoadingScenarios(false);
@@ -238,7 +240,7 @@ const PortalInicio = () => {
         const fileExt = exerciseFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${userSession.usuario}/ejercicio_${selectedSubmodule.id}_${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('evidencias_asesores')
           .upload(filePath, exerciseFile, { upsert: true });
@@ -264,7 +266,7 @@ const PortalInicio = () => {
         .eq('id_asesor', userSession.id)
         .order('intento', { ascending: false })
         .limit(1);
-      
+
       const currentIntento = itins && itins.length > 0 ? itins[0].intento : 1;
 
       // Guardamos en notas_por_submodulo
@@ -303,16 +305,28 @@ const PortalInicio = () => {
     setLoginError('');
 
     try {
+      // 1. Iniciar sesión con el sistema nativo y seguro de Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password
+      });
+
+      if (authError || !authData.user) {
+        setLoginError('Usuario o clave incorrectos (Supabase Auth)');
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Obtener los datos antiguos del usuario para no romper las relaciones (IDs antiguos)
       const { data, error } = await supabase
         .schema('portal_afv')
         .from('usuarios')
         .select('*')
         .eq('usuario', username)
-        .eq('clave', password)
         .single();
 
       if (error || !data) {
-        setLoginError('Usuario o clave incorrectos');
+        setLoginError('Usuario no encontrado en la base de datos');
       } else {
         const { data: evalData } = await supabase
           .schema('portal_afv')
@@ -324,12 +338,12 @@ const PortalInicio = () => {
         const isAuthorizedEval = evalData !== null;
         const finalRole = data.rol === 'admin' ? 'admin' : (isAuthorizedEval ? 'evaluador' : data.rol);
 
-        const userData = { 
-          ...data, 
+        const userData = {
+          ...data,
           loginDate: new Date().toISOString(),
-          rol: finalRole 
+          rol: finalRole
         };
-        
+
         setUserSession(userData);
         localStorage.setItem('portalUser', JSON.stringify(userData));
         setShowLogin(false);
@@ -347,7 +361,7 @@ const PortalInicio = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!username || !password || !fullName || !email) return setLoginError('Complete todos los campos');
     if (!emailRegex.test(email)) return setLoginError('Formato de correo inválido');
-    
+
     setIsLoading(true);
     setLoginError('');
 
@@ -356,10 +370,10 @@ const PortalInicio = () => {
         .schema('portal_afv')
         .from('usuarios')
         .insert([
-          { 
-            usuario: username, 
-            clave: password, 
-            nombre: fullName, 
+          {
+            usuario: username,
+            clave: password,
+            nombre: fullName,
             correo: email,
             empresa: selectedCompany,
             rol: 'asesor'
@@ -389,7 +403,11 @@ const PortalInicio = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Cerrar sesión en el servidor seguro de Supabase
+    await supabase.auth.signOut();
+    
+    // Limpiar caché local
     localStorage.removeItem('portalUser');
     localStorage.removeItem('selectedCompany');
     setUserSession(null);
@@ -425,45 +443,59 @@ const PortalInicio = () => {
   if (showLogin || !userSession) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
-        <div className="bg-white rounded-3xl p-10 w-full max-w-sm shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+        <div className="bg-white rounded-xl p-10 w-full max-w-md shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
           <div className="text-center mb-8">
-            <img src={currentBrand.logo} className="h-8 mx-auto mb-4" alt="Empresa" />
-            <h2 className="text-lg font-bold text-slate-900 mb-1">
-              {isRegistering ? 'Filiación Académica' : 'Acceso Autorizado'}
+            <div className="flex justify-center mb-6">
+              <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M35 10C21.1929 10 10 21.1929 10 35C10 48.8071 21.1929 60 35 60C43.5 60 51.5 55 56.5 48L63.5 38L53 28L47.5 36C44.5 40 40 42 35 42C26.7157 42 20 35.2843 20 27C20 18.7157 26.7157 12 35 12C40 12 44.5 14 47.5 18L58 28L68.5 18C73.5 11 81.5 6 90 6C103.807 6 115 17.1929 115 31C115 44.8071 103.807 56 90 56C85 56 80.5 54 77.5 50L67 40L77.5 30L83 38C86 42 90.5 44 95 44C103.284 44 110 37.2843 110 29C110 20.7157 103.284 14 95 14C90.5 14 86 16 83 20L72.5 30L62 20C57 13 49 10 40 10H35Z" fill="#2a2421" />
+                <path d="M35 60C21.1929 60 10 48.8071 10 35C10 26 14.5 18 21.5 13L32 23L26.5 31C23.5 35 28 39 33 39C41.2843 39 48 32.2843 48 24C48 19.5 46 15 43 12L53.5 22L64 32C69 39 77 42 86 42H90C103.807 42 115 30.8071 115 17C115 26 110.5 34 103.5 39L93 29L98.5 21C101.5 17 97 13 92 13C83.7157 13 77 19.7157 77 28C77 32.5 79 37 82 40L71.5 30L61 20C56 13 48 10 39 10L35 10" fill="#9ca3af" style={{mixBlendMode: 'multiply'}} />
+                <path d="M35 10C44 10 52 13 57 20L67 30L77.5 20C80.5 16 85 14 90 14C98.2843 14 105 20.7157 105 29C105 37.2843 98.2843 44 90 44C85 44 80.5 42 77.5 38L67 28L56.5 38C51.5 45 43.5 50 35 50C21.1929 50 10 38.8071 10 25C10 16.7157 16.7157 10 25 10H35Z" fill="#2a2421"/>
+                <path d="M90 60C81 60 73 57 68 50L58 40L47.5 50C44.5 54 40 56 35 56C26.7157 56 20 49.2843 20 41C20 32.7157 26.7157 26 35 26C40 26 44.5 28 47.5 32L58 42L68.5 32C73.5 25 81.5 20 90 20C103.807 20 115 31.1929 115 45C115 53.2843 108.284 60 100 60H90Z" fill="#9ca3af"/>
+              </svg>
+            </div>
+            <h1 className="text-4xl font-extrabold text-[#2a2421] mb-2 tracking-tight">Portal de Pedidos</h1>
+            <h2 className="text-2xl font-bold text-slate-500 mb-8">
+              {isRegistering ? 'Registro' : 'Inicio de Sesión'}
             </h2>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-              {isRegistering ? 'Registro de nuevo Participante' : selectedCompany}
-            </p>
+
+            {!isRegistering && (
+              <div className="flex text-left items-start gap-4 mb-8">
+                <div className="w-2 h-20 bg-[#0ea5e9] flex-shrink-0"></div>
+                <p className="text-lg text-slate-800 leading-relaxed font-medium">
+                  Para iniciar la sesión deben colocar el correo registrado y la contraseña, a partir de ahí cambia la vista a la pantalla de inicio.
+                </p>
+              </div>
+            )}
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {isRegistering && (
               <>
-                <input type="text" placeholder="Nombre y Apellido" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
-                <input type="email" placeholder="Correo Electrónico" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
+                <input type="text" placeholder="Nombre y Apellido" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+                <input type="email" placeholder="Correo Electrónico" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
               </>
             )}
-            <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
-            <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-5 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none text-sm font-medium focus:ring-1 focus:ring-slate-900 transition-all" />
+            <input type="text" placeholder="Correo Registrado / Usuario" value={username} onChange={e => setUsername(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+            <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
           </div>
           {loginError && <p className="text-red-500 text-[10px] font-bold mt-4 text-center">{loginError}</p>}
-          
-          <button 
-            onClick={isRegistering ? handleRegister : handleLogin} 
-            disabled={isLoading} 
+
+          <button
+            onClick={isRegistering ? handleRegister : handleLogin}
+            disabled={isLoading}
             className="w-full mt-6 py-4 bg-slate-950 text-white font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg text-[10px] uppercase tracking-widest"
           >
             {isLoading ? 'Verificando...' : (isRegistering ? 'Completar Registro' : 'Iniciar Sesión')}
           </button>
 
           <div className="mt-6 text-center">
-            <button 
-              onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }} 
+            <button
+              onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }}
               className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:underline"
             >
               {isRegistering ? '¿Posee una cuenta? Acceder' : '¿Nuevo participante? Crear cuenta'}
             </button>
           </div>
-          
+
           <button onClick={() => { setSelectedCompany(null); setShowLogin(false); setIsRegistering(false); }} className="w-full mt-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-600">Volver a Selección</button>
         </div>
       </div>
@@ -475,390 +507,484 @@ const PortalInicio = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center font-sans">
-      <nav className="w-full bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center gap-6">
-           <img src={currentBrand.logo} className="h-6" alt="L" />
-           <div className="h-4 w-[1px] bg-slate-200"></div>
-           <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Participante: {userSession.nombre}</span>
-           {(userSession.rol === 'admin' || userSession.rol === 'evaluador') && (
-              <button 
+    <div className="min-h-screen bg-white flex flex-col" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+
+      {/* ─── NAVBAR ─── */}
+      <nav className="w-full bg-white border-b border-gray-200 px-8 py-3 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-5">
+          <img src={currentBrand.logo} className="h-5" alt="Logo" />
+          <div className="w-px h-4 bg-gray-200" />
+          <span className="text-xs text-gray-400 font-normal">{userSession.nombre}</span>
+          {(userSession.rol === 'admin' || userSession.rol === 'evaluador') ? (
+            <>
+              <button
                 onClick={() => setShowEvaluatorConsole(true)}
-                className="bg-blue-600 text-white px-3 py-1 rounded text-[8px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all ml-4"
+                className="text-xs text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-50 transition-colors"
               >
                 Gestionar Evaluaciones
               </button>
-           )}
+              <button
+                onClick={() => navigate('/dashboard-seguimiento')}
+                className="text-xs text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-50 transition-colors"
+              >
+                Dashboard Rúbricas
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => navigate('/dashboard-seguimiento')}
+              className="text-xs text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-50 transition-colors"
+            >
+              Mi Dashboard
+            </button>
+          )}
         </div>
-        <button onClick={handleLogout} className="text-[9px] font-bold text-slate-400 hover:text-red-500 tracking-[0.2em]">CERRAR SESIÓN</button>
+        <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 transition-colors">
+          Cerrar sesión
+        </button>
       </nav>
 
-      <main className="w-full max-w-5xl px-6 py-12 flex flex-col items-center animate-in fade-in duration-500">
-        <header className="text-center mb-16 max-w-3xl">
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight leading-tight">Itinerario Formativo <span style={{ color: currentBrand.primary }}>{selectedCompany}</span></h1>
-          <p className="text-sm text-slate-500 font-medium leading-relaxed">Siga los módulos establecidos para la validación de sus competencias técnicas en el sistema AFV.</p>
-        </header>
+      {/* ─── CONTENIDO PRINCIPAL ─── */}
+      <main className="w-full max-w-4xl mx-auto px-6 py-10 flex flex-col gap-10">
 
-        <section className="w-full mb-16">
-          <div className="flex items-center gap-4 mb-8">
-             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">01</span>
-             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Filiación Académica e Inducción</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all text-left">
-                <span className="text-2xl">📝</span>
-                <div className="flex-1">
-                   <h3 className="text-xs font-bold font-black text-slate-800">Censo Curricular</h3>
-                   <button 
-                    onClick={() => {
-                      const baseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZv8PrDzzlCpq7fsqkBYlAOSkAzsRBmUEDz4A-901r3cpJOg/viewform?usp=pp_url";
-                      const params = `&entry.1319823054=${encodeURIComponent(userSession.nombre || '')}` +
-                                     `&entry.1185854057=${encodeURIComponent(userSession.correo || '')}` +
-                                     `&entry.553997044=${encodeURIComponent(userSession.clave || '')}` +
-                                     `&entry.523342047=${encodeURIComponent(selectedCompany || '')}`;
-                      window.open(baseUrl + params, '_blank');
-                    }}
-                    className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
-                   >
-                     Registrar Datos →
-                   </button>
-                </div>
-             </div>
-             <div onClick={() => navigate('/sds')} className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer text-left">
-                <span className="text-2xl">⚙️</span>
-                <div className="flex-1">
-                   <h3 className="text-xs font-bold font-black text-slate-800">Configuración Técnica</h3>
-                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inducción de Aplicaciones</span>
-                </div>
-             </div>
-             <div onClick={() => window.open(currentBrand.manualLink, '_blank')} className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer text-left">
-                <span className="text-2xl">📖</span>
-                <div className="flex-1">
-                   <h3 className="text-xs font-bold font-black text-slate-800">Manual Codex SKU</h3>
-                   <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Guía de Usuario →</span>
-                </div>
-             </div>
-          </div>
-        </section>
+        {/* ENCABEZADO */}
+        <div className="border-b border-gray-100 pb-6">
+          <p className="text-xs text-gray-400 mb-1 uppercase tracking-widest">Portal de Inducción</p>
+          <h1 className="text-xl font-bold text-gray-900">Itinerario Formativo — {selectedCompany}</h1>
+          <p className="text-sm text-gray-500 mt-1">Siga los módulos establecidos para la validación de sus competencias técnicas en el sistema AFV.</p>
+        </div>
 
-        <section className="w-full mb-16">
-          <div className="flex items-center gap-4 mb-8">
-             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">02</span>
-             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Entrenamiento en Simuladores</h2>
+        {/* ─── SECCIÓN 01: Filiación ─── */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold text-gray-400 w-6 text-right">01</span>
+            <div className="w-px h-4 bg-gray-200" />
+            <h2 className="text-sm font-bold text-gray-800">Filiación Académica e Inducción</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 hover:shadow-xl transition-all border-b-4 flex flex-col" style={{borderBottomColor: currentBrand.primary}}>
-              <h3 className="text-sm font-bold text-slate-900 mb-2">Simulador de Ventas</h3>
-              <p className="text-[11px] text-slate-500 mb-6 font-medium flex-1">Laboratorio de práctica para creación de pedidos y gestión de inventario.</p>
-              <button onClick={() => navigate('/simulador', { state: { proceso: 'ventas' } })} className="w-full py-3 rounded-xl font-black text-white text-[9px] uppercase tracking-widest shadow-md" style={{background: currentBrand.primary}}>💻 Iniciar Laboratorio</button>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 hover:shadow-xl transition-all border-b-4 flex flex-col" style={{borderBottomColor: currentBrand.primary}}>
-              <h3 className="text-sm font-bold text-slate-900 mb-2">Simulador de Cobranzas</h3>
-              <p className="text-[11px] text-slate-500 mb-6 font-medium flex-1">Validación de flujos financieros, recibos y depósitos bancarios.</p>
-              <button onClick={() => navigate('/simulador', { state: { proceso: 'cobranza' } })} className="w-full py-3 rounded-xl font-black text-white text-[9px] uppercase tracking-widest shadow-md" style={{background: currentBrand.primary}}>💰 Iniciar Gestión</button>
-            </div>
-          </div>
-        </section>
-
-        <section className="w-full mb-16">
-          <div className="flex items-center gap-4 mb-8">
-             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">03</span>
-             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Módulos de Formación Técnica</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loadingSubmodules ? (
-              <div className="col-span-full py-10 text-center animate-pulse text-slate-400 font-bold text-[10px] uppercase tracking-widest">Cargando temas...</div>
-            ) : submodulesList.length === 0 ? (
-              <div className="col-span-full py-10 text-center border-2 border-dashed border-slate-100 rounded-3xl">
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No hay temas técnicos asignados aún.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pl-9">
+            <div className="border border-gray-200 rounded p-4 flex gap-3 items-start hover:bg-gray-50 transition-colors">
+              <span className="text-base mt-0.5">📝</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Censo Curricular</p>
+                <button
+                  onClick={() => {
+                    const baseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZv8PrDzzlCpq7fsqkBYlAOSkAzsRBmUEDz4A-901r3cpJOg/viewform?usp=pp_url";
+                    const params = `&entry.1319823054=${encodeURIComponent(userSession.nombre || '')}` +
+                      `&entry.1185854057=${encodeURIComponent(userSession.correo || '')}` +
+                      `&entry.553997044=${encodeURIComponent(userSession.clave || '')}` +
+                      `&entry.523342047=${encodeURIComponent(selectedCompany || '')}`;
+                    window.open(baseUrl + params, '_blank');
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-1"
+                >
+                  Registrar datos →
+                </button>
               </div>
+            </div>
+            <div onClick={() => navigate('/sds')} className="border border-gray-200 rounded p-4 flex gap-3 items-start hover:bg-gray-50 transition-colors cursor-pointer">
+              <span className="text-base mt-0.5">⚙️</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Configuración Técnica</p>
+                <p className="text-xs text-gray-400 mt-1">Inducción de aplicaciones</p>
+              </div>
+            </div>
+            <div onClick={() => window.open(currentBrand.manualLink, '_blank')} className="border border-gray-200 rounded p-4 flex gap-3 items-start hover:bg-gray-50 transition-colors cursor-pointer">
+              <span className="text-base mt-0.5">📖</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Manual Codex SKU</p>
+                <p className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-1">Guía de usuario →</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── SECCIÓN 02: Simuladores ─── */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold text-gray-400 w-6 text-right">02</span>
+            <div className="w-px h-4 bg-gray-200" />
+            <h2 className="text-sm font-bold text-gray-800">Entrenamiento en Simuladores</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-9">
+            <div className="border border-gray-200 rounded p-4 flex flex-col gap-3 hover:bg-gray-50 transition-colors">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Simulador de Ventas</p>
+                <p className="text-xs text-gray-400 mt-1">Laboratorio de práctica para creación de pedidos y gestión de inventario.</p>
+              </div>
+              <button
+                onClick={() => navigate('/simulador', { state: { proceso: 'ventas' } })}
+                className="text-xs border border-gray-800 text-gray-800 px-4 py-2 rounded hover:bg-gray-900 hover:text-white transition-colors w-fit"
+              >
+                Iniciar laboratorio →
+              </button>
+            </div>
+            <div className="border border-gray-200 rounded p-4 flex flex-col gap-3 hover:bg-gray-50 transition-colors">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Simulador de Cobranzas</p>
+                <p className="text-xs text-gray-400 mt-1">Validación de flujos financieros, recibos y depósitos bancarios.</p>
+              </div>
+              <button
+                onClick={() => navigate('/simulador', { state: { proceso: 'cobranza' } })}
+                className="text-xs border border-gray-800 text-gray-800 px-4 py-2 rounded hover:bg-gray-900 hover:text-white transition-colors w-fit"
+              >
+                Iniciar gestión →
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── SECCIÓN 03: Módulos Técnicos ─── */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold text-gray-400 w-6 text-right">03</span>
+            <div className="w-px h-4 bg-gray-200" />
+            <h2 className="text-sm font-bold text-gray-800">Módulos de Formación Técnica</h2>
+          </div>
+          <div className="pl-9">
+            {loadingSubmodules ? (
+              <p className="text-xs text-gray-400 py-6">Cargando temas...</p>
+            ) : submodulesList.length === 0 ? (
+              <p className="text-xs text-gray-400 py-6 border border-dashed border-gray-200 rounded text-center">No hay temas técnicos asignados aún.</p>
             ) : (
-              submodulesList.map((sub) => (
-                <div key={sub.id} onClick={() => { setSelectedSubmodule(sub); setShowExerciseModal(true); }} className="bg-white p-6 rounded-3xl border border-slate-100 hover:shadow-lg transition-all cursor-pointer group text-left relative overflow-hidden">
-                   <div className="flex justify-between items-start mb-4">
-                     <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all">📘</div>
-                     {sub.area_tecnica && (
-                       <span className={`text-[7px] font-black px-2 py-1 rounded-full uppercase tracking-widest ${
-                         sub.area_tecnica.includes('VENTAS') ? 'bg-blue-100 text-blue-700' :
-                         sub.area_tecnica.includes('COBRANZA') ? 'bg-green-100 text-green-700' :
-                         sub.area_tecnica.includes('CATÁLOGO') ? 'bg-purple-100 text-purple-700' :
-                         sub.area_tecnica.includes('SKU') ? 'bg-orange-100 text-orange-700' :
-                         'bg-slate-100 text-slate-600'
-                       }`}>
-                         {sub.area_tecnica}
-                       </span>
-                     )}
-                   </div>
-                   <h3 className="text-xs font-black text-slate-800 uppercase mb-1">{sub.nombre_tarea}</h3>
-                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mb-4">{sub.departamentos?.nombre}</p>
-                   <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">Registrar Avance →</span>
-                </div>
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {submodulesList.map((sub) => (
+                  <div
+                    key={sub.id}
+                    onClick={() => { setSelectedSubmodule(sub); setShowExerciseModal(true); }}
+                    className="border border-gray-200 rounded p-4 cursor-pointer hover:bg-gray-50 transition-colors group"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-sm font-semibold text-gray-800 leading-snug">{sub.nombre_tarea}</p>
+                    </div>
+                    <p className="text-xs text-gray-400">{sub.departamentos?.nombre}</p>
+                    {sub.area_tecnica && (
+                      <span className="inline-block mt-2 text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded">
+                        {sub.area_tecnica}
+                      </span>
+                    )}
+                    <p className="text-xs text-gray-500 mt-3 group-hover:text-gray-900 transition-colors">Registrar avance →</p>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </section>
 
-        <section className="w-full mb-16">
-          <div className="flex items-center gap-4 mb-8">
-             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">04</span>
-             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Prácticas Situacionales y Roleplay</h2>
+        {/* ─── SECCIÓN 04: Roleplay ─── */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold text-gray-400 w-6 text-right">04</span>
+            <div className="w-px h-4 bg-gray-200" />
+            <h2 className="text-sm font-bold text-gray-800">Prácticas Situacionales y Roleplay</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div 
-               onClick={() => setShowRoleplayModal(true)}
-               className="bg-white p-8 rounded-[2.5rem] border-2 border-dashed border-blue-100 shadow-xl shadow-blue-50/50 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all col-span-1 md:col-span-2"
-             >
-                <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-xl shadow-blue-200 group-hover:scale-110 transition-transform">🎭</div>
-                <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Módulo de Roleplay Digital</h3>
-                <p className="text-sm text-slate-500 max-w-sm mb-6">Seleccione uno de los escenarios situacionales y suba sus evidencias aquí.</p>
-                <span className="bg-blue-600 text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest">Iniciar Desafío →</span>
-             </div>
+          <div className="pl-9">
+            <div
+              onClick={() => setShowRoleplayModal(true)}
+              className="border border-gray-200 rounded p-6 flex items-center gap-5 cursor-pointer hover:bg-gray-50 transition-colors group"
+            >
+              <div className="w-10 h-10 border border-gray-200 rounded flex items-center justify-center text-lg shrink-0 group-hover:bg-gray-100 transition-colors">
+                🎭
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-800">Módulo de Roleplay Digital</p>
+                <p className="text-xs text-gray-400 mt-1">Seleccione uno de los escenarios situacionales y suba sus evidencias aquí.</p>
+              </div>
+              <span className="text-xs text-gray-500 group-hover:text-gray-900 transition-colors shrink-0">Iniciar desafío →</span>
+            </div>
           </div>
         </section>
 
-        <section id="evaluaciones" className="w-full mb-16">
-          <div className="flex items-center gap-4 mb-8">
-             <span className="w-8 h-8 rounded-full bg-slate-950 text-white flex items-center justify-center font-black text-[10px]">05</span>
-             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Evaluación de Competencias y Certificación</h2>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 text-center shadow-md">
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 block">Fase de Validación Sumativa</span>
-             <p className="text-sm text-slate-500 mb-8 max-w-2xl mx-auto font-medium">
-               Tras completar los módulos formativos, por favor proceda con la validación de sus competencias académicas.
-             </p>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-10 text-left">
-                {[
-                  { t: 'Evaluación AFV Profesional', l: currentBrand.examenAfvLink || 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform' },
-                  { t: 'Validación de Catálogo Digital', l: 'https://docs.google.com/forms/d/e/1FAIpQLSf-T62I4aMMmt0zcxn5VRaSg8ita_o-XxOa2GK4H4q4qxP8XQ/viewform' },
-                  { t: 'Examen Teórico de Terminología', l: 'https://docs.google.com/forms/d/e/1FAIpQLSf33_fV9jqCXODZSyS5af_Rpcv8S4_SThAUK6tACcP7c5OagA/viewform' },
-                  { t: 'Valoración de Prácticas Situacionales', l: currentBrand.escenarioLink }
-                ].map(ex => (
-                  <div 
-                    key={ex.t} 
-                    onClick={() => ex.l && window.open(ex.l, '_blank')}
-                    className={`p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between group transition-all ${ex.l ? 'hover:bg-white hover:border-slate-300 cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
-                  >
-                     <span className="text-[10px] font-bold text-slate-700 tracking-tight">{ex.t}</span>
-                     {ex.l && <span className="text-[10px] opacity-20 group-hover:opacity-100 transition-opacity">➔</span>}
+        {/* ─── SECCIÓN 06: Plan Focalizado (visible para todos) ─── */}
+        {userSession && (
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-bold text-gray-400 w-6 text-right">06</span>
+              <div className="w-px h-4 bg-gray-200" />
+              <h2 className="text-sm font-bold text-gray-800">Plan Focalizado de Ventas</h2>
+            </div>
+            <div className="pl-9">
+              <div
+                onClick={() => setShowPlanFocalizado(true)}
+                className="border border-gray-200 rounded p-6 flex items-center gap-5 cursor-pointer hover:bg-gray-50 transition-colors group"
+              >
+                <div className="w-10 h-10 border border-gray-200 rounded flex items-center justify-center text-lg shrink-0 group-hover:bg-gray-100 transition-colors">
+                  📊
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-800">Crear / Ver mi Plan Focalizado</p>
+                  <p className="text-xs text-gray-400 mt-1">Marcas a impulsar, pedido propuesto, material POP, asesoría y condiciones comerciales.</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {['Marcas & Clientes', 'Pedido Propuesto', 'Marketing POP', 'Asesoría', 'Condiciones'].map(tag => (
+                      <span key={tag} className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded">{tag}</span>
+                    ))}
                   </div>
-                ))}
-             </div>
-             <button onClick={() => setShowAuthModal(true)} className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 border-b border-transparent hover:border-slate-900 transition-all">Informe Personal de Calificaciones →</button>
+                </div>
+                <span className="text-xs text-gray-500 group-hover:text-gray-900 transition-colors shrink-0">Abrir plan →</span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ─── SECCIÓN 05: Evaluación y Certificación ─── */}
+        <section id="evaluaciones">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold text-gray-400 w-6 text-right">05</span>
+            <div className="w-px h-4 bg-gray-200" />
+            <h2 className="text-sm font-bold text-gray-800">Evaluación de Competencias y Certificación</h2>
+          </div>
+          <div className="pl-9 border border-gray-200 rounded p-6 space-y-4">
+            <p className="text-xs text-gray-400 uppercase tracking-widest">Fase de Validación Sumativa</p>
+            <p className="text-sm text-gray-600">Tras completar los módulos formativos, proceda con la validación de sus competencias académicas.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[
+                { t: 'Evaluación AFV Profesional', l: currentBrand.examenAfvLink || 'https://docs.google.com/forms/d/e/1FAIpQLScjLXWVS10t7L1gtC1OErbksyn6uXHX9G74uBxmCobqO-62ew/viewform' },
+                { t: 'Validación de Catálogo Digital', l: 'https://docs.google.com/forms/d/e/1FAIpQLSf-T62I4aMMmt0zcxn5VRaSg8ita_o-XxOa2GK4H4q4qxP8XQ/viewform' },
+                { t: 'Examen Teórico de Terminología', l: 'https://docs.google.com/forms/d/e/1FAIpQLSf33_fV9jqCXODZSyS5af_Rpcv8S4_SThAUK6tACcP7c5OagA/viewform' },
+                { t: 'Valoración de Prácticas Situacionales', l: currentBrand.escenarioLink }
+              ].map(ex => (
+                <div
+                  key={ex.t}
+                  onClick={() => ex.l && window.open(ex.l, '_blank')}
+                  className={`p-3 border rounded flex items-center justify-between group transition-colors ${ex.l ? 'border-gray-200 hover:border-gray-400 hover:bg-gray-50 cursor-pointer' : 'border-gray-100 opacity-40 cursor-not-allowed'}`}
+                >
+                  <span className="text-sm text-gray-700">{ex.t}</span>
+                  {ex.l && <span className="text-gray-300 group-hover:text-gray-600 transition-colors text-sm">→</span>}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="text-xs text-gray-400 hover:text-gray-800 underline underline-offset-2 transition-colors"
+            >
+              Informe personal de calificaciones →
+            </button>
           </div>
         </section>
+
       </main>
 
-      <footer className="py-12 text-[8px] font-black text-slate-300 uppercase tracking-[0.4em]">Dirección de Aprendizaje Corporativo — v2.0</footer>
+      <footer className="py-8 text-center text-xs text-gray-300" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+        Dirección de Aprendizaje Corporativo — v2.0
+      </footer>
+
+      {/* MODAL PLAN FOCALIZADO */}
+      {showPlanFocalizado && (
+        <PlanFocalizadoWizard
+          userSession={userSession}
+          empresa={selectedCompany}
+          onClose={() => setShowPlanFocalizado(false)}
+        />
+      )}
 
       {/* MODAL DE ROLEPLAY DIGITAL REDISEÑADO */}
       {showRoleplayModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-5xl h-full max-h-[92vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden relative">
-              <button 
-                onClick={() => setShowRoleplayModal(false)}
-                className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
-              >✕</button>
+          <div className="bg-white w-full max-w-5xl h-full max-h-[92vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden relative">
+            <button
+              onClick={() => setShowRoleplayModal(false)}
+              className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
+            >✕</button>
 
-              <div className="p-6 md:p-8 flex flex-col h-full">
-                 <header className="mb-6 text-center md:text-left border-b pb-4">
-                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4">
-                       <span className="text-3xl">🎭</span> Módulo de Roleplay Digital
-                    </h2>
-                    <p className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mt-1">Seleccione su desafío para iniciar la práctica</p>
-                 </header>
+            <div className="p-6 md:p-8 flex flex-col h-full">
+              <header className="mb-6 text-center md:text-left border-b pb-4">
+                <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4">
+                  <span className="text-3xl">🎭</span> Módulo de Roleplay Digital
+                </h2>
+                <p className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mt-1">Seleccione su desafío para iniciar la práctica</p>
+              </header>
 
-                 {!selectedEscenario ? (
-                    <div className="flex-1 overflow-y-auto pr-2">
-                      {loadingScenarios ? (
-                        <div className="flex items-center justify-center h-48 text-slate-300 font-black text-[9px] uppercase tracking-widest animate-pulse">Cargando escenarios...</div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
-                          {scenariosList.map(esc => {
-                            const enviada = misEvidencias.find(e => e.id_escenario === esc.id);
-                            return (
-                              <div key={esc.id} onClick={() => setSelectedEscenario(esc)} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all group relative overflow-hidden flex flex-col">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block">Caso #{esc.numero_escenario}</span>
-                                  {enviada && (
-                                    <span className={`px-2 py-1 rounded-full text-[7px] font-black uppercase ${enviada.nota_ejercicio !== null ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                      {enviada.nota_ejercicio !== null ? `Evaluado: ${enviada.nota_ejercicio}` : 'Enviado'}
-                                    </span>
+              {!selectedEscenario ? (
+                <div className="flex-1 overflow-y-auto pr-2">
+                  {loadingScenarios ? (
+                    <div className="flex items-center justify-center h-48 text-slate-300 font-black text-[9px] uppercase tracking-widest animate-pulse">Cargando escenarios...</div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
+                      {scenariosList.map(esc => {
+                        const enviada = misEvidencias.find(e => e.id_escenario === esc.id);
+                        return (
+                          <div key={esc.id} onClick={() => setSelectedEscenario(esc)} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all group relative overflow-hidden flex flex-col">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block">Caso #{esc.numero_escenario}</span>
+                              {enviada && (
+                                <span className={`px-2 py-1 rounded-full text-[7px] font-black uppercase ${enviada.nota_ejercicio !== null ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                  {enviada.nota_ejercicio !== null ? `Evaluado: ${enviada.nota_ejercicio}` : 'Enviado'}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="text-xs font-black text-slate-800 uppercase mb-1 flex-1">{esc.titulo_escenario}</h4>
+                            <p className="text-[10px] text-slate-400 font-medium line-clamp-2 mt-auto">{esc.descripcion_tarea}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <button onClick={() => setSelectedEscenario(null)} className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-4 flex items-center gap-2">← Volver a la Lista</button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
+                    <div className="md:col-span-1 bg-slate-50 p-6 rounded-2xl border border-slate-100 overflow-y-auto">
+                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block mb-3">Caso Seleccionado</span>
+                      <h3 className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tighter leading-tight">#{selectedEscenario.numero_escenario}: {selectedEscenario.titulo_escenario}</h3>
+                      <div className="space-y-4">
+                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Instrucción:</h4>
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium italic">{selectedEscenario.descripcion_tarea}</p>
+                        {selectedEscenario.pdf_url && (
+                          <button onClick={() => window.open(selectedEscenario.pdf_url, '_blank')} className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-xl text-[8px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2">📄 Abrir Guía PDF</button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+                      {(() => {
+                        const enviada = misEvidencias.find(e => e.id_escenario === selectedEscenario.id);
+
+                        if (enviada) {
+                          return (
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+                              <div className="absolute -right-10 -top-10 w-32 h-32 bg-slate-50 rounded-full opacity-50 pointer-events-none"></div>
+                              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 border-b border-slate-100 pb-2">Evidencia Registrada</h4>
+
+                              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                                <h4 className="text-[9px] font-black text-blue-900 uppercase mb-2 opacity-60 tracking-widest">Mi Speech de Ventas Enviado</h4>
+                                <p className="text-xs text-blue-900 leading-relaxed italic">"{enviada.speech_ventas}"</p>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                {enviada.pdf_catalogo_url && (
+                                  <button onClick={() => window.open(enviada.pdf_catalogo_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📒 Ver Catálogo</button>
+                                )}
+                                {enviada.pdf_afv_url && (
+                                  <button onClick={() => window.open(enviada.pdf_afv_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📱 Ver AFV</button>
+                                )}
+                              </div>
+
+                              {enviada.nota_ejercicio !== null ? (
+                                <div className="mt-2 p-5 bg-green-50 border border-green-200 rounded-xl relative overflow-hidden">
+                                  <div className="absolute right-0 bottom-0 text-6xl opacity-10 translate-x-4 translate-y-4">🏆</div>
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="bg-green-500 text-white w-10 h-10 flex items-center justify-center rounded-xl font-black text-lg shadow-sm">{enviada.nota_ejercicio}</span>
+                                    <div>
+                                      <h4 className="text-[9px] font-black text-green-900 uppercase tracking-widest">Calificación Final</h4>
+                                      <p className="text-xs font-bold text-green-700">Módulo Completado</p>
+                                    </div>
+                                  </div>
+                                  {enviada.feedback_evaluador && (
+                                    <p className="text-[10px] text-green-800 mt-4 font-medium p-3 bg-green-100/50 rounded-lg">💬 {enviada.feedback_evaluador}</p>
                                   )}
                                 </div>
-                                <h4 className="text-xs font-black text-slate-800 uppercase mb-1 flex-1">{esc.titulo_escenario}</h4>
-                                <p className="text-[10px] text-slate-400 font-medium line-clamp-2 mt-auto">{esc.descripcion_tarea}</p>
+                              ) : (
+                                <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+                                  <span className="text-2xl animate-pulse">⏳</span>
+                                  <div>
+                                    <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">En Revisión</h4>
+                                    <p className="text-[10px] text-amber-700 font-medium">Su escenario ha sido enviado y está esperando evaluación por parte del equipo académico.</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // Formulario de envío si no se ha enviado nada
+                        return (
+                          <>
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                              <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas ✨</h4>
+                              <textarea value={speechVentas} onChange={(e) => setSpeechVentas(e.target.value)} placeholder="Escriba su guion aquí..." className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"></textarea>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-dashed border-2">
+                              <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales 📂</h4>
+                              <div className="grid grid-cols-2 gap-3">
+                                <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                                  <span className="text-xl mb-1">{fileCatalogo ? '✅' : '📒'}</span>
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
+                                  <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
+                                </label>
+                                <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                                  <span className="text-xl mb-1">{fileAfv ? '✅' : '📱'}</span>
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
+                                  <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
+                                </label>
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
-                 ) : (
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                       <button onClick={() => setSelectedEscenario(null)} className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-4 flex items-center gap-2">← Volver a la Lista</button>
+                  </div>
 
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
-                          <div className="md:col-span-1 bg-slate-50 p-6 rounded-2xl border border-slate-100 overflow-y-auto">
-                             <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase inline-block mb-3">Caso Seleccionado</span>
-                             <h3 className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tighter leading-tight">#{selectedEscenario.numero_escenario}: {selectedEscenario.titulo_escenario}</h3>
-                             <div className="space-y-4">
-                                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Instrucción:</h4>
-                                <p className="text-xs text-slate-600 leading-relaxed font-medium italic">{selectedEscenario.descripcion_tarea}</p>
-                                {selectedEscenario.pdf_url && (
-                                  <button onClick={() => window.open(selectedEscenario.pdf_url, '_blank')} className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-xl text-[8px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2">📄 Abrir Guía PDF</button>
-                                )}
-                             </div>
-                          </div>
-
-                          <div className="md:col-span-2 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
-                             {(() => {
-                               const enviada = misEvidencias.find(e => e.id_escenario === selectedEscenario.id);
-                               
-                               if (enviada) {
-                                 return (
-                                   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-4 relative overflow-hidden">
-                                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-slate-50 rounded-full opacity-50 pointer-events-none"></div>
-                                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 border-b border-slate-100 pb-2">Evidencia Registrada</h4>
-                                     
-                                     <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                                       <h4 className="text-[9px] font-black text-blue-900 uppercase mb-2 opacity-60 tracking-widest">Mi Speech de Ventas Enviado</h4>
-                                       <p className="text-xs text-blue-900 leading-relaxed italic">"{enviada.speech_ventas}"</p>
-                                     </div>
-                                     
-                                     <div className="grid grid-cols-2 gap-3">
-                                       {enviada.pdf_catalogo_url && (
-                                         <button onClick={() => window.open(enviada.pdf_catalogo_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📒 Ver Catálogo</button>
-                                       )}
-                                       {enviada.pdf_afv_url && (
-                                         <button onClick={() => window.open(enviada.pdf_afv_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📱 Ver AFV</button>
-                                       )}
-                                     </div>
-                                     
-                                     {enviada.nota_ejercicio !== null ? (
-                                       <div className="mt-2 p-5 bg-green-50 border border-green-200 rounded-xl relative overflow-hidden">
-                                         <div className="absolute right-0 bottom-0 text-6xl opacity-10 translate-x-4 translate-y-4">🏆</div>
-                                         <div className="flex items-center gap-3 mb-2">
-                                           <span className="bg-green-500 text-white w-10 h-10 flex items-center justify-center rounded-xl font-black text-lg shadow-sm">{enviada.nota_ejercicio}</span>
-                                           <div>
-                                             <h4 className="text-[9px] font-black text-green-900 uppercase tracking-widest">Calificación Final</h4>
-                                             <p className="text-xs font-bold text-green-700">Módulo Completado</p>
-                                           </div>
-                                         </div>
-                                         {enviada.feedback_evaluador && (
-                                           <p className="text-[10px] text-green-800 mt-4 font-medium p-3 bg-green-100/50 rounded-lg">💬 {enviada.feedback_evaluador}</p>
-                                         )}
-                                       </div>
-                                     ) : (
-                                       <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
-                                         <span className="text-2xl animate-pulse">⏳</span>
-                                         <div>
-                                           <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">En Revisión</h4>
-                                           <p className="text-[10px] text-amber-700 font-medium">Su escenario ha sido enviado y está esperando evaluación por parte del equipo académico.</p>
-                                         </div>
-                                       </div>
-                                     )}
-                                   </div>
-                                 );
-                               }
-
-                               // Formulario de envío si no se ha enviado nada
-                               return (
-                                 <>
-                                   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                                      <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas ✨</h4>
-                                      <textarea value={speechVentas} onChange={(e) => setSpeechVentas(e.target.value)} placeholder="Escriba su guion aquí..." className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"></textarea>
-                                   </div>
-
-                                   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-dashed border-2">
-                                      <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales 📂</h4>
-                                      <div className="grid grid-cols-2 gap-3">
-                                         <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                           <span className="text-xl mb-1">{fileCatalogo ? '✅' : '📒'}</span>
-                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
-                                           <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
-                                         </label>
-                                         <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                           <span className="text-xl mb-1">{fileAfv ? '✅' : '📱'}</span>
-                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
-                                           <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
-                                         </label>
-                                      </div>
-                                   </div>
-                                 </>
-                               );
-                             })()}
-                          </div>
-                       </div>
-
-                       {/* BOTÓN FIJO EN EL PIE DEL MODAL (Solo si no está enviado) */}
-                       {!misEvidencias.find(e => e.id_escenario === selectedEscenario?.id) && (
-                         <div className="mt-6 pt-4 border-t flex flex-col gap-3">
-                            {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
-                            <button 
-                              onClick={handleSubmitRoleplay}
-                              disabled={isUploading}
-                              className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
-                            >
-                               {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
-                            </button>
-                         </div>
-                       )}
+                  {/* BOTÓN FIJO EN EL PIE DEL MODAL (Solo si no está enviado) */}
+                  {!misEvidencias.find(e => e.id_escenario === selectedEscenario?.id) && (
+                    <div className="mt-6 pt-4 border-t flex flex-col gap-3">
+                      {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
+                      <button
+                        onClick={handleSubmitRoleplay}
+                        disabled={isUploading}
+                        className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+                      >
+                        {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
+                      </button>
                     </div>
-                 )}
-              </div>
-           </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
       {/* MODAL DE REGISTRO DE EJERCICIO */}
       {showExerciseModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden relative">
-              <button 
-                onClick={() => setShowExerciseModal(false)}
-                className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
-              >✕</button>
+          <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden relative">
+            <button
+              onClick={() => setShowExerciseModal(false)}
+              className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all z-20"
+            >✕</button>
 
-              <div className="p-8">
-                 <header className="mb-8 border-b pb-4">
-                    <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                       <span className="text-2xl">📘</span> Registro de Ejercicio
-                    </h2>
-                    <p className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mt-1">{selectedSubmodule?.nombre_tarea}</p>
-                 </header>
+            <div className="p-8">
+              <header className="mb-8 border-b pb-4">
+                <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                  <span className="text-2xl">📘</span> Registro de Ejercicio
+                </h2>
+                <p className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mt-1">{selectedSubmodule?.nombre_tarea}</p>
+              </header>
 
-                 <div className="space-y-6">
-                    <div>
-                       <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Propuesta / Speech ✨</h4>
-                       <textarea 
-                        value={exerciseSpeech} 
-                        onChange={(e) => setExerciseSpeech(e.target.value)} 
-                        placeholder="Escriba aquí su respuesta o propuesta para el cliente..." 
-                        className="w-full h-32 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"
-                       ></textarea>
-                    </div>
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Propuesta / Speech ✨</h4>
+                  <textarea
+                    value={exerciseSpeech}
+                    onChange={(e) => setExerciseSpeech(e.target.value)}
+                    placeholder="Escriba aquí su respuesta o propuesta para el cliente..."
+                    className="w-full h-32 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"
+                  ></textarea>
+                </div>
 
-                    <div>
-                       <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Soporte (Documento o Foto) 📂</h4>
-                       <label className={`p-6 rounded-2xl border-2 border-dashed flex flex-col items-center text-center cursor-pointer transition-all ${exerciseFile ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                          <span className="text-3xl mb-2">{exerciseFile ? '✅' : '📤'}</span>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{exerciseFile ? exerciseFile.name : 'Subir PDF o Imagen'}</span>
-                          <input type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setExerciseFile(e.target.files[0])} />
-                       </label>
-                    </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Soporte (Documento o Foto) 📂</h4>
+                  <label className={`p-6 rounded-2xl border-2 border-dashed flex flex-col items-center text-center cursor-pointer transition-all ${exerciseFile ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
+                    <span className="text-3xl mb-2">{exerciseFile ? '✅' : '📤'}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{exerciseFile ? exerciseFile.name : 'Subir PDF o Imagen'}</span>
+                    <input type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setExerciseFile(e.target.files[0])} />
+                  </label>
+                </div>
 
-                    <div className="pt-4 flex flex-col gap-3">
-                       {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
-                       <button 
-                        onClick={handleSubmitExercise}
-                        disabled={isUploading}
-                        className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
-                       >
-                          {isUploading ? '🚀 ENVIANDO...' : '🚀 Guardar Constancia de Ejercicio'}
-                       </button>
-                    </div>
-                 </div>
+                <div className="pt-4 flex flex-col gap-3">
+                  {opMessage && <p className="text-center text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">{opMessage}</p>}
+                  <button
+                    onClick={handleSubmitExercise}
+                    disabled={isUploading}
+                    className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
+                  >
+                    {isUploading ? '🚀 ENVIANDO...' : '🚀 Guardar Constancia de Ejercicio'}
+                  </button>
+                </div>
               </div>
-           </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

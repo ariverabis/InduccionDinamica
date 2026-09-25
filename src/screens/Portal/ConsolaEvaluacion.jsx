@@ -47,6 +47,20 @@ const parseObservacionCualitativa = (raw) => {
   };
 };
 
+// Helper para identificar si un módulo/submódulo corresponde a evaluación de SKUs
+export const isSkuModule = (sm) => {
+  if (!sm) return false;
+  const nombre = (sm.nombre_tarea || sm.nombre || '').toLowerCase();
+  const area = (sm.area_tecnica || '').toLowerCase();
+  return (
+    nombre.includes('cuestionario de sku') ||
+    nombre.includes('cuestionario de los sku') ||
+    nombre.includes('cuestionario skus') ||
+    (nombre.includes('sku') && (nombre.includes('evalua') || nombre.includes('cuestionario') || nombre.includes('examen') || nombre.includes('prueba'))) ||
+    (area.includes('sku') && (nombre.includes('cuestionario') || nombre.includes('evalua') || nombre.includes('examen')))
+  );
+};
+
 // Sub-componente para mostrar y calificar una entrega de Roleplay
 const getGoogleDriveThumbnail = (url) => {
   if (!url) return null;
@@ -63,27 +77,117 @@ const getGoogleDriveThumbnail = (url) => {
 };
 
 const parseDateForSort = (as) => {
-  let latestItinDate = 0;
-  if (as.itinerarios_induccion && as.itinerarios_induccion.length > 0) {
-    const dates = as.itinerarios_induccion.map(i => new Date(i.fecha_creacion).getTime()).filter(t => !isNaN(t));
-    if (dates.length > 0) {
-      latestItinDate = Math.max(...dates);
+  if (!as) return 0;
+  if (as.fecha_ingreso && typeof as.fecha_ingreso === 'string') {
+    const trimmed = as.fecha_ingreso.trim();
+    const slashParts = trimmed.split('/');
+    if (slashParts.length === 3) {
+      const d = parseInt(slashParts[0], 10);
+      const m = parseInt(slashParts[1], 10) - 1;
+      const y = parseInt(slashParts[2], 10);
+      const date = new Date(y, m, d);
+      if (!isNaN(date.getTime())) return date.getTime();
     }
-  }
-
-  let baseDate = 0;
-  if (as.fecha_ingreso) {
-    const parts = as.fecha_ingreso.trim().split('/');
-    if (parts.length === 3) {
-      const ts = new Date(parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:00').getTime();
-      if (!isNaN(ts)) baseDate = ts;
+    const dashParts = trimmed.split('-');
+    if (dashParts.length === 3) {
+      if (dashParts[0].length === 4) {
+        const date = new Date(trimmed);
+        if (!isNaN(date.getTime())) return date.getTime();
+      } else {
+        const d = parseInt(dashParts[0], 10);
+        const m = parseInt(dashParts[1], 10) - 1;
+        const y = parseInt(dashParts[2], 10);
+        const date = new Date(y, m, d);
+        if (!isNaN(date.getTime())) return date.getTime();
+      }
     }
+    const fallbackDate = new Date(trimmed);
+    if (!isNaN(fallbackDate.getTime())) return fallbackDate.getTime();
   }
-  if (!baseDate) {
-    baseDate = as.created_at ? new Date(as.created_at).getTime() : 0;
+  if (as.created_at) {
+    const cDate = new Date(as.created_at);
+    if (!isNaN(cDate.getTime())) return cDate.getTime();
   }
+  return 0;
+};
 
-  return Math.max(baseDate, latestItinDate);
+const getApellido = (as) => {
+  if (!as) return '';
+  if (as.apellido && typeof as.apellido === 'string') return as.apellido.trim();
+  if (!as.nombre) return '';
+  const str = as.nombre.trim();
+  if (str.includes(',')) {
+    return str.split(',')[0].trim();
+  }
+  const parts = str.split(/\s+/);
+  if (parts.length > 1) {
+    return parts.slice(1).join(' ');
+  }
+  return str;
+};
+
+const getPrimerNombre = (as) => {
+  if (!as || !as.nombre) return '';
+  const str = as.nombre.trim();
+  if (str.includes(',')) {
+    return str.split(',')[1]?.trim() || str;
+  }
+  const parts = str.split(/\s+/);
+  return parts[0] || str;
+};
+
+// Helper para recalcular la nota de un asesor cuando cambia la ponderación de un tema
+const recalcularNotaAsesor = (notaRecord, nuevoContenido) => {
+  let rawComentario = notaRecord.comentario || '';
+  if (!rawComentario.startsWith('{')) return null;
+  try {
+    const parsed = JSON.parse(rawComentario);
+    if (parsed.no_presento) return null;
+    if (parsed.evaluacion_sku) return null;
+
+    const detalleExistente = parsed.detalle_evaluacion || {};
+    let notaTotal = 0;
+    const nuevoDetalle = {};
+
+    (nuevoContenido || []).forEach(act => {
+      let itemExistente = detalleExistente[act.actividad];
+      if (!itemExistente) {
+        const cleanAct = (act.actividad || '').replace(/^["']|["']$/g, '').trim();
+        for (const [k, v] of Object.entries(detalleExistente)) {
+          const cleanK = k.replace(/^["']|["']$/g, '').trim();
+          if (cleanK === cleanAct || cleanK.includes(cleanAct) || cleanAct.includes(cleanK)) {
+            itemExistente = v;
+            break;
+          }
+        }
+      }
+
+      let notaItem = 0;
+      let isNp = false;
+      if (itemExistente) {
+        notaItem = itemExistente.np ? 0 : (parseFloat(itemExistente.nota) || 0);
+        isNp = itemExistente.np || false;
+      }
+
+      const peso = parseFloat(act.peso) || 0;
+      notaTotal += (notaItem * (peso / 100));
+      nuevoDetalle[act.actividad] = {
+        nota: isNp ? null : notaItem,
+        peso: peso,
+        np: isNp
+      };
+    });
+
+    parsed.detalle_evaluacion = nuevoDetalle;
+    const finalGrade = parseFloat(notaTotal.toFixed(2));
+    return {
+      nota: finalGrade,
+      comentario: JSON.stringify(parsed)
+    };
+  } catch (e) {
+    console.error('Error recalculando nota:', e);
+    return null;
+  }
 };
 
 const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
@@ -202,6 +306,8 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [searchTermAuto, setSearchTermAuto] = useState('');
   const [searchTermAsesores, setSearchTermAsesores] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
+  const [asesorSortKey, setAsesorSortKey] = useState('fecha');
+  const [asesorSortDir, setAsesorSortDir] = useState('desc');
   const [sortConfig, setSortConfig] = useState({ key: 'fecha_sincronizacion', direction: 'desc' });
   
   // Estados para activación de itinerario e historial
@@ -252,6 +358,8 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [editData, setEditData] = useState({});
   const [editPhotoFile, setEditPhotoFile] = useState(null);
   const [isEditingSub, setIsEditingSub] = useState(null); // ID del submodulo en edición
+  const [showRecalcularModal, setShowRecalcularModal] = useState(false);
+  const [pendingRecalculateData, setPendingRecalculateData] = useState(null);
 
   // Estados para Evaluación de Imagen Personal
   const [imagenPersonal, setImagenPersonal] = useState({
@@ -783,7 +891,16 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
         if (notaExistente?.comentario?.startsWith('{')) {
           try {
             const parsed = JSON.parse(notaExistente.comentario);
-            if (parsed.detalle_evaluacion) {
+            
+            // Detalle especial para evaluación de SKUs
+            if (parsed.evaluacion_sku) {
+              const { skus_evaluados, skus_aprendidos, porcentaje } = parsed.evaluacion_sku;
+              const pct = porcentaje ?? (skus_evaluados > 0 ? Math.round((skus_aprendidos / skus_evaluados) * 100) : 0);
+              detalleTexto = `🎯 ${skus_aprendidos}/${skus_evaluados} SKUs aprendidos (${pct}%)`;
+              if (parsed.texto && parsed.texto.trim() !== '') {
+                detalleTexto += ` | <strong>Obs:</strong> ${parsed.texto.trim()}`;
+              }
+            } else if (parsed.detalle_evaluacion) {
               // Solo mostrar actividades que tengan NP=true o nota > 0 (significativas)
               const lineas = Object.entries(parsed.detalle_evaluacion)
                 .filter(([act, d]) => d.np === true || (d.nota && parseFloat(d.nota) > 0))
@@ -1442,20 +1559,76 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   };
 
   const calcularNotaFinal = (sm, evalState, notaExistente) => {
-    if (!sm.contenido || sm.contenido.length === 0) {
-      const defaultNota = notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : 0;
-      return { 
-        nota: parseFloat(evalState?.nota !== undefined ? evalState.nota : defaultNota) || 0, 
-        detalle: null, 
-        obs: evalState?.obs !== undefined ? evalState.obs : (notaExistente?.comentario || '') 
-      };
-    }
-    let notaTotal = 0;
-    const detalle = {};
     let parsedExistente = null;
     if (notaExistente?.comentario?.startsWith('{')) {
       try { parsedExistente = JSON.parse(notaExistente.comentario); } catch(e){}
     }
+
+    const isSku = isSkuModule(sm) || evalState?.isSku || !!parsedExistente?.evaluacion_sku;
+
+    // Caso Especial: Módulo o tema de SKUs sin contenido subdividido
+    if (isSku && (!sm.contenido || sm.contenido.length === 0)) {
+      const evaluadosVal = evalState?.skusEvaluados !== undefined
+        ? evalState.skusEvaluados
+        : (parsedExistente?.evaluacion_sku?.skus_evaluados ?? '');
+
+      const aprendidosVal = evalState?.skusAprendidos !== undefined
+        ? evalState.skusAprendidos
+        : (parsedExistente?.evaluacion_sku?.skus_aprendidos ?? '');
+
+      let notaCalculada = 0;
+      let evaluacionSku = null;
+
+      if (evaluadosVal !== '' && aprendidosVal !== '') {
+        const numEval = Math.max(0, parseFloat(evaluadosVal) || 0);
+        const numApr = Math.max(0, parseFloat(aprendidosVal) || 0);
+        const pct = numEval > 0 ? Math.min(100, Math.round((numApr / numEval) * 100)) : 0;
+        notaCalculada = numEval > 0 ? parseFloat(Math.min(10, (numApr / numEval) * 10).toFixed(2)) : 0;
+
+        evaluacionSku = {
+          skus_evaluados: numEval,
+          skus_aprendidos: numApr,
+          porcentaje: pct
+        };
+      } else if (evalState?.nota !== undefined) {
+        notaCalculada = parseFloat(evalState.nota) || 0;
+      } else if (notaExistente?.nota !== undefined && notaExistente?.nota !== null) {
+        notaCalculada = parseFloat(notaExistente.nota) || 0;
+      }
+
+      const obsFinal = evalState?.obs !== undefined
+        ? evalState.obs
+        : (parsedExistente
+            ? (parsedExistente.texto || '')
+            : (notaExistente?.comentario?.startsWith('{') ? '' : (notaExistente?.comentario || '')));
+      return { 
+        nota: parseFloat(notaCalculada.toFixed(2)), 
+        detalle: null, 
+        obs: obsFinal, 
+        evaluacionSku 
+      };
+    }
+
+    if (!sm.contenido || sm.contenido.length === 0) {
+      const defaultNota = notaExistente?.nota !== undefined && notaExistente?.nota !== null ? notaExistente.nota : 0;
+      // Si ya existe un registro JSON, usar solo .texto; nunca el JSON crudo completo
+      let obsFallback = '';
+      if (notaExistente?.comentario) {
+        if (notaExistente.comentario.startsWith('{')) {
+          try { obsFallback = JSON.parse(notaExistente.comentario).texto || ''; } catch(e) {}
+        } else {
+          obsFallback = notaExistente.comentario;
+        }
+      }
+      return { 
+        nota: parseFloat(evalState?.nota !== undefined ? evalState.nota : defaultNota) || 0, 
+        detalle: null, 
+        obs: evalState?.obs !== undefined ? evalState.obs : obsFallback,
+        evaluacionSku: null
+      };
+    }
+    let notaTotal = 0;
+    const detalle = {};
     
     sm.contenido.forEach((act, idx) => {
        let notaItem = 0;
@@ -1477,14 +1650,18 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
        detalle[act.actividad] = { nota: isNp ? null : notaItem, peso: peso, np: isNp };
     });
     
-    const obsFinal = evalState?.obs !== undefined ? evalState.obs : (parsedExistente?.texto || notaExistente?.comentario || '');
-    return { nota: parseFloat(notaTotal.toFixed(2)), detalle, obs: obsFinal };
+    const obsFinal = evalState?.obs !== undefined
+      ? evalState.obs
+      : (parsedExistente
+          ? (parsedExistente.texto || '')
+          : (notaExistente?.comentario?.startsWith('{') ? '' : (notaExistente?.comentario || '')));
+    return { nota: parseFloat(notaTotal.toFixed(2)), detalle, obs: obsFinal, evaluacionSku: null };
   };
 
   const handleSaveNota = async (sm, evalState, notaExistente) => {
     if (!selectedAsesor || itinerarioActual.length === 0) return;
     
-    const { nota, detalle, obs } = calcularNotaFinal(sm, evalState, notaExistente);
+    const { nota, detalle, obs, evaluacionSku } = calcularNotaFinal(sm, evalState, notaExistente);
     if (nota > 10) {
       setMessage('⚠️ La nota no puede superar los 10 puntos.');
       setTimeout(() => setMessage(''), 4000);
@@ -1499,6 +1676,9 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
     };
     if (detalle) {
       comentarioObj.detalle_evaluacion = detalle;
+    }
+    if (evaluacionSku) {
+      comentarioObj.evaluacion_sku = evaluacionSku;
     }
     const comentarioFinal = JSON.stringify(comentarioObj);
 
@@ -1551,7 +1731,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
         const sm = submodulos.find(s => s.id == id);
         if(!sm) return null;
         const notaExistente = notasGuardadas.find(n => n.id_submodulo === sm.id);
-        const { nota, detalle, obs } = calcularNotaFinal(sm, evaluaciones[id], notaExistente);
+        const { nota, detalle, obs, evaluacionSku } = calcularNotaFinal(sm, evaluaciones[id], notaExistente);
         
         const isNoPresento = evaluaciones[id]?.noPresento || false;
         let comentarioObj = {
@@ -1560,6 +1740,9 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
         };
         if (detalle) {
           comentarioObj.detalle_evaluacion = detalle;
+        }
+        if (evaluacionSku) {
+          comentarioObj.evaluacion_sku = evaluacionSku;
         }
         const comentarioFinal = JSON.stringify(comentarioObj);
 
@@ -1660,29 +1843,108 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   };
 
   const handleUpdateSubmodulo = async () => {
-    if (!newSubmodulo.nombre) return;
+    if (!newSubmodulo.nombre || !isEditingSub) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase.schema('portal_afv').from('submodulos_finales').update({
-        nombre_tarea: newSubmodulo.nombre,
-        descripcion: newSubmodulo.descripcion,
-        duracion_horas: newSubmodulo.horas,
-        es_interno: newSubmodulo.es_interno,
-        contenido: newSubmodulo.contenido,
-        recursos: newSubmodulo.recursos
-      }).eq('id', isEditingSub);
+      const subOriginal = submodulos.find(s => s.id === isEditingSub);
       
-      if (error) throw error;
-      setMessage('Tema actualizado con éxito.');
-      setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false });
+      // Comprobar si cambiaron actividades o ponderaciones
+      let pesosCambiaron = false;
+      if (subOriginal) {
+        const oldCont = subOriginal.contenido || [];
+        const newCont = newSubmodulo.contenido || [];
+        if (oldCont.length !== newCont.length) {
+          pesosCambiaron = true;
+        } else {
+          for (let i = 0; i < newCont.length; i++) {
+            if (oldCont[i]?.actividad !== newCont[i]?.actividad) pesosCambiaron = true;
+            if (parseFloat(oldCont[i]?.peso || 0) !== parseFloat(newCont[i]?.peso || 0)) pesosCambiaron = true;
+          }
+        }
+      }
+
+      if (pesosCambiaron) {
+        // Verificar si hay notas asociadas a este tema
+        const { data: notasAfectadas, error: fetchErr } = await supabase
+          .schema('portal_afv')
+          .from('notas_por_submodulo')
+          .select('id, id_asesor, nota, comentario, usuarios(nombre)')
+          .eq('id_submodulo', isEditingSub);
+
+        if (!fetchErr && notasAfectadas && notasAfectadas.length > 0) {
+          setPendingRecalculateData({
+            submoduloId: isEditingSub,
+            submoduloNombre: newSubmodulo.nombre,
+            updatedData: { ...newSubmodulo },
+            notasAfectadas
+          });
+          setShowRecalcularModal(true);
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Si no cambiaron pesos o no hay notas existentes, guardar directo
+      await executeSaveSubmodulo(false);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Error al verificar tema: ' + err.message);
+      setIsSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const executeSaveSubmodulo = async (shouldRecalculate) => {
+    setIsSaving(true);
+    try {
+      const targetSubId = pendingRecalculateData?.submoduloId || isEditingSub;
+      const targetData = pendingRecalculateData?.updatedData || newSubmodulo;
+      const notasAfectadas = pendingRecalculateData?.notasAfectadas || [];
+
+      // 1. Actualizar el submodulo en submodulos_finales
+      const { error: updateSubErr } = await supabase.schema('portal_afv').from('submodulos_finales').update({
+        nombre_tarea: targetData.nombre,
+        descripcion: targetData.descripcion,
+        duracion_horas: targetData.horas,
+        es_interno: targetData.es_interno,
+        contenido: targetData.contenido,
+        recursos: targetData.recursos
+      }).eq('id', targetSubId);
+
+      if (updateSubErr) throw updateSubErr;
+
+      // 2. Si el usuario decidió recalcular todas las notas existentes
+      let recalculadasCount = 0;
+      if (shouldRecalculate && notasAfectadas.length > 0) {
+        for (const n of notasAfectadas) {
+          const resultado = recalcularNotaAsesor(n, targetData.contenido || []);
+          if (resultado) {
+            await supabase.schema('portal_afv').from('notas_por_submodulo').update({
+              nota: resultado.nota,
+              comentario: resultado.comentario
+            }).eq('id', n.id);
+            recalculadasCount++;
+          }
+        }
+      }
+
+      if (shouldRecalculate && recalculadasCount > 0) {
+        setMessage(`✅ Tema guardado y ${recalculadasCount} notas recalculadas correctamente.`);
+      } else {
+        setMessage('✅ Tema actualizado con éxito.');
+      }
+
+      setNewSubmodulo({ nombre: '', descripcion: '', horas: '', es_interno: false, contenido: [], recursos: '' });
       setIsEditingSub(null);
+      setShowRecalcularModal(false);
+      setPendingRecalculateData(null);
       fetchInitialData();
     } catch (err) {
       console.error(err);
-      setMessage('Error al actualizar tema.');
+      setMessage('❌ Error al actualizar tema: ' + err.message);
     } finally {
       setIsSaving(false);
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 4000);
     }
   };
 
@@ -1809,7 +2071,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
     const notasActivas = (as.notas_por_submodulo || []).filter(n => n.intento === maxIntento && subIds.includes(n.id_submodulo));
 
     if (notasActivas.length >= subIds.length) {
-      return { label: 'Completado', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' };
+      return { label: 'Completado', color: 'bg-red-50 text-red-600 border-red-200' };
     }
 
     return { label: 'En Curso', color: 'bg-blue-50 text-blue-600 border-blue-100' };
@@ -1993,41 +2255,48 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   if (isLoading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold text-[10px]">Cargando Sistema...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 font-sans">
+    <div className="min-h-screen bg-white p-6" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
       <div className="max-w-[1600px] mx-auto">
-        <header className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 mb-8 flex justify-between items-center">
+        <header className="border-b border-gray-200 pb-5 mb-6 flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-black text-slate-950">Consola de Evaluación y Reclutamiento</h1>
-            <div className="flex gap-4 mt-6">
-              <button onClick={() => setViewMode('manual')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'manual' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>👥 Evaluaciones</button>
-              <button onClick={() => setViewMode('mi-academia')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'mi-academia' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>📚 Mi Academia</button>
-              <button onClick={() => setViewMode('automatico')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'automatico' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>📥 Aspirantes Excel</button>
-              <button onClick={() => setViewMode('resumen')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'resumen' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>📊 Resumen</button>
+            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Panel de administración</p>
+            <h1 className="text-xl font-bold text-gray-900">Consola de Evaluación y Reclutamiento</h1>
+            <div className="flex gap-2 mt-4 flex-wrap">
+              <button onClick={() => setViewMode('manual')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'manual' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>Evaluaciones</button>
+              <button onClick={() => setViewMode('mi-academia')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'mi-academia' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>Mi Academia</button>
+              <button onClick={() => setViewMode('automatico')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'automatico' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>Aspirantes Excel</button>
+              <button onClick={() => setViewMode('resumen')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'resumen' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>Resumen</button>
              {user.rol === 'admin' && (
                <>
-                <button onClick={() => setViewMode('configuracion')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'configuracion' ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                    ⚙️ Biblioteca Temas
+                <button onClick={() => setViewMode('configuracion')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'configuracion' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
+                    Biblioteca Temas
                 </button>
-                <button onClick={() => setViewMode('escenarios')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'escenarios' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                    🎭 Gestionar Escenarios
+                <button onClick={() => setViewMode('escenarios')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'escenarios' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
+                    Gestionar Escenarios
                 </button>
-                <button onClick={() => setViewMode('reportes')} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'reportes' ? 'bg-slate-950 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                    📈 Reporte de Notas
+                <button onClick={() => setViewMode('reportes')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'reportes' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
+                    Reporte de Notas
                 </button>
-                <button onClick={() => setShowGestionCalleModal(true)} className="px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all bg-indigo-900 text-white shadow-lg hover:bg-indigo-800">
-                    🚗 Gestor Acompañamiento
+                <button onClick={() => setShowGestionCalleModal(true)} className="px-4 py-1.5 rounded text-xs border border-gray-300 text-gray-500 hover:bg-gray-50 transition-colors">
+                    Gestor Acompañamiento
                 </button>
-                <button onClick={() => { setViewMode('responsables'); fetchResponsables(); }} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'responsables' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                    👨‍💼 Responsables
+                <button onClick={() => { setViewMode('responsables'); fetchResponsables(); }} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'responsables' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
+                    Responsables
                 </button>
-                <button onClick={() => { setViewMode('departamentos'); fetchDepartamentos(); }} className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'departamentos' ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-600'}`}>
-                    🏢 Departamentos
+                <button onClick={() => { setViewMode('departamentos'); fetchDepartamentos(); }} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'departamentos' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
+                    Departamentos
                 </button>
                </>
              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={onBack} 
+              className="text-xs text-gray-600 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50 transition-colors"
+            >
+              ← Volver a Pantalla Inicial
+            </button>
             {onLogout && (
               <button
                 onClick={() => {
@@ -2035,12 +2304,11 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                     onLogout();
                   }
                 }}
-                className="px-6 py-3 bg-red-50 text-red-600 border border-red-200 font-bold text-[9px] uppercase rounded-full hover:bg-red-100 hover:border-red-300 transition-all flex items-center gap-2"
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
               >
-                🔒 Cerrar Sesión
+                Cerrar sesión
               </button>
             )}
-            <button onClick={onBack} className="px-8 py-3 bg-slate-900 text-white font-bold text-[9px] uppercase rounded-full shadow-lg">← Volver</button>
           </div>
         </header>
 
@@ -2062,11 +2330,11 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                   </span>
                 </div>
                 
-                {/* BUSCADOR Y FILTRO DE ASESORES */}
+                {/* BUSCADOR, FILTRO Y ORDENAMIENTO DE ASESORES */}
                 <div className="p-3 border-b bg-white space-y-2">
                   <input
                     type="text"
-                    placeholder="🔍 Buscar asesor..."
+                    placeholder="🔍 Buscar asesor o empresa..."
                     value={searchTermAsesores}
                     onChange={(e) => setSearchTermAsesores(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all"
@@ -2077,11 +2345,43 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2394a3b8' d='M5 7L1 3h8z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
                   >
-                    <option value="todos">📋 Todos los asesores</option>
-                    <option value="completado">✅ Inducción completada</option>
+                    <option value="todos">📋 Todos los estados</option>
+                    <option value="completado">🔴 Inducción completada</option>
                     <option value="en_curso">🔵 En curso</option>
                     <option value="sin_itinerario">⚪ Sin itinerario</option>
                   </select>
+
+                  <div className="flex gap-1.5 items-center pt-1 border-t border-slate-100">
+                    <div className="relative flex-1">
+                      <select
+                        value={asesorSortKey}
+                        onChange={(e) => {
+                          const newKey = e.target.value;
+                          setAsesorSortKey(newKey);
+                          if (newKey === 'fecha') {
+                            setAsesorSortDir('desc');
+                          } else {
+                            setAsesorSortDir('asc');
+                          }
+                        }}
+                        className="w-full pl-2.5 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 10 10'%3E%3Cpath fill='%2364748b' d='M5 7L1 3h8z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+                      >
+                        <option value="fecha">📅 Orden: Fecha</option>
+                        <option value="nombre">🔤 Orden: Nombre</option>
+                        <option value="apellido">👤 Orden: Apellido</option>
+                        <option value="empresa">🏢 Orden: Empresa</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAsesorSortDir(prev => prev === 'asc' ? 'desc' : 'asc')}
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-[10px] font-black transition-all flex items-center gap-1 shrink-0 active:scale-95"
+                      title={asesorSortDir === 'asc' ? 'Ascendente (A-Z / Antiguo a Reciente)' : 'Descendente (Z-A / Reciente a Antiguo)'}
+                    >
+                      {asesorSortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="overflow-y-auto flex-1">
@@ -2093,7 +2393,40 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                       if (filterStatus === 'sin_itinerario') return s === 'Sin Itinerario';
                       return true;
                     })
-                    .filter(as => (as.nombre || '').toLowerCase().includes(searchTermAsesores.toLowerCase()))
+                    .filter(as => {
+                      const term = searchTermAsesores.toLowerCase().trim();
+                      if (!term) return true;
+                      return (
+                        (as.nombre || '').toLowerCase().includes(term) ||
+                        (as.empresa || '').toLowerCase().includes(term) ||
+                        (as.usuario || '').toLowerCase().includes(term)
+                      );
+                    })
+                    .sort((a, b) => {
+                      if (asesorSortKey === 'nombre') {
+                        const valA = (getPrimerNombre(a) || a.nombre || '').toLowerCase();
+                        const valB = (getPrimerNombre(b) || b.nombre || '').toLowerCase();
+                        const cmp = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                        return asesorSortDir === 'asc' ? cmp : -cmp;
+                      }
+                      if (asesorSortKey === 'apellido') {
+                        const valA = (getApellido(a) || '').toLowerCase();
+                        const valB = (getApellido(b) || '').toLowerCase();
+                        const cmp = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                        return asesorSortDir === 'asc' ? cmp : -cmp;
+                      }
+                      if (asesorSortKey === 'empresa') {
+                        const valA = (a.empresa || 'Independiente').toLowerCase();
+                        const valB = (b.empresa || 'Independiente').toLowerCase();
+                        const cmp = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                        if (cmp !== 0) return asesorSortDir === 'asc' ? cmp : -cmp;
+                        return (a.nombre || '').toLowerCase().localeCompare((b.nombre || '').toLowerCase(), 'es', { sensitivity: 'base' });
+                      }
+                      // Default 'fecha'
+                      const dateA = parseDateForSort(a);
+                      const dateB = parseDateForSort(b);
+                      return asesorSortDir === 'asc' ? dateA - dateB : dateB - dateA;
+                    })
                     .map(as => {
                       const status = getAsesorStatus(as);
                       return (
@@ -2452,6 +2785,107 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                                                 </div>
                                               );
                                            })
+                                        ) : isSkuModule(sm) ? (
+                                          /* UI ESPECIALIZADA PARA CUESTIONARIO Y EVALUACIÓN DE SKUS */
+                                          (() => {
+                                            let parsedSku = null;
+                                            if (notaExistente?.comentario?.startsWith('{')) {
+                                              try { parsedSku = JSON.parse(notaExistente.comentario).evaluacion_sku; } catch(e){}
+                                            }
+
+                                            const currentEvalState = evaluaciones[sm.id] || {};
+                                            const evalVal = currentEvalState.skusEvaluados !== undefined ? currentEvalState.skusEvaluados : (parsedSku?.skus_evaluados ?? '');
+                                            const aprVal = currentEvalState.skusAprendidos !== undefined ? currentEvalState.skusAprendidos : (parsedSku?.skus_aprendidos ?? '');
+                                            
+                                            const numEval = parseFloat(evalVal) || 0;
+                                            const numApr = parseFloat(aprVal) || 0;
+                                            const pct = numEval > 0 ? Math.min(100, Math.round((numApr / numEval) * 100)) : (notaExistente?.nota ? Math.round((notaExistente.nota / 10) * 100) : 0);
+                                            const notaCalculada = numEval > 0 ? Math.min(10, ((numApr / numEval) * 10)).toFixed(1) : (notaExistente?.nota !== undefined && notaExistente?.nota !== null ? Number(notaExistente.nota).toFixed(1) : '0.0');
+
+                                            const isDisabled = currentEvalState.noPresento !== undefined 
+                                              ? currentEvalState.noPresento 
+                                              : ((() => {
+                                                  if (notaExistente?.comentario?.startsWith('{')) {
+                                                    try { return JSON.parse(notaExistente.comentario).no_presento || false; } catch(e){}
+                                                  }
+                                                  return false;
+                                                })());
+
+                                            return (
+                                              <div className="bg-orange-50/70 border border-orange-200/80 rounded-2xl p-3.5 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="text-[9px] font-black uppercase text-orange-950 flex items-center gap-1.5">
+                                                    <span>📦</span> Registro de SKUs Evaluados
+                                                  </span>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${
+                                                      pct >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                                                      pct >= 60 ? 'bg-amber-100 text-amber-800' :
+                                                      'bg-rose-100 text-rose-800'
+                                                    }`}>
+                                                      {pct}% Efectividad
+                                                    </span>
+                                                    <span className="text-[10px] font-black bg-slate-900 text-white px-2.5 py-0.5 rounded-lg">
+                                                      {notaCalculada}/10
+                                                    </span>
+                                                  </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3">
+                                                  <div>
+                                                    <label className="text-[8px] font-black uppercase text-slate-500 block mb-1">
+                                                      SKUs Evaluados (Total)
+                                                    </label>
+                                                    <input 
+                                                      type="number"
+                                                      min="1"
+                                                      step="1"
+                                                      disabled={isDisabled}
+                                                      className="w-full h-9 bg-white border border-orange-200 rounded-xl text-center font-black text-xs text-slate-800 focus:border-orange-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-100"
+                                                      placeholder="Ej: 50"
+                                                      defaultValue={evalVal}
+                                                      onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setEvaluaciones(prev => ({
+                                                          ...prev,
+                                                          [sm.id]: {
+                                                            ...prev[sm.id],
+                                                            skusEvaluados: val,
+                                                            isSku: true
+                                                          }
+                                                        }));
+                                                      }}
+                                                    />
+                                                  </div>
+                                                  <div>
+                                                    <label className="text-[8px] font-black uppercase text-slate-500 block mb-1">
+                                                      SKUs Aprendidos (Aciertos)
+                                                    </label>
+                                                    <input 
+                                                      type="number"
+                                                      min="0"
+                                                      step="1"
+                                                      disabled={isDisabled}
+                                                      className="w-full h-9 bg-white border border-orange-200 rounded-xl text-center font-black text-xs text-slate-800 focus:border-orange-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-100"
+                                                      placeholder="Ej: 42"
+                                                      defaultValue={aprVal}
+                                                      onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setEvaluaciones(prev => ({
+                                                          ...prev,
+                                                          [sm.id]: {
+                                                            ...prev[sm.id],
+                                                            skusAprendidos: val,
+                                                            isSku: true
+                                                          }
+                                                        }));
+                                                      }}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            );
+                                          })()
                                         ) : (
                                            <div className="flex gap-2">
                                               <input 
@@ -2481,15 +2915,25 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                                             placeholder="Feedback del evaluador..." 
                                             defaultValue={(() => {
                                                 if (submission) return '';
-                                                if (notaExistente?.comentario?.startsWith('{')) {
-                                                   try { return JSON.parse(notaExistente.comentario).texto || ''; } catch(e){}
-                                                }
-                                                return notaExistente?.comentario || '';
+                                                if (!notaExistente?.comentario) return '';
+                                                // Always try to parse as JSON first
+                                                try {
+                                                  const parsed = JSON.parse(notaExistente.comentario);
+                                                  if (typeof parsed === 'object') return parsed.texto || '';
+                                                } catch(e){}
+                                                // Only show raw text if it doesn't look like JSON
+                                                if (notaExistente.comentario.startsWith('{') || notaExistente.comentario.startsWith('"')) return '';
+                                                return notaExistente.comentario;
                                             })()}
                                             onBlur={(e) => setEvaluaciones({...evaluaciones, [sm.id]: {...evaluaciones[sm.id], obs: e.target.value}})}
                                           />
                                           <button onClick={() => handleSaveNota(sm, evaluaciones[sm.id], notaExistente)} className="px-5 h-10 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase hover:bg-blue-600 transition-all">OK</button>
                                         </div>
+                                        {notaExistente?.updated_at && (
+                                          <p className="text-[8px] text-slate-400 text-right mt-1 px-1">
+                                            Última modif. {new Date(notaExistente.updated_at).toLocaleString('es-CO', {day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'})}
+                                          </p>
+                                        )}
                                       </div>
                                     </div>
                                   );
@@ -2868,7 +3312,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
 
                               return (
                                 <div key={inc.id} className="bg-rose-50/30 p-6 rounded-[2rem] border border-rose-100 relative overflow-hidden">
-                                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-7xl">🚨</div>
+                                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-7xl pointer-events-none">🚨</div>
 
                                   {isEditing ? (
                                     <div className="space-y-4">
@@ -2971,7 +3415,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                                         </button>
                                         <button 
                                           onClick={() => handleUpdateIncidencia(inc.id, editingIncidencia)}
-                                          disabled={isSaving || !editingIncidencia.descripcion.trim()}
+                                          disabled={isSaving || !editingIncidencia.descripcion?.trim()}
                                           className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50"
                                         >
                                           💾 Guardar Cambios
@@ -3019,16 +3463,24 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
 
                                           {/* ACCIONES DE MANTENIMIENTO */}
                                           <button 
-                                            onClick={() => setEditingIncidencia({
-                                              id: inc.id,
-                                              fecha_reporte: inc.fecha_reporte,
-                                              descripcion: descReal,
-                                              observacion: inc.observacion || '',
-                                              recomendaciones: inc.recomendaciones || '',
-                                              requiere_seguimiento: inc.requiere_seguimiento,
-                                              estado_seguimiento: inc.estado_seguimiento || 'pendiente',
-                                              clasificacion: clasif
-                                            })}
+                                            onClick={() => {
+                                              try {
+                                                console.log("Intentando editar incidencia:", inc.id);
+                                                setEditingIncidencia({
+                                                  id: inc.id,
+                                                  fecha_reporte: inc.fecha_reporte,
+                                                  descripcion: descReal || '',
+                                                  observacion: inc.observacion || '',
+                                                  recomendaciones: inc.recomendaciones || '',
+                                                  requiere_seguimiento: inc.requiere_seguimiento || false,
+                                                  estado_seguimiento: inc.estado_seguimiento || 'pendiente',
+                                                  clasificacion: clasif || 'Otros'
+                                                });
+                                              } catch (err) {
+                                                alert("Error al abrir edición: " + err.message);
+                                                console.error(err);
+                                              }
+                                            }}
                                             className="bg-slate-100 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg text-[10px] font-bold transition-all border border-slate-200"
                                             title="Editar Eventualidad"
                                           >
@@ -3984,6 +4436,75 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
             asesor={selectedAsesor}
             onClose={() => setShowFormularioCalleModal(false)}
           />
+        )}
+
+        {/* MODAL DE ADVERTENCIA Y DECISIÓN DE RECÁLCULO DE PONDERACIÓN */}
+        {showRecalcularModal && pendingRecalculateData && (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[150] flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white rounded-[2.5rem] p-8 max-w-xl w-full shadow-2xl border border-slate-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-black">
+                  ⚖️
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Actualización de Ponderación (%)</h3>
+                  <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Cambio en las actividades o pesos del tema</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 space-y-2">
+                <p className="text-xs text-slate-700 leading-relaxed font-semibold">
+                  Has modificado la estructura o los porcentajes de peso de: <br/>
+                  <strong className="text-slate-900 text-sm">"{pendingRecalculateData.submoduloNombre}"</strong>
+                </p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Se encontraron <strong className="text-blue-600 font-black">{pendingRecalculateData.notasAfectadas.length} evaluaciones registradas</strong> en este tema con la ponderación anterior.
+                </p>
+
+                {/* Lista de asesores afectados */}
+                <div className="mt-3 pt-3 border-t border-slate-200">
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-2">Asesores con notas previas en este tema:</p>
+                  <div className="max-h-28 overflow-y-auto flex flex-wrap gap-1.5 pr-1">
+                    {pendingRecalculateData.notasAfectadas.map((n, i) => (
+                      <span key={n.id || i} className="bg-white border border-slate-200 text-slate-700 px-2 py-1 rounded-lg text-[9px] font-bold flex items-center gap-1.5 shadow-sm">
+                        <span>👤 {n.usuarios?.nombre || 'Asesor'}</span>
+                        <span className="bg-slate-100 text-blue-700 px-1 rounded font-mono text-[8px] font-black">Nota: {n.nota}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => executeSaveSubmodulo(true)}
+                  disabled={isSaving}
+                  className="w-full py-3.5 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  <span>🔄 Recalcular y actualizar todas las notas ({pendingRecalculateData.notasAfectadas.length})</span>
+                </button>
+
+                <button
+                  onClick={() => executeSaveSubmodulo(false)}
+                  disabled={isSaving}
+                  className="w-full py-3 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  <span>📁 Solo guardar tema (Conservar notas históricas sin alterar)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowRecalcularModal(false);
+                    setPendingRecalculateData(null);
+                  }}
+                  disabled={isSaving}
+                  className="w-full py-2.5 text-slate-400 hover:text-slate-600 rounded-xl text-[10px] font-bold uppercase transition-all"
+                >
+                  ✕ Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {message && <div className="fixed bottom-10 right-10 bg-slate-900 text-white px-10 py-5 rounded-3xl shadow-2xl animate-in slide-in-from-right font-black uppercase text-[10px] z-[200] border-2 border-slate-700">{message}</div>}

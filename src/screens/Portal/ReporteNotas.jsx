@@ -226,8 +226,14 @@ const ReporteNotas = ({ onBack }) => {
         if (item.comentario.startsWith('{')) {
           try {
             const p = JSON.parse(item.comentario);
-            // Detalle por actividad: "Actividad1: 8/10, Actividad2: NP"
-            if (p.detalle_evaluacion) {
+            
+            // Si tiene evaluacion_sku (SKUs evaluados y aprendidos)
+            if (p.evaluacion_sku) {
+              const { skus_evaluados, skus_aprendidos, porcentaje } = p.evaluacion_sku;
+              const pct = porcentaje ?? (skus_evaluados > 0 ? Math.round((skus_aprendidos / skus_evaluados) * 100) : 0);
+              detalle_actividades = `🎯 ${skus_aprendidos}/${skus_evaluados} SKUs aprendidos (${pct}%)`;
+            } else if (p.detalle_evaluacion) {
+              // Detalle por actividad: "Actividad1: 8/10, Actividad2: NP"
               detalle_actividades = Object.entries(p.detalle_evaluacion)
                 .map(([actividad, v]) => `${actividad}: ${v.np ? 'NP' : (v.nota ?? 0) + '/10'}`)
                 .join(' | ');
@@ -485,12 +491,16 @@ const ReporteNotas = ({ onBack }) => {
                              try {
                                const p = JSON.parse(item.comentario);
                                let txt = '';
-                               if (p.detalle_evaluacion) {
+                               if (p.evaluacion_sku) {
+                                 const { skus_evaluados, skus_aprendidos, porcentaje } = p.evaluacion_sku;
+                                 const pct = porcentaje ?? (skus_evaluados > 0 ? Math.round((skus_aprendidos / skus_evaluados) * 100) : 0);
+                                 txt = `🎯 ${skus_aprendidos}/${skus_evaluados} SKUs (${pct}%)`;
+                               } else if (p.detalle_evaluacion) {
                                  txt = Object.entries(p.detalle_evaluacion).map(([k,v]) => `${k}: ${v.np ? 'NP' : (v.nota||0)+'/10'}`).join(', ');
                                }
                                if (p.texto) txt += (txt ? ' | ' : '') + p.texto;
                                return txt;
-                             } catch(e) { return item.comentario; }
+                             } catch(e) { return ''; }
                            }
                            return item.comentario;
                         })()}>
@@ -500,12 +510,16 @@ const ReporteNotas = ({ onBack }) => {
                              try {
                                const p = JSON.parse(item.comentario);
                                let txt = '';
-                               if (p.detalle_evaluacion) {
+                               if (p.evaluacion_sku) {
+                                 const { skus_evaluados, skus_aprendidos, porcentaje } = p.evaluacion_sku;
+                                 const pct = porcentaje ?? (skus_evaluados > 0 ? Math.round((skus_aprendidos / skus_evaluados) * 100) : 0);
+                                 txt = `🎯 ${skus_aprendidos}/${skus_evaluados} SKUs (${pct}%)`;
+                               } else if (p.detalle_evaluacion) {
                                  txt = Object.entries(p.detalle_evaluacion).map(([k,v]) => `${k}: ${v.np ? 'NP' : (v.nota||0)+'/10'}`).join(', ');
                                }
                                if (p.texto) txt += (txt ? ' | ' : '') + p.texto;
                                return txt || '—';
-                             } catch(e) { return item.comentario; }
+                             } catch(e) { return '—'; }
                            }
                            return item.comentario;
                         })()}

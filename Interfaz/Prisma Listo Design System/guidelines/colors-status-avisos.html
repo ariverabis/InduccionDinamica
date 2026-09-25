@@ -1,0 +1,11 @@
+<!-- @dsCard group="Colors" viewport="700x260" name="Status en avisos y formularios" subtitle="Barra lateral de aviso, validación de campo y progreso" -->
+<link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;font-family:var(--font-body);color:var(--color-text-primary);background:var(--white)}.wrap{padding:22px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px}.alert{display:flex;gap:12px;align-items:flex-start;background:var(--gray-50);border:1px solid var(--color-border);padding:11px 14px}.bar{width:3px;align-self:stretch;flex:0 0 3px}.t{font-size:14px;font-weight:600;margin:0}.s{margin:2px 0 0;font-size:12px;color:var(--gray-600)}.field{font-size:12px}.input{margin-top:5px;padding:8px 10px;border:1px solid var(--color-border);font-size:14px;color:var(--gray-700);background:var(--white)}.track{height:5px;background:var(--gray-200);position:relative}.fill{position:absolute;left:0;top:0;bottom:0}a{color:var(--black)}a:hover{color:var(--gray-600)}</style>
+<div class="wrap">
+<div class="alert"><span class="bar" style="background:var(--status-good)"></span><div><p class="t">Pedido confirmado</p><p class="s">El despacho salió de bodega norte a las 7:40.</p></div></div>
+<div class="alert"><span class="bar" style="background:var(--status-bad)"></span><div><p class="t">Cupo de crédito excedido</p><p class="s">Ajusta el pedido o solicita ampliación al asesor.</p></div></div>
+<div style="display:flex;gap:22px;align-items:flex-start">
+<div class="field" style="flex:1"><span style="color:var(--gray-600)">Nit del cliente</span><div class="input" style="border-color:var(--status-bad);color:var(--status-bad)">900.123</div><p class="s" style="color:var(--status-bad)">Formato incompleto</p></div>
+<div class="field" style="flex:1"><span style="color:var(--gray-600)">Preparación del pedido</span><div class="track" style="margin-top:12px"><span class="fill" style="width:64%;background:var(--status-regular)"></span></div><p class="s">64% alistado · en proceso</p></div>
+</div>
+</div>
