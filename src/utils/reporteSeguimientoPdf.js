@@ -73,12 +73,12 @@ export function generarPdfSeguimiento({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
-  doc.text(advisor?.full_name || 'Asesor Comercial', margin + 42, yPos + 6);
+  doc.text(advisor?.full_name || 'Asesor Comercial', margin + 55, yPos + 6);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(advisor?.email || 'N/A', margin + 42, yPos + 13);
-  doc.text(evaluatorName || 'Comité Evaluador', margin + 42, yPos + 20);
+  doc.text(advisor?.email || 'N/A', margin + 55, yPos + 13);
+  doc.text(evaluatorName || 'Comité Evaluador', margin + 55, yPos + 20);
 
   // 3. Resumen Ejecutivo (Semáforo Global)
   // Calcular promedio global de las evaluaciones recibidas para este mes

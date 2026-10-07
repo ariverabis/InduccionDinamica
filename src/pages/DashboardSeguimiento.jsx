@@ -42,6 +42,44 @@ const parseDateForSort = (as) => {
   return 0;
 };
 
+// Helper para calcular la fecha de inicio en calle (fecha de ingreso + 18 días)
+const calcularFechaInicioCalle = (fechaIngresoStr) => {
+  if (!fechaIngresoStr || typeof fechaIngresoStr !== 'string') return null;
+  const trimmed = fechaIngresoStr.trim();
+  let date = null;
+  if (trimmed.includes('/')) {
+    const parts = trimmed.split('/');
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      let y = parseInt(parts[2], 10);
+      if (y < 100) y += 2000;
+      date = new Date(y, m, d);
+    }
+  } else if (trimmed.includes('-')) {
+    const dashParts = trimmed.split('-');
+    if (dashParts[0].length === 4) {
+      date = new Date(trimmed);
+    } else {
+      const d = parseInt(dashParts[0], 10);
+      const m = parseInt(dashParts[1], 10) - 1;
+      const y = parseInt(dashParts[2], 10);
+      date = new Date(y, m, d);
+    }
+  } else {
+    date = new Date(trimmed);
+  }
+  
+  if (date && !isNaN(date.getTime())) {
+    date.setDate(date.getDate() + 18);
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  return null;
+};
+
 // Helper para obtener primer nombre
 const getPrimerNombre = (as) => {
   const str = (as.name || as.full_name || '').trim();
@@ -231,11 +269,14 @@ export default function DashboardSeguimiento() {
           (a.nombre && a.nombre.toLowerCase().trim() === (p.full_name || '').toLowerCase().trim())
         );
         const st = getAsesorStatus(afv, submodulosData || []);
+        const fechaIngresoFinal = afv?.fecha_ingreso || p.created_at;
+        const fechaInicioCalle = afv?.fecha_inicio_calle || calcularFechaInicioCalle(fechaIngresoFinal);
         return {
           ...p,
           empresa: afv?.empresa || 'Independiente',
           status: st,
-          fecha_ingreso: afv?.fecha_ingreso || p.created_at
+          fecha_ingreso: fechaIngresoFinal,
+          fecha_inicio_calle: fechaInicioCalle
         };
       });
 
@@ -293,6 +334,7 @@ export default function DashboardSeguimiento() {
         empresa: adv.empresa || 'Independiente',
         status: adv.status,
         fecha_ingreso: adv.fecha_ingreso,
+        fecha_inicio_calle: adv.fecha_inicio_calle,
         created_at: adv.created_at,
         months: {} 
       };
@@ -583,7 +625,10 @@ export default function DashboardSeguimiento() {
                                 {advisor.empresa || 'Independiente'}
                               </span>
                               {advisor.fecha_ingreso && (
-                                <span className="text-gray-400">{advisor.fecha_ingreso}</span>
+                                <span className="text-gray-400">Ingreso: {advisor.fecha_ingreso.substring(0, 10)}</span>
+                              )}
+                              {advisor.fecha_inicio_calle && (
+                                <span className="text-blue-500 font-medium ml-1">Calle: {advisor.fecha_inicio_calle}</span>
                               )}
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
@@ -632,12 +677,12 @@ export default function DashboardSeguimiento() {
                               ) : (
                                 <span className="text-gray-300">—</span>
                               )}
-                              {activeRole !== 'Asesor' && (
+                              {(activeRole !== 'Asesor' || advisor.id === (profile?.id || portalUser?.id)) && (
                                 <Link
                                   to={`/evaluacion/${advisor.id}/mes/${m}`}
                                   className="mt-1.5 inline-block text-xs text-gray-400 hover:text-gray-900 underline underline-offset-2 transition-colors"
                                 >
-                                  Evaluar
+                                  {activeRole === 'Asesor' ? 'Autoevaluar' : 'Evaluar'}
                                 </Link>
                               )}
                             </td>

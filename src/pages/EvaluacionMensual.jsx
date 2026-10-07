@@ -24,13 +24,43 @@ export default function EvaluacionMensual() {
   const navigate = useNavigate();
 
   const isAdmin = activeRole === 'Administrador';
+  const isAsesor = activeRole === 'Asesor';
+  const effectiveRole = isAsesor ? 'Autoevaluacion' : activeRole;
   
-  // Si el usuario es Asesor, bloquear acceso a evaluar
-  if (activeRole === 'Asesor') {
+  // Validar rol de evaluador
+  const validRoles = DIMENSIONS.map(d => d.key);
+  if (!isAdmin && !validRoles.includes(effectiveRole)) {
     return (
       <div style={{ fontFamily: '"Myriad Pro", Arial, sans-serif', padding: '48px', textAlign: 'center' }}>
         <h2 style={{ fontSize: '22px', fontWeight: 600, color: '#d32f2f', marginBottom: '16px' }}>Acceso denegado</h2>
-        <p style={{ fontSize: '16px', color: '#666', marginBottom: '24px' }}>No tiene permisos para evaluar a otros asesores.</p>
+        <p style={{ fontSize: '16px', color: '#666', marginBottom: '24px' }}>
+          Su perfil ({activeRole || 'Sin Rol'}) no tiene permisos para realizar esta evaluación.
+        </p>
+        <button
+          onClick={() => navigate('/dashboard-seguimiento')}
+          style={{
+            fontFamily: 'inherit', fontSize: '14px', fontWeight: 600,
+            color: '#000', background: '#c6c6c6', border: '1px solid transparent',
+            borderRadius: '8px', padding: '10px 24px', cursor: 'pointer',
+            transition: 'background 150ms ease, color 150ms ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#c6c6c6'; e.currentTarget.style.color = '#000'; }}
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Bloqueo de seguridad: El Asesor solo puede autoevaluarse a sí mismo
+  if (isAsesor && (profile?.id !== advisorId && portalUser?.id !== advisorId)) {
+    return (
+      <div style={{ fontFamily: '"Myriad Pro", Arial, sans-serif', padding: '48px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 600, color: '#d32f2f', marginBottom: '16px' }}>Acceso denegado</h2>
+        <p style={{ fontSize: '16px', color: '#666', marginBottom: '24px' }}>
+          Solo puedes realizar la autoevaluación de tu propio perfil.
+        </p>
         <button
           onClick={() => navigate('/dashboard-seguimiento')}
           style={{
@@ -50,7 +80,7 @@ export default function EvaluacionMensual() {
 
   // Si es Administrador, puede elegir cualquiera de las 6 dimensiones.
   // Si es un evaluador de un área específica (ej. Auditoria), se fija a su departamento.
-  const initialDept = isAdmin ? 'Desarrollo' : (activeRole || 'Desarrollo');
+  const initialDept = isAdmin ? 'Desarrollo' : effectiveRole;
   const [selectedDept, setSelectedDept] = useState(initialDept);
 
   const [advisor, setAdvisor] = useState(null);
@@ -60,6 +90,11 @@ export default function EvaluacionMensual() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [expandedItem, setExpandedItem] = useState(null);
+
+  const toggleExpand = (id) => {
+    setExpandedItem(prev => (prev === id ? null : id));
+  };
 
   // 1. Cargar datos del asesor evaluado
   useEffect(() => {
@@ -123,14 +158,14 @@ export default function EvaluacionMensual() {
   const isDesarrollo = selectedDept === 'Desarrollo';
 
   const handleScoreChange = (id, value) => {
-    setScores(prev => ({ ...prev, [id]: Number(value) }));
+    setScores(prev => ({ ...prev, [id]: value === 'N/A' ? 'N/A' : Number(value) }));
   };
 
   const calculateAverage = () => {
-    const values = Object.values(scores);
-    if (values.length === 0) return 0;
-    const sum = values.reduce((a, b) => a + b, 0);
-    return (sum / values.length).toFixed(2);
+    const validScores = Object.values(scores).filter(val => val !== 'N/A');
+    if (validScores.length === 0) return (0).toFixed(2);
+    const sum = validScores.reduce((a, b) => a + Number(b), 0);
+    return (sum / validScores.length).toFixed(2);
   };
 
   const handleSubmit = async (e) => {
@@ -315,17 +350,15 @@ export default function EvaluacionMensual() {
           >
             {isAdmin ? 'Seleccione la dimensión a calificar:' : 'Dimensión de evaluación asignada:'}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6" style={{ gap: '8px' }}>
-            {DIMENSIONS.map(dim => {
+          <div className={`grid grid-cols-2 md:grid-cols-3 ${isAdmin ? 'lg:grid-cols-6' : 'lg:grid-cols-1'}`} style={{ gap: '8px' }}>
+            {DIMENSIONS.filter(dim => isAdmin || effectiveRole === dim.key).map(dim => {
               const isCompleted = !!existingEvals[dim.key];
               const isSelected = selectedDept === dim.key;
-              const canSelect = isAdmin || activeRole === dim.key;
 
               return (
                 <button
                   key={dim.key}
                   type="button"
-                  disabled={!canSelect}
                   onClick={() => setSelectedDept(dim.key)}
                   style={{
                     fontFamily: 'inherit',
@@ -337,11 +370,11 @@ export default function EvaluacionMensual() {
                     borderRadius: '8px',
                     border: isSelected ? '1px solid #000' : '1px solid #e2e2e2',
                     background: isSelected ? '#f9fafb' : '#fff',
-                    cursor: canSelect ? 'pointer' : 'default',
-                    opacity: canSelect ? 1 : 0.4,
+                    cursor: 'pointer',
+                    opacity: 1,
                     transition: 'border-color 150ms ease, background 150ms ease',
                   }}
-                  onMouseEnter={e => { if (canSelect && !isSelected) e.currentTarget.style.background = '#f9fafb'; }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f9fafb'; }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = '#fff'; }}
                 >
                   <div>
@@ -441,54 +474,71 @@ export default function EvaluacionMensual() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {criteria.map((item) => {
                   const currentVal = scores[item.id];
+                  const isExpanded = expandedItem === item.id;
+
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between"
                       style={{
-                        padding: '16px',
                         borderRadius: '8px',
                         border: '1px solid #e2e2e2',
                         background: currentVal ? '#f9fafb' : '#fff',
                         transition: 'background 150ms ease',
+                        overflow: 'hidden'
                       }}
                     >
-                      <div className="mb-3 md:mb-0 md:w-3/5">
-                        <div className="flex items-center" style={{ gap: '8px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'monospace',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              color: '#4a4a4a',
-                              background: '#fff',
-                              padding: '2px 8px',
-                              borderRadius: '8px',
-                              border: '1px solid #c6c6c6',
-                            }}
+                      <div
+                        className="flex flex-col xl:flex-row xl:items-center justify-between"
+                        style={{ padding: '16px' }}
+                      >
+                        <div className="mb-3 xl:mb-0 xl:w-3/5">
+                          <button 
+                            type="button"
+                            onClick={() => toggleExpand(item.id)}
+                            className="flex items-start text-left w-full hover:opacity-80 transition-opacity" 
+                            style={{ gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
+                            title="Haga clic para ver qué evalúa este criterio"
                           >
-                            {item.id}
-                          </span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: '#000' }}>
-                            {item.label}
-                          </span>
+                            <span
+                              style={{
+                                fontFamily: 'monospace',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                color: '#4a4a4a',
+                                background: '#fff',
+                                padding: '2px 8px',
+                                borderRadius: '8px',
+                                border: '1px solid #c6c6c6',
+                                marginTop: '2px'
+                              }}
+                            >
+                              {item.id}
+                            </span>
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: '14px', fontWeight: 600, color: '#000', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {item.label}
+                                <span style={{ color: '#4f46e5', fontSize: '10px' }}>
+                                  {isExpanded ? '▲' : '▼'}
+                                </span>
+                              </span>
+                            </div>
+                          </button>
                         </div>
-                      </div>
 
-                      <div className="flex items-center" style={{ gap: '6px' }}>
-                        {[1, 2, 3, 4, 5].map((num) => (
+                        <div className="flex items-center" style={{ gap: '6px' }}>
+                        {[1, 2, 3, 4, 5, 'N/A'].map((num) => (
                           <label
                             key={num}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              width: '40px',
+                              width: num === 'N/A' ? '46px' : '40px',
                               height: '40px',
                               borderRadius: '8px',
                               cursor: 'pointer',
                               fontWeight: 700,
-                              fontSize: '14px',
+                              fontSize: num === 'N/A' ? '12px' : '14px',
                               border: scores[item.id] === num ? '1px solid #000' : '1px solid #c6c6c6',
                               background: scores[item.id] === num ? '#000' : '#fff',
                               color: scores[item.id] === num ? '#fff' : '#4a4a4a',
@@ -512,9 +562,29 @@ export default function EvaluacionMensual() {
                         ))}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    {/* Explicación Desplegable */}
+                    {isExpanded && (
+                      <div style={{ 
+                        padding: '16px', 
+                        background: '#f8fafc', 
+                        borderTop: '1px solid #e2e2e2',
+                        fontSize: '13px',
+                        color: '#334155',
+                        lineHeight: '1.5'
+                      }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '16px', marginTop: '2px' }}>ℹ️</span>
+                          <div style={{ whiteSpace: 'pre-wrap', flex: 1 }}>
+                            {item.descripcion || "No hay explicación detallada configurada para este criterio."}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
               {/* Observaciones */}
               <div style={{ marginTop: '32px' }}>

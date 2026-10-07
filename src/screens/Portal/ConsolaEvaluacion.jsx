@@ -5,6 +5,7 @@ import ReporteNotas from './ReporteNotas';
 import AsignacionActividadesCalleModal from '../../components/Acompanamiento/AsignacionActividadesCalleModal';
 import FormularioAcompanamientoCalle from '../../components/Acompanamiento/FormularioAcompanamientoCalle';
 import GestionBuddiesYActividades from '../../components/Acompanamiento/GestionBuddiesYActividades';
+import CartaEvaluacionPDF from './CartaEvaluacionPDF';
 
 const DISPONIBLE_SKILLS_TAGS = [
   { category: 'Ventas y Comercial', icon: '💼', tags: ['Ventas de Campo', 'Televentas', 'Ventas B2B', 'Ventas de Consumo Masivo', 'Negociación Comercial'] },
@@ -147,6 +148,7 @@ const recalcularNotaAsesor = (notaRecord, nuevoContenido) => {
 
     const detalleExistente = parsed.detalle_evaluacion || {};
     let notaTotal = 0;
+    let pesoTotalValido = 0;
     const nuevoDetalle = {};
 
     (nuevoContenido || []).forEach(act => {
@@ -170,7 +172,10 @@ const recalcularNotaAsesor = (notaRecord, nuevoContenido) => {
       }
 
       const peso = parseFloat(act.peso) || 0;
-      notaTotal += (notaItem * (peso / 100));
+      if (!isNp) {
+        pesoTotalValido += peso;
+        notaTotal += (notaItem * (peso / 100));
+      }
       nuevoDetalle[act.actividad] = {
         nota: isNp ? null : notaItem,
         peso: peso,
@@ -179,7 +184,10 @@ const recalcularNotaAsesor = (notaRecord, nuevoContenido) => {
     });
 
     parsed.detalle_evaluacion = nuevoDetalle;
-    const finalGrade = parseFloat(notaTotal.toFixed(2));
+    let finalGrade = 0;
+    if (pesoTotalValido > 0) {
+      finalGrade = parseFloat((notaTotal / (pesoTotalValido / 100)).toFixed(2));
+    }
     return {
       nota: finalGrade,
       comentario: JSON.stringify(parsed)
@@ -293,6 +301,110 @@ const EvidenciaCard = ({ evidencia, onSave, onDelete, isSaving }) => {
   );
 };
 
+// Helper para calcular la fecha de inicio en calle (fecha de ingreso + 18 días)
+const calcularFechaInicioCalle = (fechaIngresoStr) => {
+  if (!fechaIngresoStr || typeof fechaIngresoStr !== 'string') return null;
+  const trimmed = fechaIngresoStr.trim();
+  let date = null;
+  if (trimmed.includes('/')) {
+    const parts = trimmed.split('/');
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      let y = parseInt(parts[2], 10);
+      if (y < 100) y += 2000;
+      date = new Date(y, m, d);
+    }
+  } else if (trimmed.includes('-')) {
+    const dashParts = trimmed.split('-');
+    if (dashParts[0].length === 4) {
+      date = new Date(trimmed);
+    } else {
+      const d = parseInt(dashParts[0], 10);
+      const m = parseInt(dashParts[1], 10) - 1;
+      const y = parseInt(dashParts[2], 10);
+      date = new Date(y, m, d);
+    }
+  } else {
+    date = new Date(trimmed);
+  }
+  
+  if (date && !isNaN(date.getTime())) {
+    date.setDate(date.getDate() + 18);
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  return null;
+};
+
+const calcularHitosEvaluacion = (fechaIngreso) => {
+  if (!fechaIngreso) return null;
+  const time = parseDateForSort({ fecha_ingreso: fechaIngreso });
+  if (!time) return null;
+  const fecha = new Date(time);
+  
+  const hitos = {};
+  for (let i = 1; i <= 6; i++) {
+    const fechaHito = new Date(fecha);
+    fechaHito.setMonth(fechaHito.getMonth() + i);
+    hitos[`mes${i}`] = fechaHito;
+  }
+  return hitos;
+};
+
+const obtenerEstadoHito = (fechaHito) => {
+  const hoy = new Date();
+  const diferenciaDias = (fechaHito - hoy) / (1000 * 60 * 60 * 24);
+  
+  if (diferenciaDias < 0) return { texto: 'Vencido', color: '#d32f2f', bg: 'rgba(211,47,47,.1)' }; 
+  if (diferenciaDias <= 7) return { texto: 'Próximo', color: '#ed6c02', bg: 'rgba(237,108,2,.1)' };
+  return { texto: 'A tiempo', color: '#666666', bg: '#f3f4f6' };
+};
+
+const TimelineMeses = ({ asesor }) => {
+  if (!asesor?.fecha_ingreso) return null;
+  
+  const fechaInicioCalle = asesor.fecha_inicio_calle || calcularFechaInicioCalle(asesor.fecha_ingreso) || asesor.fecha_ingreso;
+  const hitos = calcularHitosEvaluacion(fechaInicioCalle);
+  if (!hitos) return null;
+
+  let evaluacionesGuardadas = {};
+  try {
+    if (asesor.evaluaciones_mensuales) {
+      evaluacionesGuardadas = typeof asesor.evaluaciones_mensuales === 'string' ? JSON.parse(asesor.evaluaciones_mensuales) : asesor.evaluaciones_mensuales;
+    }
+  } catch (e) {}
+
+  return (
+    <div style={{ marginTop: '16px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e2e2', padding: '16px' }}>
+      <h3 style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: '#000000', marginBottom: '12px', letterSpacing: '0.05em' }}>
+        Acompañamiento - Primeros 6 Meses
+      </h3>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        {[1, 2, 3, 4, 5, 6].map(m => {
+          const completado = evaluacionesGuardadas[`mes${m}`]?.completada;
+          const hitoFecha = hitos[`mes${m}`];
+          const estado = completado ? { texto: 'Completado', color: '#2e7d32', bg: 'rgba(46,125,50,.1)' } : obtenerEstadoHito(hitoFecha);
+          
+          return (
+            <div key={m} style={{ flex: 1, minWidth: '80px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: '#666' }}>MES {m}</div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#000' }}>
+                {hitoFecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+              </div>
+              <div style={{ fontSize: '9px', fontWeight: '700', color: estado.color, background: estado.bg, padding: '4px 8px', borderRadius: '4px', textAlign: 'center', textTransform: 'uppercase' }}>
+                {estado.texto}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [viewMode, setViewMode] = useState('manual'); // 'manual' | 'automatico' | 'escenarios' | 'reportes'
   const [asesores, setAsesores] = useState([]);
@@ -321,6 +433,10 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
   const [showAsignacionCalleModal, setShowAsignacionCalleModal] = useState(false);
   const [showFormularioCalleModal, setShowFormularioCalleModal] = useState(false);
   const [showGestionCalleModal, setShowGestionCalleModal] = useState(false);
+  
+  // Estado para la carta de evaluación PDF (Sede)
+  const [instrumentoConfig, setInstrumentoConfig] = useState(null);
+  const [showInstrumentoModal, setShowInstrumentoModal] = useState(false);
   
   const [masterEscenarios, setMasterEscenarios] = useState({});
   const [activeCompanyEscenarios, setActiveCompanyEscenarios] = useState('Febeca');
@@ -882,7 +998,20 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           try { noPresento = JSON.parse(notaExistente.comentario).no_presento || false; } catch(e){}
         }
         const nota = notaExistente?.nota || 0;
-        if (notaExistente && !noPresento) {
+
+        // Detectar si todos los ítems del submodulo son NP (que causaría nota=0 sin ser realmente un 0)
+        let todosNp = false;
+        if (notaExistente?.comentario?.startsWith('{')) {
+          try {
+            const parsedCom = JSON.parse(notaExistente.comentario);
+            if (parsedCom.detalle_evaluacion) {
+              const detalleItems = Object.values(parsedCom.detalle_evaluacion);
+              todosNp = detalleItems.length > 0 && detalleItems.every(it => it.np === true);
+            }
+          } catch(e) {}
+        }
+
+        if (notaExistente && !noPresento && !todosNp) {
           sumGrades += nota;
           countedSubmodules++;
         }
@@ -1320,6 +1449,10 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
               <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.fecha_ingreso || 'N/A'}</span>
             </div>
             <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
+              <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Inicio Calle (Real)</span>
+              <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${selectedAsesor.fecha_inicio_calle || calcularFechaInicioCalle(selectedAsesor.fecha_ingreso) || 'N/A'}</span>
+            </div>
+            <div class="profile-item" style="display: flex !important; flex-direction: column !important;">
               <span class="profile-label" style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Estatus General</span>
               <span class="profile-value" style="font-size: 11px; font-weight: 700; color: #0f172a;">${getAsesorStatus(selectedAsesor).label}</span>
             </div>
@@ -1628,6 +1761,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
       };
     }
     let notaTotal = 0;
+    let pesoTotalValido = 0;
     const detalle = {};
     
     sm.contenido.forEach((act, idx) => {
@@ -1646,16 +1780,24 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
        if (isNp) notaItem = 0;
        
        const peso = parseFloat(act.peso) || 0;
-       notaTotal += (notaItem * (peso / 100));
+       if (!isNp) {
+         pesoTotalValido += peso;
+         notaTotal += (notaItem * (peso / 100));
+       }
        detalle[act.actividad] = { nota: isNp ? null : notaItem, peso: peso, np: isNp };
     });
+    
+    let notaFinal = 0;
+    if (pesoTotalValido > 0) {
+      notaFinal = parseFloat((notaTotal / (pesoTotalValido / 100)).toFixed(2));
+    }
     
     const obsFinal = evalState?.obs !== undefined
       ? evalState.obs
       : (parsedExistente
           ? (parsedExistente.texto || '')
           : (notaExistente?.comentario?.startsWith('{') ? '' : (notaExistente?.comentario || '')));
-    return { nota: parseFloat(notaTotal.toFixed(2)), detalle, obs: obsFinal, evaluacionSku: null };
+    return { nota: notaFinal, detalle, obs: obsFinal, evaluacionSku: null };
   };
 
   const handleSaveNota = async (sm, evalState, notaExistente) => {
@@ -2215,6 +2357,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           zona: editData.zona,
           telefono: editData.telefono,
           fecha_ingreso: editData.fecha_ingreso,
+          fecha_inicio_calle: editData.fecha_inicio_calle,
           foto_url: photoUrl
         }).eq('id', editData.id);
 
@@ -2234,6 +2377,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           zona: editData.zona,
           telefono: editData.telefono,
           fecha_ingreso: editData.fecha_ingreso,
+          fecha_inicio_calle: editData.fecha_inicio_calle,
           cedula: editData.cedula
         }).eq('id', editData.id);
 
@@ -2251,6 +2395,17 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
       setTimeout(() => setMessage(''), 3000);
     }
   };
+
+  if (instrumentoConfig) {
+    return (
+      <CartaEvaluacionPDF 
+        asesor={instrumentoConfig.asesor} 
+        departamento={instrumentoConfig.departamento} 
+        actividades={instrumentoConfig.actividades} 
+        onBack={() => setInstrumentoConfig(null)} 
+      />
+    );
+  }
 
   if (isLoading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold text-[10px]">Cargando Sistema...</div>;
 
@@ -2493,143 +2648,231 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                         )}
                     </div>
                   ) : (
-                    <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-10 opacity-10 text-9xl">✈️</div>
-                        <div className="relative z-10 flex justify-between items-center">
-                            <div className="flex items-center gap-6">
+                    <div style={{ background: '#ffffff', borderRadius: '8px', padding: '32px', border: '1px solid #e2e2e2', boxShadow: '0 1px 3px rgba(0,0,0,.08)', position: 'relative', overflow: 'hidden', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
+                        <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                                 {/* FOTO DE PERFIL EN EVALUACIÓN */}
-                                <div className="w-20 h-20 rounded-[2rem] bg-slate-800 border-2 border-slate-700 overflow-hidden shadow-2xl flex items-center justify-center">
+                                <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: '#f9fafb', border: '1px solid #e2e2e2', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {selectedAsesor.foto_url ? (
-                                        <a href={selectedAsesor.foto_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative group">
+                                        <a href={selectedAsesor.foto_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', height: '100%', position: 'relative' }}>
                                             <img 
                                               src={getGoogleDriveThumbnail(selectedAsesor.foto_url)} 
                                               alt="Perfil" 
                                               referrerPolicy="no-referrer"
-                                              className="w-full h-full object-cover transition-opacity" 
+                                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                               onError={(e) => {
                                                   e.target.style.display = 'none';
                                                   if(e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
                                               }}
                                             />
-                                            <div className="absolute inset-0 items-center justify-center text-2xl font-black text-blue-400 bg-slate-800" style={{ display: 'none' }}>
+                                            <div style={{ position: 'absolute', inset: 0, display: 'none', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '900', color: '#000000', background: '#f9fafb' }}>
                                                 {selectedAsesor.nombre?.substring(0,1)}
-                                            </div>
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-300" title="Ver Foto Original">
-                                                <span className="text-xl">🔗</span>
                                             </div>
                                         </a>
                                     ) : (
-                                        <span className="text-2xl font-black text-blue-400">{selectedAsesor.nombre?.substring(0,1)}</span>
+                                        <span style={{ fontSize: '24px', fontWeight: '900', color: '#000000' }}>{selectedAsesor.nombre?.substring(0,1)}</span>
                                     )}
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-4">
-                                        <h2 className="text-2xl font-black">{selectedAsesor.nombre}</h2>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#000000', margin: '0 16px 0 0' }}>{selectedAsesor.nombre}</h2>
                                         <button 
                                             onClick={handleGeneratePDF}
-                                            className="bg-white/10 hover:bg-white text-white hover:text-slate-950 border border-white/20 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer"
+                                            style={{ background: '#ffffff', color: '#666666', border: '1px solid #c6c6c6', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'border-color 150ms ease, color 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#000000'; e.currentTarget.style.color = '#000000'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#c6c6c6'; e.currentTarget.style.color = '#666666'; }}
                                         >
-                                            📄 Emitir Reporte PDF
+                                            Emitir Reporte PDF
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowInstrumentoModal(true)}
+                                            style={{ background: '#ffffff', color: '#4f46e5', border: '1px solid rgba(79,70,229,.4)', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79,70,229,.06)'; e.currentTarget.style.borderColor = '#4f46e5'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = 'rgba(79,70,229,.4)'; }}
+                                        >
+                                            Emitir Instrumento Sede
                                         </button>
                                         <button 
                                             onClick={() => setShowAsignacionCalleModal(true)}
-                                            className="bg-blue-500/20 hover:bg-blue-500 text-blue-200 hover:text-white border border-blue-400/40 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer"
+                                            style={{ background: '#ffffff', color: '#666666', border: '1px solid #c6c6c6', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'border-color 150ms ease, color 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#000000'; e.currentTarget.style.color = '#000000'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#c6c6c6'; e.currentTarget.style.color = '#666666'; }}
                                         >
-                                            🎯 Asignar Calle
+                                            Asignar Calle
                                         </button>
                                         <button 
                                             onClick={() => setShowFormularioCalleModal(true)}
-                                            className="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-200 hover:text-white border border-emerald-400/40 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
+                                            style={{ background: '#ffffff', color: '#666666', border: '1px solid #c6c6c6', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'border-color 150ms ease, color 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#000000'; e.currentTarget.style.color = '#000000'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#c6c6c6'; e.currentTarget.style.color = '#666666'; }}
                                         >
-                                            <span>🚗</span> Reporte Acompañamiento en Calle
+                                            Reporte Acompañamiento en Calle
                                         </button>
                                         {user.rol === 'admin' && (
                                             <>
                                               <button 
                                                   onClick={() => handleOpenEdit(selectedAsesor, 'usuario')}
-                                                  className="bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
+                                                  style={{ background: '#ffffff', color: '#666666', border: '1px solid #c6c6c6', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'border-color 150ms ease, color 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#000000'; e.currentTarget.style.color = '#000000'; }}
+                                                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#c6c6c6'; e.currentTarget.style.color = '#666666'; }}
                                               >
-                                                  ✏️ Editar Datos
+                                                  Editar Datos
                                               </button>
                                               <button 
                                                   onClick={handleDesactivarAsesor}
-                                                  className="bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
+                                                  style={{ background: '#ffffff', color: '#d32f2f', border: '1px solid rgba(211,47,47,.4)', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'border-color 150ms ease, background 150ms ease, color 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(211,47,47,.06)'; e.currentTarget.style.borderColor = '#d32f2f'; }}
+                                                  onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = 'rgba(211,47,47,.4)'; }}
                                               >
-                                                  ⛔ Desactivar Asesor
+                                                  Desactivar Asesor
                                               </button>
                                               <button 
                                                   onClick={handleDeleteInduccion}
-                                                  className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all"
+                                                  style={{ background: '#ffffff', color: '#d32f2f', border: '1px solid rgba(211,47,47,.4)', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'border-color 150ms ease, background 150ms ease, color 150ms ease', cursor: 'pointer', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(211,47,47,.06)'; e.currentTarget.style.borderColor = '#d32f2f'; }}
+                                                  onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = 'rgba(211,47,47,.4)'; }}
                                               >
-                                                  🗑️ Borrar Historial
+                                                  Borrar Historial
                                               </button>
                                             </>
                                         )}
                                     </div>
-                                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest block mb-1">
+                                    <span style={{ fontSize: '11px', color: '#000000', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', margin: '12px 0 4px 0' }}>
                                         Inducción en Curso - Intento #{itinerarioActual[0]?.intento}
                                     </span>
-                                    <div className="flex gap-4 text-[9px] text-slate-400 font-medium uppercase tracking-widest flex-wrap mt-2">
-                                       <span>📧 Personal: {selectedAsesor.correo || selectedAsesor.usuario}</span>
-                                       <span>🏢 Corp: {selectedAsesor.correo_corporativo ? (
-                                         <span className="text-emerald-400 font-bold">{selectedAsesor.correo_corporativo}</span>
+                                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#666666', fontWeight: '400', flexWrap: 'wrap' }}>
+                                       <span>Personal: <strong style={{ fontWeight: '600', color: '#000000' }}>{selectedAsesor.correo || selectedAsesor.usuario}</strong></span>
+                                       <span>Corp: {selectedAsesor.correo_corporativo ? (
+                                         <strong style={{ fontWeight: '600', color: '#000000' }}>{selectedAsesor.correo_corporativo}</strong>
                                        ) : (
-                                         <span className="text-amber-400 font-bold bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">⚠️ Sin Correo Corp</span>
+                                         <span style={{ color: '#d32f2f', fontWeight: '700', background: 'rgba(211,47,47,.06)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(211,47,47,.4)', fontSize: '11px', textTransform: 'uppercase' }}>Sin Correo Corp</span>
                                        )}</span>
-                                       <span>📍 {selectedAsesor.zona || 'Zona no definida'}</span>
-                                       <span>📱 {selectedAsesor.telefono || 'Sin teléfono'}</span>
-                                       <span>📅 Ingreso: {selectedAsesor.fecha_ingreso || 'N/A'}</span>
+                                       <span>Ubicación: <strong style={{ fontWeight: '600', color: '#000000' }}>{selectedAsesor.zona || 'No definida'}</strong></span>
+                                       <span>Móvil: <strong style={{ fontWeight: '600', color: '#000000' }}>{selectedAsesor.telefono || 'Sin teléfono'}</strong></span>
+                                       <span>Ingreso: <strong style={{ fontWeight: '600', color: '#000000' }}>{selectedAsesor.fecha_ingreso || 'N/A'}</strong></span>
+                                       <span>Inicio Calle: <strong style={{ fontWeight: '600', color: '#1976d2' }}>{selectedAsesor.fecha_inicio_calle || calcularFechaInicioCalle(selectedAsesor.fecha_ingreso) || 'N/A'}</strong></span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div style={{ display: 'flex', gap: '8px' }}>
                                 {itinerarioActual.map((it, idx) => (
-                                    <div key={it.id} className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black" title={it.departamentos?.nombre}>
+                                    <div key={it.id} style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f9fafb', border: '1px solid #e2e2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#000000' }} title={it.departamentos?.nombre}>
                                         {idx + 1}
                                     </div>
                                 ))}
                             </div>
+                            <TimelineMeses asesor={selectedAsesor} />
                         </div>
                     </div>
                   )}
 
-                  {/* NAVEGACIÓN DE PESTAÑAS (TABS) */}
-                  <div className="flex flex-wrap gap-3 border-b border-slate-200 pb-2 mb-6 mt-4">
+                  {/* NAVEGACIÓN DE PESTAÑAS — Prisma Design System */}
+                  <div style={{ marginTop: '16px', marginBottom: '24px', paddingBottom: '0', display: 'flex', flexWrap: 'wrap', gap: '8px', fontFamily: '"Myriad Pro", Arial, sans-serif', borderBottom: '1px solid #e2e2e2' }}>
                     <button 
                       onClick={() => setActiveSubTab('evaluacion')}
-                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'evaluacion' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px 8px 0 0',
+                        fontSize: '11px',
+                        fontWeight: activeSubTab === 'evaluacion' ? '700' : '600',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        transition: 'background 150ms ease, color 150ms ease, border-color 150ms ease',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderBottom: activeSubTab === 'evaluacion' ? '1px solid #ffffff' : '1px solid #e2e2e2',
+                        background: activeSubTab === 'evaluacion' ? '#ffffff' : '#f9fafb',
+                        color: activeSubTab === 'evaluacion' ? '#000000' : '#666666',
+                        borderColor: activeSubTab === 'evaluacion' ? '#e2e2e2 #e2e2e2 #ffffff #e2e2e2' : '#e2e2e2',
+                        boxShadow: activeSubTab === 'evaluacion' ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                        marginBottom: activeSubTab === 'evaluacion' ? '-1px' : '0',
+                        fontFamily: '"Myriad Pro", Arial, sans-serif',
+                      }}
                     >
-                      👥 Evaluaciones del Itinerario
+                      Evaluaciones del Itinerario
                     </button>
                     <button 
                       onClick={() => setActiveSubTab('seguimiento')}
-                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'seguimiento' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px 8px 0 0',
+                        fontSize: '11px',
+                        fontWeight: activeSubTab === 'seguimiento' ? '700' : '600',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        transition: 'background 150ms ease, color 150ms ease, border-color 150ms ease',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderBottom: activeSubTab === 'seguimiento' ? '1px solid #ffffff' : '1px solid #e2e2e2',
+                        background: activeSubTab === 'seguimiento' ? '#ffffff' : '#f9fafb',
+                        color: activeSubTab === 'seguimiento' ? '#000000' : '#666666',
+                        borderColor: activeSubTab === 'seguimiento' ? '#e2e2e2 #e2e2e2 #ffffff #e2e2e2' : '#e2e2e2',
+                        boxShadow: activeSubTab === 'seguimiento' ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                        marginBottom: activeSubTab === 'seguimiento' ? '-1px' : '0',
+                        fontFamily: '"Myriad Pro", Arial, sans-serif',
+                      }}
                     >
-                      📈 Seguimiento y Feedback
+                      Seguimiento y Feedback
                     </button>
                     <button 
                       onClick={() => setActiveSubTab('incidencias')}
-                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'incidencias' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px 8px 0 0',
+                        fontSize: '11px',
+                        fontWeight: activeSubTab === 'incidencias' ? '700' : '600',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        transition: 'background 150ms ease, color 150ms ease, border-color 150ms ease',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderBottom: activeSubTab === 'incidencias' ? '1px solid #ffffff' : '1px solid #e2e2e2',
+                        background: activeSubTab === 'incidencias' ? '#ffffff' : '#f9fafb',
+                        color: activeSubTab === 'incidencias' ? '#000000' : '#666666',
+                        borderColor: activeSubTab === 'incidencias' ? '#e2e2e2 #e2e2e2 #ffffff #e2e2e2' : '#e2e2e2',
+                        boxShadow: activeSubTab === 'incidencias' ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                        marginBottom: activeSubTab === 'incidencias' ? '-1px' : '0',
+                        fontFamily: '"Myriad Pro", Arial, sans-serif',
+                      }}
                     >
-                      ⚠️ Bitácora de Eventualidades ({incidencias.length})
+                      Bitácora de Eventualidades ({incidencias.length})
                     </button>
                     <button 
                       onClick={() => setActiveSubTab('imagen_personal')}
-                      className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${activeSubTab === 'imagen_personal' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px 8px 0 0',
+                        fontSize: '11px',
+                        fontWeight: activeSubTab === 'imagen_personal' ? '700' : '600',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        transition: 'background 150ms ease, color 150ms ease, border-color 150ms ease',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderBottom: activeSubTab === 'imagen_personal' ? '1px solid #ffffff' : '1px solid #e2e2e2',
+                        background: activeSubTab === 'imagen_personal' ? '#ffffff' : '#f9fafb',
+                        color: activeSubTab === 'imagen_personal' ? '#000000' : '#666666',
+                        borderColor: activeSubTab === 'imagen_personal' ? '#e2e2e2 #e2e2e2 #ffffff #e2e2e2' : '#e2e2e2',
+                        boxShadow: activeSubTab === 'imagen_personal' ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                        marginBottom: activeSubTab === 'imagen_personal' ? '-1px' : '0',
+                        fontFamily: '"Myriad Pro", Arial, sans-serif',
+                      }}
                     >
-                      🪒 Imagen Personal
+                      Imagen Personal
                     </button>
                   </div>
 
                   {activeSubTab === 'evaluacion' && (
-                    <div className="space-y-6">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
                       {/* TEMAS POR DEPARTAMENTO */}
                       {itinerarioActual.length > 0 && (
-                         <div className="flex justify-end mb-6">
+                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
                             <button 
                                onClick={handleSaveAllNotas} 
                                disabled={isSaving}
-                               className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3 active:scale-95"
+                               style={{ background: isSaving ? 'rgba(198,198,198,.4)' : '#c6c6c6', color: isSaving ? '#8a8a8a' : '#000000', padding: '14px 32px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', border: 'none', cursor: isSaving ? 'default' : 'pointer', transition: 'background 150ms ease, color 150ms ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 1px 3px rgba(0,0,0,.08)', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                               onMouseEnter={e => { if (!isSaving) { e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#ffffff'; } }}
+                               onMouseLeave={e => { if (!isSaving) { e.currentTarget.style.background = '#c6c6c6'; e.currentTarget.style.color = '#000000'; } }}
                             >
                                {isSaving ? (
                                   <>
@@ -2980,19 +3223,21 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* PERFIL DE HABILIDADES Y EXPERIENCIA */}
-                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
-                          <div className="flex flex-col h-full justify-between">
+                        <div style={{ background: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e2e2', boxShadow: '0 1px 3px rgba(0,0,0,.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
                             <div>
-                              <div className="flex items-center justify-between mb-4 border-b pb-4">
-                                <h3 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
-                                  💼 Perfil de Habilidades
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #e2e2e2' }}>
+                                <h3 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#000000', margin: 0 }}>
+                                  Perfil de habilidades
                                 </h3>
                                 <button 
                                   onClick={handleSaveCualidadesGenerales}
                                   disabled={isSaving}
-                                  className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-40"
+                                  style={{ background: isSaving ? 'rgba(198,198,198,.4)' : '#c6c6c6', color: isSaving ? '#8a8a8a' : '#000000', padding: '8px 16px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', border: 'none', cursor: isSaving ? 'default' : 'pointer', transition: 'background 150ms ease, color 150ms ease', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                                  onMouseEnter={e => { if (!isSaving) { e.currentTarget.style.background='#000000'; e.currentTarget.style.color='#ffffff'; } }}
+                                  onMouseLeave={e => { if (!isSaving) { e.currentTarget.style.background='#c6c6c6'; e.currentTarget.style.color='#000000'; } }}
                                 >
-                                  💾 Guardar
+                                  Guardar
                                 </button>
                               </div>
                               <p className="text-[10px] text-slate-400 font-medium mb-3">
@@ -3207,19 +3452,21 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                   )}
 
                   {activeSubTab === 'incidencias' && (
-                    <div className="space-y-6">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
                       {/* FORMULARIO DE REPORTE */}
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                        <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">⚠️ Registrar Nueva Eventualidad o Inconveniente en Calle</h3>
+                      <div style={{ background: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e2e2', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
+                        <h3 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#000000', borderBottom: '1px solid #e2e2e2', paddingBottom: '16px', marginBottom: '24px', margin: '0 0 0 0' }}>Registrar nueva eventualidad o inconveniente en calle</h3>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px', background: '#f9fafb', padding: '24px', borderRadius: '8px', border: '1px solid #e2e2e2' }}>
                           <div>
-                            <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha del Suceso</label>
+                            <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8a8a8a', display: 'block', marginBottom: '6px', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>Fecha del suceso</label>
                             <input 
                               type="date"
                               value={newIncidencia.fecha_reporte}
                               onChange={(e) => setNewIncidencia({...newIncidencia, fecha_reporte: e.target.value})}
-                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none"
+                              style={{ width: '100%', height: '40px', background: '#ffffff', border: '1px solid #c6c6c6', borderRadius: '8px', padding: '0 12px', fontSize: '14px', fontWeight: '400', outline: 'none', boxSizing: 'border-box', fontFamily: '"Myriad Pro", Arial, sans-serif', color: '#000000', transition: 'border-color 150ms ease' }}
+                              onFocus={e => { e.target.style.borderColor = '#a8a8a8'; }}
+                              onBlur={e => { e.target.style.borderColor = '#c6c6c6'; }}
                             />
                           </div>
                           <div>
@@ -3523,10 +3770,10 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
 
                   {/* === PESTAÑA: IMAGEN PERSONAL === */}
                   {activeSubTab === 'imagen_personal' && (
-                    <div className="space-y-6">
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                        <h3 className="text-xs font-black uppercase text-slate-800 border-b pb-4 mb-6">🪒 Evaluación de Imagen Personal y Presentación</h3>
-                        <p className="text-[10px] text-slate-500 font-semibold mb-8 leading-relaxed">Registra la evaluación de la presentación personal del asesor durante la inducción. Cada criterio se evalúa como <span className="text-emerald-600 font-black">Cumple</span>, <span className="text-amber-500 font-black">Parcialmente</span> o <span className="text-rose-500 font-black">No Cumple</span>.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
+                      <div style={{ background: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e2e2', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
+                        <h3 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#000000', borderBottom: '1px solid #e2e2e2', paddingBottom: '16px', marginBottom: '24px', margin: '0 0 0 0' }}>Evaluación de imagen personal y presentación</h3>
+                        <p style={{ fontSize: '14px', color: '#666666', fontWeight: '400', marginBottom: '32px', lineHeight: '1.5' }}>Registra la evaluación de la presentación personal del asesor durante la inducción. Cada criterio se evalúa como <strong style={{ color: '#388e3c' }}>Cumple</strong>, <strong style={{ color: '#f57f17' }}>Parcialmente</strong> o <strong style={{ color: '#d32f2f' }}>No cumple</strong>.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                           {[
@@ -3536,38 +3783,62 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                             { key: 'lenguaje', icon: '🗣️', label: 'Lenguaje y Comunicación Verbal', desc: 'Habla con vocabulario apropiado, sin expresiones inadecuadas' },
                             { key: 'actitud', icon: '🎯', label: 'Actitud y Postura Corporal', desc: 'Actitud proactiva y postura profesional durante la inducción' },
                           ].map(({ key, icon, label, desc }) => (
-                            <div key={key} className={`p-5 rounded-2xl border-2 transition-all ${
-                              imagenPersonal[key] === 'Cumple' ? 'bg-emerald-50 border-emerald-200' :
-                              imagenPersonal[key] === 'Parcialmente' ? 'bg-amber-50 border-amber-200' :
-                              imagenPersonal[key] === 'No Cumple' ? 'bg-rose-50 border-rose-200' :
-                              'bg-slate-50 border-slate-200'
-                            }`}>
-                              <div className="flex items-start gap-3 mb-4">
-                                <span className="text-2xl">{icon}</span>
-                                <div className="flex-1">
-                                  <p className="text-[10px] font-black text-slate-800 uppercase tracking-wide">{label}</p>
-                                  <p className="text-[9px] text-slate-500 font-semibold mt-0.5 leading-relaxed">{desc}</p>
+                            <div key={key} style={{
+                              padding: '16px',
+                              borderRadius: '8px',
+                              border: '1px solid',
+                              borderColor: imagenPersonal[key] === 'Cumple' ? 'rgba(56,142,60,.4)' : imagenPersonal[key] === 'Parcialmente' ? 'rgba(245,127,23,.45)' : imagenPersonal[key] === 'No Cumple' ? 'rgba(211,47,47,.4)' : '#e2e2e2',
+                              background: imagenPersonal[key] === 'Cumple' ? 'rgba(56,142,60,.06)' : imagenPersonal[key] === 'Parcialmente' ? 'rgba(245,127,23,.06)' : imagenPersonal[key] === 'No Cumple' ? 'rgba(211,47,47,.06)' : '#f9fafb',
+                              transition: 'border-color 150ms ease, background 150ms ease',
+                              fontFamily: '"Myriad Pro", Arial, sans-serif',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
+                                <div style={{ flex: 1 }}>
+                                  <p style={{ fontSize: '13px', fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 4px 0' }}>{label}</p>
+                                  <p style={{ fontSize: '12px', color: '#8a8a8a', fontWeight: '400', lineHeight: '1.5', margin: 0 }}>{desc}</p>
                                 </div>
                                 {imagenPersonal[key] && (
-                                  <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase shrink-0 ${
-                                    imagenPersonal[key] === 'Cumple' ? 'bg-emerald-500 text-white' :
-                                    imagenPersonal[key] === 'Parcialmente' ? 'bg-amber-500 text-white' :
-                                    'bg-rose-500 text-white'
-                                  }`}>{imagenPersonal[key]}</span>
+                                  <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '999px',
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    flexShrink: 0,
+                                    color: imagenPersonal[key] === 'Cumple' ? '#388e3c' : imagenPersonal[key] === 'Parcialmente' ? '#f57f17' : '#d32f2f',
+                                    border: '1px solid',
+                                    borderColor: imagenPersonal[key] === 'Cumple' ? 'rgba(56,142,60,.4)' : imagenPersonal[key] === 'Parcialmente' ? 'rgba(245,127,23,.45)' : 'rgba(211,47,47,.4)',
+                                    background: 'transparent',
+                                  }}>{imagenPersonal[key]}</span>
                                 )}
                               </div>
-                              <div className="flex gap-2">
+                              <div style={{ display: 'flex', gap: '8px' }}>
                                 {['Cumple', 'Parcialmente', 'No Cumple'].map(val => (
                                   <button
                                     key={val}
                                     onClick={() => setImagenPersonal(prev => ({ ...prev, [key]: val }))}
-                                    className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-wide transition-all ${
-                                      imagenPersonal[key] === val
-                                        ? val === 'Cumple' ? 'bg-emerald-500 text-white shadow-md' :
-                                          val === 'Parcialmente' ? 'bg-amber-500 text-white shadow-md' :
-                                          'bg-rose-500 text-white shadow-md'
-                                        : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-100'
-                                    }`}
+                                    style={{
+                                      flex: 1,
+                                      padding: '8px 0',
+                                      borderRadius: '8px',
+                                      fontSize: '11px',
+                                      fontWeight: '700',
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.06em',
+                                      transition: 'background 150ms ease, color 150ms ease, border-color 150ms ease',
+                                      cursor: 'pointer',
+                                      fontFamily: '"Myriad Pro", Arial, sans-serif',
+                                      border: '1px solid',
+                                      background: imagenPersonal[key] === val
+                                        ? val === 'Cumple' ? '#388e3c' : val === 'Parcialmente' ? '#f57f17' : '#d32f2f'
+                                        : '#ffffff',
+                                      color: imagenPersonal[key] === val ? '#ffffff' : '#666666',
+                                      borderColor: imagenPersonal[key] === val
+                                        ? val === 'Cumple' ? '#388e3c' : val === 'Parcialmente' ? '#f57f17' : '#d32f2f'
+                                        : '#e2e2e2',
+                                      boxShadow: imagenPersonal[key] === val ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                                    }}
                                   >
                                     {val === 'Cumple' ? '✓ Cumple' : val === 'Parcialmente' ? '~ Parcial' : '✗ No Cumple'}
                                   </button>
@@ -3577,54 +3848,63 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                           ))}
                         </div>
 
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">
-                          <label className="text-[9px] font-black uppercase text-slate-400 block mb-2">📝 Observaciones Adicionales de Imagen Personal</label>
+                        <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '24px', border: '1px solid #e2e2e2', marginBottom: '32px' }}>
+                          <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8a8a8a', display: 'block', marginBottom: '8px', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>Observaciones adicionales de imagen personal</label>
                           <textarea
                             rows={4}
                             value={imagenPersonal.observaciones}
                             onChange={(e) => setImagenPersonal(prev => ({ ...prev, observaciones: e.target.value }))}
                             placeholder="Comentarios libres sobre la presentación personal del asesor durante la inducción..."
-                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-300 resize-none leading-relaxed"
+                            style={{ width: '100%', background: '#ffffff', border: '1px solid #c6c6c6', borderRadius: '8px', padding: '12px 16px', fontSize: '14px', fontWeight: '400', outline: 'none', resize: 'none', lineHeight: '1.5', boxSizing: 'border-box', fontFamily: '"Myriad Pro", Arial, sans-serif', color: '#000000', transition: 'border-color 150ms ease' }}
+                            onFocus={e => { e.target.style.borderColor = '#a8a8a8'; }}
+                            onBlur={e => { e.target.style.borderColor = '#c6c6c6'; }}
                           />
                         </div>
 
-                        <div className="flex justify-end">
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <button
                             onClick={handleSaveImagenPersonal}
                             disabled={isSaving}
-                            className="bg-emerald-600 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
+                            style={{ background: isSaving ? 'rgba(198,198,198,.4)' : '#c6c6c6', color: isSaving ? '#8a8a8a' : '#000000', padding: '12px 32px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', border: 'none', cursor: isSaving ? 'default' : 'pointer', transition: 'background 150ms ease, color 150ms ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 1px 3px rgba(0,0,0,.08)', fontFamily: '"Myriad Pro", Arial, sans-serif' }}
+                            onMouseEnter={e => { if (!isSaving) { e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#ffffff'; } }}
+                            onMouseLeave={e => { if (!isSaving) { e.currentTarget.style.background = '#c6c6c6'; e.currentTarget.style.color = '#000000'; } }}
                           >
-                            {isSaving ? '⏳ Guardando...' : '💾 Guardar Evaluación de Imagen Personal'}
+                            {isSaving ? 'Guardando...' : 'Guardar evaluación de imagen personal'}
                           </button>
                         </div>
                       </div>
 
                       {/* Resumen visual de la evaluación */}
                       {Object.values(imagenPersonal).some(v => v && v !== imagenPersonal.observaciones) && (
-                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                          <h4 className="text-xs font-black uppercase text-slate-700 mb-5">📊 Resumen de Criterios Evaluados</h4>
-                          <div className="grid grid-cols-5 gap-3">
+                        <div style={{ background: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e2e2', boxShadow: '0 1px 3px rgba(0,0,0,.08)', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
+                          <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#000000', margin: '0 0 20px 0' }}>Resumen de criterios evaluados</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
                             {[
-                              { key: 'afeitado', icon: '🪒', label: 'Higiene Facial' },
-                              { key: 'vestimenta', icon: '👔', label: 'Vestimenta' },
-                              { key: 'cabello', icon: '💇', label: 'Cabello' },
-                              { key: 'lenguaje', icon: '🗣️', label: 'Lenguaje' },
-                              { key: 'actitud', icon: '🎯', label: 'Actitud' },
-                            ].map(({ key, icon, label }) => (
-                              <div key={key} className={`flex flex-col items-center p-4 rounded-2xl text-center ${
-                                imagenPersonal[key] === 'Cumple' ? 'bg-emerald-50 border-2 border-emerald-200' :
-                                imagenPersonal[key] === 'Parcialmente' ? 'bg-amber-50 border-2 border-amber-200' :
-                                imagenPersonal[key] === 'No Cumple' ? 'bg-rose-50 border-2 border-rose-200' :
-                                'bg-slate-50 border-2 border-slate-200'
-                              }`}>
-                                <span className="text-2xl mb-2">{icon}</span>
-                                <p className="text-[8px] font-black uppercase text-slate-500 mb-1">{label}</p>
-                                <span className={`text-[8px] font-black uppercase ${
-                                  imagenPersonal[key] === 'Cumple' ? 'text-emerald-600' :
-                                  imagenPersonal[key] === 'Parcialmente' ? 'text-amber-500' :
-                                  imagenPersonal[key] === 'No Cumple' ? 'text-rose-500' :
-                                  'text-slate-400'
-                                }`}>{imagenPersonal[key] || 'Sin eval.'}</span>
+                              { key: 'afeitado', label: 'Higiene facial' },
+                              { key: 'vestimenta', label: 'Vestimenta' },
+                              { key: 'cabello', label: 'Cabello' },
+                              { key: 'lenguaje', label: 'Lenguaje' },
+                              { key: 'actitud', label: 'Actitud' },
+                            ].map(({ key, label }) => (
+                              <div key={key} style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                padding: '16px 8px',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                border: '1px solid',
+                                borderColor: imagenPersonal[key] === 'Cumple' ? 'rgba(56,142,60,.4)' : imagenPersonal[key] === 'Parcialmente' ? 'rgba(245,127,23,.45)' : imagenPersonal[key] === 'No Cumple' ? 'rgba(211,47,47,.4)' : '#e2e2e2',
+                                background: imagenPersonal[key] === 'Cumple' ? 'rgba(56,142,60,.06)' : imagenPersonal[key] === 'Parcialmente' ? 'rgba(245,127,23,.06)' : imagenPersonal[key] === 'No Cumple' ? 'rgba(211,47,47,.06)' : '#f9fafb',
+                              }}>
+                                <p style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#4a4a4a', margin: '0 0 8px 0' }}>{label}</p>
+                                <span style={{
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.04em',
+                                  color: imagenPersonal[key] === 'Cumple' ? '#388e3c' : imagenPersonal[key] === 'Parcialmente' ? '#f57f17' : imagenPersonal[key] === 'No Cumple' ? '#d32f2f' : '#8a8a8a',
+                                }}>{imagenPersonal[key] || 'Sin eval.'}</span>
                               </div>
                             ))}
                           </div>
@@ -4383,13 +4663,23 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                           className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
                         />
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Fecha de Ingreso</label>
                         <input 
                           type="text" 
                           value={editData.fecha_ingreso || ''} 
                           placeholder="Ej: 01/01/2024"
                           onChange={(e) => setEditData({ ...editData, fecha_ingreso: e.target.value })}
+                          className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div className="col-span-1">
+                        <label className="text-[9px] font-black uppercase text-slate-400 block mb-1">Inicio en Calle (Real)</label>
+                        <input 
+                          type="text" 
+                          value={editData.fecha_inicio_calle || ''} 
+                          placeholder="Si se deja vacío: Ingreso + 18 días"
+                          onChange={(e) => setEditData({ ...editData, fecha_inicio_calle: e.target.value })}
                           className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400"
                         />
                     </div>
@@ -4502,6 +4792,50 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                 >
                   ✕ Cancelar
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL INSTRUMENTO SEDE */}
+        {showInstrumentoModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+              <div className="bg-indigo-600 p-6 text-white flex justify-between items-center">
+                <div>
+                  <h3 className="font-black text-lg tracking-tight">Instrumento de Inducción</h3>
+                  <p className="text-[10px] uppercase tracking-widest font-bold opacity-80">Generar Hoja Física</p>
+                </div>
+                <button onClick={() => setShowInstrumentoModal(false)} className="text-white hover:bg-white/20 p-2 rounded-xl transition-all">✕</button>
+              </div>
+              <div className="p-6">
+                <p className="text-xs text-slate-500 font-medium mb-4">Seleccione el departamento del cual desea imprimir la hoja de evaluación para que sea llenada a mano.</p>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {itinerarioActual.map(it => {
+                    const depto = it.departamentos;
+                    if (!depto) return null;
+                    return (
+                      <button
+                        key={it.id}
+                        onClick={() => {
+                          const deptoActividades = submodulos.filter(sm => sm.id_departamento === depto.id);
+                          setInstrumentoConfig({
+                            asesor: selectedAsesor,
+                            departamento: depto,
+                            actividades: deptoActividades
+                          });
+                          setShowInstrumentoModal(false);
+                        }}
+                        className="w-full text-left p-4 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
+                      >
+                        <h4 className="font-bold text-sm text-slate-800 group-hover:text-indigo-700">{depto.nombre}</h4>
+                      </button>
+                    );
+                  })}
+                </div>
+                {itinerarioActual.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-4 italic">El asesor no tiene itinerario configurado.</p>
+                )}
               </div>
             </div>
           </div>
