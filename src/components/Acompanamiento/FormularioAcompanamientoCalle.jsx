@@ -20,6 +20,7 @@ export default function FormularioAcompanamientoCalle({ asesor, onClose }) {
   const [saving, setSaving] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [showPDF, setShowPDF] = useState(false);
+  const [showGuiaSaber, setShowGuiaSaber] = useState(false);
 
   useEffect(() => {
     cargarAsignacionesYPrevios();
@@ -72,9 +73,14 @@ export default function FormularioAcompanamientoCalle({ asesor, onClose }) {
           if (bud) setSelectedBuddy(bud);
         }
 
-
         if (Array.isArray(asignacion.actividades_ids) && asignacion.actividades_ids.length > 0) {
-          actsFiltradas = ACTIVIDADES_CALLE_DEFAULT.filter(a => asignacion.actividades_ids.includes(a.id));
+          let ids = [...asignacion.actividades_ids];
+          // Retrocompatibilidad: expandir act-5 en los 5 pasos si viene de una versión previa
+          if (ids.includes('act-5')) {
+            ids = ids.filter(x => x !== 'act-5');
+            ids.push('act-5-s', 'act-5-a', 'act-5-b', 'act-5-e', 'act-5-r');
+          }
+          actsFiltradas = ACTIVIDADES_CALLE_DEFAULT.filter(a => ids.includes(a.id));
         }
       }
 
@@ -98,7 +104,16 @@ export default function FormularioAcompanamientoCalle({ asesor, onClose }) {
 
         if (dbReporte && dbReporte.length > 0) {
           const rep = dbReporte[0];
-          if (rep.evaluacion_items) setEvaluacionItems(rep.evaluacion_items);
+          if (rep.evaluacion_items) {
+            let ev = { ...rep.evaluacion_items };
+            // Si el reporte previo contenía act-5 consolidado, propagar el valor a los 5 pasos
+            if (ev['act-5']) {
+              ['act-5-s', 'act-5-a', 'act-5-b', 'act-5-e', 'act-5-r'].forEach(k => {
+                if (ev[k] === undefined) ev[k] = ev['act-5'];
+              });
+            }
+            setEvaluacionItems(ev);
+          }
           if (rep.fortalezas_detectadas) setFortalezas(rep.fortalezas_detectadas);
           if (rep.areas_mejora_inmediata) setAreasMejora(rep.areas_mejora_inmediata);
           if (rep.recomendacion_final) setRecomendacionFinal(rep.recomendacion_final);
@@ -326,34 +341,123 @@ export default function FormularioAcompanamientoCalle({ asesor, onClose }) {
                   )}
                 </div>
 
+                {/* Banner interactivo del Método SABER en Categoría 2 */}
+                {cat.nombre.includes('GESTIÓN DE VENTAS Y SURTIDO') && (
+                  <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-4 rounded-2xl shadow-sm space-y-2 border border-blue-800/50">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🎯</span>
+                        <div>
+                          <span className="font-black text-xs uppercase tracking-wider text-blue-200 block">
+                            METODOLOGÍA SABER — DE TOMADOR DE PEDIDOS A ASESOR DE SURTIDO
+                          </span>
+                          <span className="text-[10px] text-blue-300">
+                            Secuencia operacional de 5 pasos para diagnosticar, proponer y cerrar con valor en menos de 10 min.
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowGuiaSaber(!showGuiaSaber)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 font-bold text-[11px] border border-blue-400/30 transition-all flex items-center gap-1.5"
+                      >
+                        {showGuiaSaber ? '✕ Ocultar Guía' : '💡 Ver Guía del Buddy'}
+                      </button>
+                    </div>
+
+                    {showGuiaSaber && (
+                      <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-1 md:grid-cols-5 gap-2.5 text-[10px] animate-in fade-in-50 duration-150">
+                        <div className="bg-white/10 p-2.5 rounded-xl border border-white/10 space-y-1">
+                          <span className="font-black text-cyan-300 block">S - SONDEAR</span>
+                          <p className="text-slate-200 text-[10px] leading-tight">Proyectos, tipo de cliente, temporadas y flujo de caja en &lt; 5 min.</p>
+                        </div>
+                        <div className="bg-white/10 p-2.5 rounded-xl border border-white/10 space-y-1">
+                          <span className="font-black text-indigo-300 block">A - ANALIZAR</span>
+                          <p className="text-slate-200 text-[10px] leading-tight">Radiografía de anaquel. Top 3 marcas y productos solicitados (BDF).</p>
+                        </div>
+                        <div className="bg-white/10 p-2.5 rounded-xl border border-white/10 space-y-1">
+                          <span className="font-black text-amber-300 block">B - BUSCAR BRECHAS</span>
+                          <p className="text-slate-200 text-[10px] leading-tight">Categorías sin 2da marca, quiebres de inventario e infaltables.</p>
+                        </div>
+                        <div className="bg-white/10 p-2.5 rounded-xl border border-white/10 space-y-1">
+                          <span className="font-black text-emerald-300 block">E - ELABORAR</span>
+                          <p className="text-slate-200 text-[10px] leading-tight">Propuesta estructurada en AFV en &lt; 10 min respetando empaque comercial.</p>
+                        </div>
+                        <div className="bg-white/10 p-2.5 rounded-xl border border-white/10 space-y-1">
+                          <span className="font-black text-purple-300 block">R - REVISAR/CERRAR</span>
+                          <p className="text-slate-200 text-[10px] leading-tight">Manejo de 5 objeciones, límite de crédito, cierre formal y seguimiento.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {cat.items.map(item => {
                     const cumple = evaluacionItems[item.id]?.cumple;
+                    const paso = item.pasoSaber || (
+                      item.id === 'act-5-s' ? 'S' :
+                      item.id === 'act-5-a' ? 'A' :
+                      item.id === 'act-5-b' ? 'B' :
+                      item.id === 'act-5-e' ? 'E' :
+                      item.id === 'act-5-r' ? 'R' : null
+                    );
+
+                    const pasoConfig = {
+                      S: { badge: 'bg-blue-600 text-white', border: 'border-blue-200 bg-blue-50/50', label: 'PASO S: SONDEAR' },
+                      A: { badge: 'bg-indigo-600 text-white', border: 'border-indigo-200 bg-indigo-50/50', label: 'PASO A: ANALIZAR' },
+                      B: { badge: 'bg-amber-600 text-white', border: 'border-amber-200 bg-amber-50/50', label: 'PASO B: BUSCAR BRECHAS' },
+                      E: { badge: 'bg-emerald-600 text-white', border: 'border-emerald-200 bg-emerald-50/50', label: 'PASO E: ELABORAR' },
+                      R: { badge: 'bg-violet-600 text-white', border: 'border-violet-200 bg-violet-50/50', label: 'PASO R: REVISAR Y CERRAR' }
+                    };
+
+                    const cfg = paso ? pasoConfig[paso] : null;
 
                     return (
-                      <div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                        <div className="flex-1">
-                          <span className="font-bold text-slate-900 block">■ {item.titulo}</span>
-                          <span className="text-[11px] text-slate-600 block">{item.descripcion}</span>
+                      <div
+                        key={item.id}
+                        className={`p-3.5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs ${
+                          cfg ? cfg.border : 'bg-slate-50 border-slate-100'
+                        }`}
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {cfg && (
+                              <span className={`px-2 py-0.5 rounded-md font-black text-[10px] tracking-wide uppercase shadow-xs ${cfg.badge}`}>
+                                {cfg.label}
+                              </span>
+                            )}
+                            <span className="font-bold text-slate-900 block">■ {item.titulo}</span>
+                          </div>
+                          <span className="text-[11px] text-slate-600 block leading-relaxed">{item.descripcion}</span>
+                          {item.preguntasClave && (
+                            <div className="mt-1.5 p-2 rounded-lg bg-white/90 border border-slate-200 text-[10.5px] text-slate-700">
+                              <span className="font-bold text-slate-900">💬 Pregunta clave al cliente: </span>
+                              <span className="italic font-medium">"{item.preguntasClave}"</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-3 font-bold text-[11px]">
-                          <label className={`px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${cumple === true ? 'bg-emerald-600 text-white border-emerald-700 shadow' : 'bg-white text-slate-600'}`}>
+
+                        <div className="flex items-center gap-2.5 font-bold text-[11px] shrink-0 self-start md:self-center">
+                          <label className={`px-3 py-1.5 rounded-lg border cursor-pointer transition-all flex items-center gap-1 ${cumple === true ? 'bg-emerald-600 text-white border-emerald-700 shadow' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
                             <input
                               type="radio"
+                              name={`eval-${item.id}`}
                               className="hidden"
                               checked={cumple === true}
                               onChange={() => handleCumpleChange(item.id, true)}
                             />
-                            ✓ Cumple
+                            <span>✓</span> Cumple
                           </label>
-                          <label className={`px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${cumple === false ? 'bg-rose-600 text-white border-rose-700 shadow' : 'bg-white text-slate-600'}`}>
+                          <label className={`px-3 py-1.5 rounded-lg border cursor-pointer transition-all flex items-center gap-1 ${cumple === false ? 'bg-rose-600 text-white border-rose-700 shadow' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
                             <input
                               type="radio"
+                              name={`eval-${item.id}`}
                               className="hidden"
                               checked={cumple === false}
                               onChange={() => handleCumpleChange(item.id, false)}
                             />
-                            ✗ No Cumple
+                            <span>✗</span> No Cumple
                           </label>
                         </div>
                       </div>

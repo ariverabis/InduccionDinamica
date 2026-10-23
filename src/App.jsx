@@ -34,6 +34,9 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardSeguimiento from './pages/DashboardSeguimiento';
 import EvaluacionMensual from './pages/EvaluacionMensual';
+import FormatoImpresionRubricas from './pages/FormatoImpresionRubricas';
+
+import DashboardSeguimientoMensual from './screens/Portal/DashboardSeguimientoMensual';
 
 function App() {
   return (
@@ -43,6 +46,7 @@ function App() {
           <Route path="/" element={<PortalInicio />} />
           <Route path="/sds" element={<ConfiguracionSds />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/dashboard-kpis" element={<DashboardSeguimientoMensual standalone={true} onBack={() => window.history.back()} />} />
           <Route path="/simulador" element={
             <ErrorBoundary>
               <Simulator />
@@ -53,6 +57,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard-seguimiento" element={<DashboardSeguimiento />} />
             <Route path="/evaluacion/:advisorId/mes/:month" element={<EvaluacionMensual />} />
+            <Route path="/imprimir-rubricas" element={<FormatoImpresionRubricas />} />
           </Route>
         </Routes>
       </Router>

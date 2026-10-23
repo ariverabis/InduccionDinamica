@@ -29,11 +29,59 @@ export const ACTIVIDADES_CALLE_DEFAULT = [
   },
 
   {
-    id: 'act-5',
+    id: 'act-5-s',
     categoria: '2. GESTIÓN DE VENTAS Y SURTIDO (Modelo B2R)',
-    objetivo: "Evaluar la transición de 'tomador de pedidos' a 'asesor de surtido'.",
-    titulo: 'Método SABER',
-    descripcion: '¿Aplica los 5 pasos (Sondear, Analizar, Buscar brechas, Elaborar, Revisar)?'
+    objetivo: "Evaluar la transición de 'tomador de pedidos' a 'asesor de surtido' mediante el Método SABER.",
+    titulo: 'Método SABER: [S] Sondear el Negocio',
+    descripcion: '¿Aplica sondeo estratégico inicial (diagnóstico de 5 min): indaga qué proyectos atiende el cliente, qué segmento sirve, sus temporadas y flujo de caja?',
+    pasoSaber: 'S',
+    letraSaber: 'S',
+    nombrePaso: 'Sondear el negocio',
+    preguntasClave: '¿Qué proyectos atiende? ¿Qué segmento sirve? ¿Cuáles son sus temporadas?'
+  },
+  {
+    id: 'act-5-a',
+    categoria: '2. GESTIÓN DE VENTAS Y SURTIDO (Modelo B2R)',
+    objetivo: "Evaluar la transición de 'tomador de pedidos' a 'asesor de surtido' mediante el Método SABER.",
+    titulo: 'Método SABER: [A] Analizar el Surtido Activo',
+    descripcion: '¿Realiza radiografía de anaquel y mostrador: clasifica marcas ancla vs complementarias (BDF), detecta reclamos y qué le piden y no tiene?',
+    pasoSaber: 'A',
+    letraSaber: 'A',
+    nombrePaso: 'Analizar el surtido activo',
+    preguntasClave: '¿Qué top 3 marcas tiene? ¿Qué le genera reclamos? ¿Qué le piden y no tiene?'
+  },
+  {
+    id: 'act-5-b',
+    categoria: '2. GESTIÓN DE VENTAS Y SURTIDO (Modelo B2R)',
+    objetivo: "Evaluar la transición de 'tomador de pedidos' a 'asesor de surtido' mediante el Método SABER.",
+    titulo: 'Método SABER: [B] Buscar Brechas',
+    descripcion: '¿Identifica categorías sin segunda marca, quiebres de inventario e infaltables, detectando cuándo el cliente pierde ventas por falta de variedad?',
+    pasoSaber: 'B',
+    letraSaber: 'B',
+    nombrePaso: 'Buscar brechas',
+    preguntasClave: '¿En qué categorías no tiene segunda marca? ¿Cuándo pierde ventas por falta de variedad?'
+  },
+  {
+    id: 'act-5-e',
+    categoria: '2. GESTIÓN DE VENTAS Y SURTIDO (Modelo B2R)',
+    objetivo: "Evaluar la transición de 'tomador de pedidos' a 'asesor de surtido' mediante el Método SABER.",
+    titulo: 'Método SABER: [E] Elaborar la Propuesta de Valor',
+    descripcion: '¿Estructura activamente la propuesta (Categoría → Marca → Rotación → Margen → Pedido prueba) en AFV/Catálogo en < 10 min respetando el empaque comercial?',
+    pasoSaber: 'E',
+    letraSaber: 'E',
+    nombrePaso: 'Elaborar propuesta',
+    preguntasClave: '¿Qué pasaría si agregáramos esta marca? ¿Cuántas unidades rotaría en un mes?'
+  },
+  {
+    id: 'act-5-r',
+    categoria: '2. GESTIÓN DE VENTAS Y SURTIDO (Modelo B2R)',
+    objetivo: "Evaluar la transición de 'tomador de pedidos' a 'asesor de surtido' mediante el Método SABER.",
+    titulo: 'Método SABER: [R] Revisar, Cierre y Seguimiento',
+    descripcion: '¿Maneja objeciones con técnica B2R, valida límite de crédito en AFV, concreta el cierre del pedido de prueba y pacta seguimiento al Sell-Out y recompra?',
+    pasoSaber: 'R',
+    letraSaber: 'R',
+    nombrePaso: 'Revisar y dar seguimiento',
+    preguntasClave: '¿Cómo le fue con el pedido de prueba? ¿Generó ventas adicionales?'
   },
   {
     id: 'act-6',

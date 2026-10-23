@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ResumenEvaluaciones } from './ResumenEvaluaciones';
 import ReporteNotas from './ReporteNotas';
+import DashboardSeguimientoMensual from './DashboardSeguimientoMensual';
 import AsignacionActividadesCalleModal from '../../components/Acompanamiento/AsignacionActividadesCalleModal';
 import FormularioAcompanamientoCalle from '../../components/Acompanamiento/FormularioAcompanamientoCalle';
 import GestionBuddiesYActividades from '../../components/Acompanamiento/GestionBuddiesYActividades';
@@ -18,7 +19,8 @@ const parseObservacionCualitativa = (raw) => {
   const defaultState = {
     observacion_global: '',
     imagen_personal: { afeitado: '', vestimenta: '', cabello: '', lenguaje: '', actitud: '', observaciones: '' },
-    cualidades_generales: { tags: [], detalle: '' }
+    cualidades_generales: { tags: [], detalle: '' },
+    contexto_zona: { origen_zona: '', deuda_heredada: '', presupuesto_asignado: '' }
   };
 
   if (!raw) return defaultState;
@@ -33,6 +35,11 @@ const parseObservacionCualitativa = (raw) => {
         cualidades_generales: {
           tags: Array.isArray(parsed.cualidades_generales?.tags) ? parsed.cualidades_generales.tags : [],
           detalle: parsed.cualidades_generales?.detalle || (typeof parsed.cualidades_generales === 'string' ? parsed.cualidades_generales : '')
+        },
+        contexto_zona: {
+          origen_zona: parsed.contexto_zona?.origen_zona || parsed.origen_zona || '',
+          deuda_heredada: parsed.contexto_zona?.deuda_heredada || parsed.deuda_heredada || '',
+          presupuesto_asignado: parsed.contexto_zona?.presupuesto_asignado || parsed.presupuesto_asignado || ''
         }
       };
     } catch (e) {
@@ -493,6 +500,15 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
     detalle: ''
   });
 
+  // Estados para Contexto de Zona (Datos Fijos)
+  const [perfilZona, setPerfilZona] = useState({
+    origen_zona: '',
+    deuda_heredada: '',
+    presupuesto_asignado: ''
+  });
+  const [savingZona, setSavingZona] = useState(false);
+  const [zonaMensaje, setZonaMensaje] = useState('');
+
   // Estados para Mantenimiento de Departamentos
   const [todosDeptos, setTodosDeptos] = useState([]);
   const [newDeptoNombre, setNewDeptoNombre] = useState('');
@@ -576,6 +592,38 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
       setActiveSubTab('evaluacion');
       
       setEvaluaciones({}); // Limpiar estado de notas no guardadas al cambiar de asesor
+
+      // Cargar contexto de zona desde parsedData.contexto_zona (portal_afv.usuarios)
+      const zonaData = parsedData.contexto_zona || {};
+      const initialZona = {
+        origen_zona: zonaData.origen_zona || selectedAsesor.origen_zona || '',
+        deuda_heredada: zonaData.deuda_heredada || selectedAsesor.deuda_heredada || '',
+        presupuesto_asignado: zonaData.presupuesto_asignado || selectedAsesor.presupuesto_asignado || ''
+      };
+      setPerfilZona(initialZona);
+      setZonaMensaje('');
+
+      // Si aún está vacío en portal_afv, consultar profiles por email como fallback
+      if (!initialZona.origen_zona && !initialZona.deuda_heredada && !initialZona.presupuesto_asignado) {
+        const asesorEmail = (selectedAsesor.usuario || selectedAsesor.correo || '').trim().toLowerCase();
+        if (asesorEmail) {
+          supabase
+            .from('profiles')
+            .select('origen_zona, deuda_heredada, presupuesto_asignado')
+            .ilike('email', asesorEmail)
+            .maybeSingle()
+            .then(({ data: profData }) => {
+              if (profData && (profData.origen_zona || profData.deuda_heredada || profData.presupuesto_asignado)) {
+                setPerfilZona({
+                  origen_zona: profData.origen_zona || '',
+                  deuda_heredada: profData.deuda_heredada || '',
+                  presupuesto_asignado: profData.presupuesto_asignado || ''
+                });
+              }
+            })
+            .catch(err => console.warn('Perfil zona profiles fallback err:', err));
+        }
+      }
     }
   }, [selectedAsesor]);
 
@@ -695,6 +743,9 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
       if (key !== 'cualidades_generales') {
         updatedObj.cualidades_generales = cualidadesGenerales;
       }
+      if (key !== 'contexto_zona') {
+        updatedObj.contexto_zona = perfilZona;
+      }
       
       const newValue = JSON.stringify(updatedObj);
       const { error } = await supabase
@@ -715,6 +766,7 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
       if (key === 'observacion_global') setObservacionGlobal(value);
       if (key === 'cualidades_generales') setCualidadesGenerales(value);
       if (key === 'imagen_personal') setImagenPersonal(value);
+      if (key === 'contexto_zona') setPerfilZona(value);
       
     } catch (err) {
       console.error(err);
@@ -735,6 +787,43 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
 
   const handleSaveCualidadesGenerales = async () => {
     await handleSaveQualitativeData('cualidades_generales', cualidadesGenerales);
+  };
+
+  const handleSaveContextoZona = async () => {
+    if (!selectedAsesor) return;
+    setSavingZona(true);
+    setZonaMensaje('');
+    try {
+      await handleSaveQualitativeData('contexto_zona', perfilZona);
+
+      // Sincronización secundaria en profiles (si coincide por email)
+      const asesorEmail = (selectedAsesor.usuario || selectedAsesor.correo || '').trim().toLowerCase();
+      if (asesorEmail) {
+        try {
+          await supabase.from('profiles').update({
+            origen_zona: perfilZona.origen_zona,
+            deuda_heredada: perfilZona.deuda_heredada,
+            presupuesto_asignado: perfilZona.presupuesto_asignado
+          }).ilike('email', asesorEmail);
+        } catch (syncErr) {
+          console.warn('Sync profile fallback:', syncErr);
+        }
+      }
+
+      setZonaMensaje('✅ Contexto de zona guardado correctamente.');
+      setSelectedAsesor(prev => ({
+        ...prev,
+        origen_zona: perfilZona.origen_zona,
+        deuda_heredada: perfilZona.deuda_heredada,
+        presupuesto_asignado: perfilZona.presupuesto_asignado
+      }));
+    } catch (err) {
+      console.error(err);
+      setZonaMensaje('❌ Error: ' + (err.message || 'Error al guardar'));
+    } finally {
+      setSavingZona(false);
+      setTimeout(() => setZonaMensaje(''), 4000);
+    }
   };
 
   const fetchSeguimientos = async (asesorId) => {
@@ -1459,7 +1548,26 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
           </div>
         </div>
 
+        ${((perfilZona.origen_zona || perfilZona.deuda_heredada || perfilZona.presupuesto_asignado) || (selectedAsesor.origen_zona || selectedAsesor.deuda_heredada || selectedAsesor.presupuesto_asignado)) ? `
+        <div class="section-title">2. Contexto Estructural de la Zona</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div style="background: #fffbf0; border: 1px solid #fde68a; border-radius: 6px; padding: 12px;">
+            <div style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #92400e; margin-bottom: 6px; letter-spacing: 0.5px;">Origen y Tipología de la Zona</div>
+            <div style="font-size: 10px; color: #333; line-height: 1.5;">${perfilZona.origen_zona || selectedAsesor.origen_zona || '<em style="color:#a16207">No registrado</em>'}</div>
+          </div>
+          <div style="background: #fffbf0; border: 1px solid #fde68a; border-radius: 6px; padding: 12px;">
+            <div style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #92400e; margin-bottom: 6px; letter-spacing: 0.5px;">Deuda Heredada (Base)</div>
+            <div style="font-size: 10px; color: #333; line-height: 1.5;">${perfilZona.deuda_heredada || selectedAsesor.deuda_heredada || '<em style="color:#a16207">No registrado</em>'}</div>
+          </div>
+          <div style="background: #fffbf0; border: 1px solid #fde68a; border-radius: 6px; padding: 12px;">
+            <div style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #92400e; margin-bottom: 6px; letter-spacing: 0.5px;">Presupuesto / Meta Mensual</div>
+            <div style="font-size: 10px; color: #333; line-height: 1.5;">${perfilZona.presupuesto_asignado || selectedAsesor.presupuesto_asignado || '<em style="color:#a16207">No registrado</em>'}</div>
+          </div>
+        </div>
+        <div class="section-title">3. Rendimiento Académico y Avance de Itinerario</div>
+        ` : `
         <div class="section-title">2. Rendimiento Académico y Avance de Itinerario</div>
+        `}
         <table class="report-table">
           <thead>
             <tr>
@@ -2432,6 +2540,9 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                 <button onClick={() => setViewMode('reportes')} className={`px-4 py-1.5 rounded text-xs border transition-colors ${viewMode === 'reportes' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
                     Reporte de Notas
                 </button>
+                <button onClick={() => setViewMode('dashboard-kpis')} className={`px-4 py-1.5 rounded text-xs border transition-all flex items-center gap-1.5 ${viewMode === 'dashboard-kpis' ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-xs' : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 font-bold'}`}>
+                    📊 Dashboard Seguimiento & KPIs
+                </button>
                 <button onClick={() => setShowGestionCalleModal(true)} className="px-4 py-1.5 rounded text-xs border border-gray-300 text-gray-500 hover:bg-gray-50 transition-colors">
                     Gestor Acompañamiento
                 </button>
@@ -2859,6 +2970,29 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                       }}
                     >
                       Imagen Personal
+                    </button>
+                    <button 
+                      onClick={() => setActiveSubTab('contexto_zona')}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px 8px 0 0',
+                        fontSize: '11px',
+                        fontWeight: activeSubTab === 'contexto_zona' ? '700' : '600',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        transition: 'background 150ms ease, color 150ms ease, border-color 150ms ease',
+                        cursor: 'pointer',
+                        border: '1px solid',
+                        borderBottom: activeSubTab === 'contexto_zona' ? '1px solid #ffffff' : '1px solid #e2e2e2',
+                        background: activeSubTab === 'contexto_zona' ? '#fffbf0' : '#f9fafb',
+                        color: activeSubTab === 'contexto_zona' ? '#92400e' : '#666666',
+                        borderColor: activeSubTab === 'contexto_zona' ? '#e2e2e2 #e2e2e2 #fffbf0 #e2e2e2' : '#e2e2e2',
+                        boxShadow: activeSubTab === 'contexto_zona' ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                        marginBottom: activeSubTab === 'contexto_zona' ? '-1px' : '0',
+                        fontFamily: '"Myriad Pro", Arial, sans-serif',
+                      }}
+                    >
+                      🗺️ Contexto de Zona
                     </button>
                   </div>
 
@@ -3913,6 +4047,51 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
                     </div>
                   )}
 
+
+                  {/* PESTAÑA: CONTEXTO DE ZONA */}
+                  {activeSubTab === 'contexto_zona' && (
+                    <div style={{ background: '#fffbf0', border: '1px solid #fde68a', borderRadius: '8px', padding: '28px', fontFamily: '"Myriad Pro", Arial, sans-serif' }}>
+                      <div style={{ marginBottom: '24px', borderBottom: '1px solid #fde68a', paddingBottom: '16px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#92400e', marginBottom: '4px' }}>🗺️ Contexto de Zona — Datos Estructurales</h3>
+                        <p style={{ fontSize: '12px', color: '#a16207' }}>
+                          Estos datos se cargan <strong>una sola vez</strong> al inicio de la inducción en calle. Sirven de referencia permanente para interpretar las evaluaciones de los 6 meses.
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#92400e', marginBottom: '6px' }}>
+                            Origen y Tipología de la Zona
+                            <span style={{ marginLeft: '8px', fontSize: '9px', fontWeight: '600', color: '#a16207', background: '#fef3c7', padding: '2px 8px', borderRadius: '999px', border: '1px solid #fde68a' }}>Impacta: Supervisor 2.2 Cobertura · 2.6 Activación</span>
+                          </label>
+                          <textarea style={{ fontFamily: 'inherit', width: '100%', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 12px', fontSize: '13px', color: '#333', outline: 'none', resize: 'vertical', background: '#fff', minHeight: '72px' }} rows={3} value={perfilZona.origen_zona} onChange={e => setPerfilZona(prev => ({ ...prev, origen_zona: e.target.value }))} placeholder="Ej: Zona subdividida de ex-asesor. ~120 clientes activos, mayoría ferreterías y bodegones. Sin visita regular en últimos 4 meses..." />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#92400e', marginBottom: '6px' }}>
+                            Monto y Contexto de Deuda Heredada (Base)
+                            <span style={{ marginLeft: '8px', fontSize: '9px', fontWeight: '600', color: '#a16207', background: '#fef3c7', padding: '2px 8px', borderRadius: '999px', border: '1px solid #fde68a' }}>Impacta: Crédito/Cobranza 4.2 · Auditoría 3.5</span>
+                          </label>
+                          <textarea style={{ fontFamily: 'inherit', width: '100%', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 12px', fontSize: '13px', color: '#333', outline: 'none', resize: 'vertical', background: '#fff', minHeight: '72px' }} rows={3} value={perfilZona.deuda_heredada} onChange={e => setPerfilZona(prev => ({ ...prev, deuda_heredada: e.target.value }))} placeholder="Ej: Deuda inicial ,500. 3 clientes críticos en mora mayor a 60 días por ,200 total..." />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#92400e', marginBottom: '6px' }}>
+                            Presupuesto / Meta Mensual Asignada a la Zona
+                            <span style={{ marginLeft: '8px', fontSize: '9px', fontWeight: '600', color: '#a16207', background: '#fef3c7', padding: '2px 8px', borderRadius: '999px', border: '1px solid #fde68a' }}>Impacta: Admin. Ventas 5.2 Cumplimiento de Presupuesto</span>
+                          </label>
+                          <textarea style={{ fontFamily: 'inherit', width: '100%', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 12px', fontSize: '13px', color: '#333', outline: 'none', resize: 'vertical', background: '#fff', minHeight: '60px' }} rows={2} value={perfilZona.presupuesto_asignado} onChange={e => setPerfilZona(prev => ({ ...prev, presupuesto_asignado: e.target.value }))} placeholder="Ej: Meta mensual: $22,000 USD ventas netas. 80% cobranza al cierre. Mínimo 5 clientes nuevos/mes..." />
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <button
+                          onClick={handleSaveContextoZona}
+                          disabled={savingZona}
+                          style={{ fontFamily: 'inherit', fontSize: '13px', fontWeight: '700', color: savingZona ? '#a16207' : '#fff', background: savingZona ? '#fef3c7' : '#92400e', border: '1px solid #92400e', borderRadius: '8px', padding: '10px 24px', cursor: savingZona ? 'default' : 'pointer' }}
+                        >
+                          {savingZona ? 'Guardando...' : '💾 Guardar Contexto de Zona'}
+                        </button>
+                        {zonaMensaje && <span style={{ fontSize: '13px', color: zonaMensaje.startsWith('✅') ? '#388e3c' : '#d32f2f', fontWeight: '600' }}>{zonaMensaje}</span>}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -4039,6 +4218,10 @@ const ConsolaEvaluacion = ({ user, onBack, onLogout }) => {
 
         {viewMode === 'reportes' && (
           <ReporteNotas onBack={() => setViewMode('manual')} />
+        )}
+
+        {viewMode === 'dashboard-kpis' && (
+          <DashboardSeguimientoMensual user={user} onBack={() => setViewMode('manual')} />
         )}
 
         {viewMode === 'departamentos' && (

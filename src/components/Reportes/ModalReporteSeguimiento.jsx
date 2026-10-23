@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { generarPdfSeguimiento } from '../../utils/reporteSeguimientoPdf';
+import { generarPdfRubricasDetallado } from '../../utils/reporteRubricasDetalladoPdf';
+import { rubricaData } from '../../data/rubricaData';
 import { getCompanyConfig, BuildingIcon } from '../../pages/DashboardSeguimiento';
 
 const DIMENSIONS = [
@@ -18,6 +20,8 @@ export default function ModalReporteSeguimiento({ advisor, defaultMonth = 1, onC
   const [actionPlans, setActionPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingDetailedPdf, setGeneratingDetailedPdf] = useState(false);
+  const [viewDetailMode, setViewDetailMode] = useState('detallado'); // 'detallado' | 'resumen'
 
   // Formulario rápido para nuevo plan de acción
   const [showAddPlan, setShowAddPlan] = useState(false);
@@ -130,9 +134,27 @@ export default function ModalReporteSeguimiento({ advisor, defaultMonth = 1, onC
         evaluatorName
       });
     } catch (err) {
-      alert("Error al generar el PDF: " + err.message);
+      alert("Error al generar la Ficha: " + err.message);
     } finally {
       setGeneratingPdf(false);
+    }
+  };
+
+  const handleDescargarPdfDetallado = (openInNewTab = false) => {
+    setGeneratingDetailedPdf(true);
+    try {
+      generarPdfRubricasDetallado({
+        advisor,
+        month: selectedMonth,
+        evaluations,
+        actionPlans,
+        evaluatorName,
+        openInNewTab
+      });
+    } catch (err) {
+      alert("Error al generar el Reporte Detallado: " + err.message);
+    } finally {
+      setGeneratingDetailedPdf(false);
     }
   };
 
@@ -159,26 +181,43 @@ export default function ModalReporteSeguimiento({ advisor, defaultMonth = 1, onC
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Barra superior de acciones */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 text-white px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="text-xl">📄</span>
             <div>
-              <h2 className="text-base font-bold">Ficha Ejecutiva de Seguimiento y Plan de Acción</h2>
-              <p className="text-xs text-slate-400">Reporte On-Demand individual con rúbrica y compromisos</p>
+              <h2 className="text-base font-bold">Reporte de Evaluación por Rúbricas y Seguimiento</h2>
+              <p className="text-xs text-slate-400">Detalle de las 6 dimensiones, observaciones por criterio y plan de mejora</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => handleDescargarPdfDetallado(true)}
+              disabled={generatingDetailedPdf}
+              title="Abre la vista previa de impresión en una nueva pestaña (para imprimir o guardar digitalmente)"
+              className="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              🖨️ {generatingDetailedPdf ? 'Generando...' : 'Vista Previa / Imprimir'}
+            </button>
+            <button
+              onClick={() => handleDescargarPdfDetallado(false)}
+              disabled={generatingDetailedPdf}
+              title="Descarga el PDF completo con todas las 6 dimensiones, rúbricas y observaciones detalladas"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              📥 {generatingDetailedPdf ? 'Generando...' : 'Descargar PDF Detallado'}
+            </button>
             <button
               onClick={handleDescargarPdf}
               disabled={generatingPdf}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md transition flex items-center gap-1.5"
+              title="Descarga la ficha ejecutiva resumida de 1-2 páginas"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              📥 {generatingPdf ? 'Generando PDF...' : 'Descargar PDF Formal'}
+              📋 {generatingPdf ? 'Generando...' : 'Ficha Resumida'}
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg text-lg transition"
+              className="text-slate-400 hover:text-white p-1 rounded-lg text-lg transition cursor-pointer ml-1"
             >
               ✕
             </button>
@@ -269,47 +308,188 @@ export default function ModalReporteSeguimiento({ advisor, defaultMonth = 1, onC
             </div>
           </div>
 
-          {/* Sección 1: Desglose por Dimensiones */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                1. Desglose de Rúbricas por Dimensión (Mes {selectedMonth})
-              </h4>
+          {/* Selector de Pestaña: Detalle vs Resumen */}
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setViewDetailMode('detallado')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  viewDetailMode === 'detallado'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>📝</span> Desglose de Rúbricas y Observaciones
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewDetailMode('resumen')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  viewDetailMode === 'resumen'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>📊</span> Resumen por Dimensión
+              </button>
             </div>
+            <span className="text-[11px] text-slate-400 font-medium hidden md:inline">
+              Mes {selectedMonth} · 6 Dimensiones
+            </span>
+          </div>
 
-            <div className="divide-y divide-slate-100">
+          {/* Sección 1: Vista Detallada de Criterios y Observaciones */}
+          {viewDetailMode === 'detallado' && (
+            <div className="space-y-4">
               {DIMENSIONS.map(dim => {
                 const ev = evaluations.find(e => e.department === dim.key);
                 const score = ev ? Number(ev.average_score).toFixed(2) : null;
+                const criterios = rubricaData[dim.key] || [];
+                const scores = ev?.scores || {};
+                const criteriaObs = ev?.criteria_observations || {};
+                const obsCount = Object.values(criteriaObs).filter(v => v && v.trim()).length;
 
                 return (
-                  <div key={dim.key} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-50/50">
-                    <div className="md:w-1/2">
-                      <p className="text-sm font-bold text-slate-900">{dim.label}</p>
-                      {ev?.comments && (
-                        <p className="text-xs text-slate-500 italic mt-0.5">"{ev.comments}"</p>
-                      )}
+                  <div key={dim.key} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    {/* Encabezado de la Dimensión */}
+                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                          {dim.label}
+                        </h4>
+                        <span className="text-[10px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full font-bold">
+                          {obsCount} / {criterios.length} con observación
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {score ? (
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md border ${getBadgeColor(score)}`}>
+                            Promedio: {score} / 5.00
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic font-semibold">Pendiente de calificar</span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      {score ? (
-                        <>
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${getBadgeColor(score)}`}>
-                            {score} / 5.00
-                          </span>
-                          <span className="text-[11px] text-slate-500 font-medium">
-                            {Number(score) >= 4.0 ? '🟢 Sólido' : Number(score) >= 3.0 ? '🟡 Competente' : '🔴 Refuerzo'}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-slate-400 font-semibold italic">Pendiente de evaluación</span>
-                      )}
+                    {/* Lista de Criterios con sus Observaciones */}
+                    <div className="divide-y divide-slate-100 p-2">
+                      {criterios.map(crit => {
+                        const critScore = scores[crit.id];
+                        const obs = criteriaObs[crit.id];
+
+                        return (
+                          <div key={crit.id} className="p-3 hover:bg-slate-50/60 rounded-lg transition">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-[11px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                                    {crit.id}
+                                  </span>
+                                  <h5 className="text-xs font-bold text-slate-900">
+                                    {crit.label}
+                                  </h5>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0">
+                                {critScore !== undefined ? (
+                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${getBadgeColor(critScore)}`}>
+                                    {critScore === 'N/A' ? 'N/A' : `${critScore} / 5`}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 italic">Sin nota</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Observación Cualitativa del Criterio */}
+                            {obs && obs.trim() ? (
+                              <div className="mt-2 bg-amber-50/80 border border-amber-200/90 rounded-md p-2.5 text-xs text-amber-950">
+                                <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-amber-800 mb-0.5">
+                                  <span>✍️</span> Observación del Evaluador:
+                                </div>
+                                <p className="leading-relaxed pl-3 border-l-2 border-amber-400">
+                                  {obs.trim()}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="mt-1 text-[10px] text-slate-400 italic">
+                                Sin observación específica registrada para este criterio.
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
+
+                    {/* Comentario General de la Dimensión si existe */}
+                    {ev?.comments && ev.comments.trim() && (
+                      <div className="bg-slate-50/80 border-t border-slate-200 p-3 text-xs text-slate-700">
+                        <span className="font-bold text-[10px] uppercase text-slate-500 block mb-0.5">
+                          💬 Comentario Global del Departamento:
+                        </span>
+                        <p className="italic pl-2 border-l-2 border-slate-300">
+                          "{ev.comments.trim()}"
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </div>
+          )}
+
+          {/* Sección 1: Vista Resumen (6 tarjetas de dimensiones) */}
+          {viewDetailMode === 'resumen' && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  1. Resumen de Rúbricas por Dimensión (Mes {selectedMonth})
+                </h4>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {DIMENSIONS.map(dim => {
+                  const ev = evaluations.find(e => e.department === dim.key);
+                  const score = ev ? Number(ev.average_score).toFixed(2) : null;
+                  const cCount = (rubricaData[dim.key] || []).length;
+                  const obsCount = ev?.criteria_observations ? Object.values(ev.criteria_observations).filter(v => v && v.trim()).length : 0;
+
+                  return (
+                    <div key={dim.key} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-50/50">
+                      <div className="md:w-1/2">
+                        <p className="text-sm font-bold text-slate-900">{dim.label}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {obsCount} de {cCount} criterios con observación cualitativa
+                        </p>
+                        {ev?.comments && (
+                          <p className="text-xs text-slate-500 italic mt-1">"{ev.comments}"</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {score ? (
+                          <>
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${getBadgeColor(score)}`}>
+                              {score} / 5.00
+                            </span>
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              {Number(score) >= 4.0 ? '🟢 Sólido' : Number(score) >= 3.0 ? '🟡 Competente' : '🔴 Refuerzo'}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-semibold italic">Pendiente de evaluación</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Sección 2: Plan de Acción y Compromisos */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

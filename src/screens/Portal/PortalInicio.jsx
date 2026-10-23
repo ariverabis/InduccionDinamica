@@ -130,6 +130,10 @@ const PortalInicio = () => {
   const [email, setEmail] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
+  const [recoveryError, setRecoveryError] = useState('');
 
   useEffect(() => {
     const savedCompany = localStorage.getItem('selectedCompany');
@@ -403,7 +407,23 @@ const PortalInicio = () => {
     }
   };
 
-  const handleLogout = async () => {
+  const handlePasswordRecovery = async () => {
+  setRecoveryMessage('');
+  setRecoveryError('');
+  if (!recoveryEmail) {
+    setRecoveryError('Ingrese su correo');
+    return;
+  }
+  setIsLoading(true);
+  const { data, error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+    redirectTo: window.location.origin,
+  });
+  if (error) setRecoveryError(error.message);
+  else setRecoveryMessage('Correo de recuperación enviado');
+  setIsLoading(false);
+};
+
+const handleLogout = async () => {
     // Cerrar sesión en el servidor seguro de Supabase
     await supabase.auth.signOut();
     
@@ -467,34 +487,51 @@ const PortalInicio = () => {
               </div>
             )}
           </div>
-          <div className="space-y-4">
-            {isRegistering && (
-              <>
-                <input type="text" placeholder="Nombre y Apellido" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
-                <input type="email" placeholder="Correo Electrónico" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
-              </>
-            )}
-            <input type="text" placeholder="Correo Registrado / Usuario" value={username} onChange={e => setUsername(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
-            <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
-          </div>
-          {loginError && <p className="text-red-500 text-[10px] font-bold mt-4 text-center">{loginError}</p>}
-
-          <button
-            onClick={isRegistering ? handleRegister : handleLogin}
-            disabled={isLoading}
-            className="w-full mt-6 py-4 bg-slate-950 text-white font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg text-[10px] uppercase tracking-widest"
-          >
-            {isLoading ? 'Verificando...' : (isRegistering ? 'Completar Registro' : 'Iniciar Sesión')}
-          </button>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }}
-              className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:underline"
-            >
-              {isRegistering ? '¿Posee una cuenta? Acceder' : '¿Nuevo participante? Crear cuenta'}
-            </button>
-          </div>
+{!showRecovery ? (
+  <>
+    <div className="space-y-4">
+      {isRegistering && (
+        <>
+          <input type="text" placeholder="Nombre y Apellido" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+          <input type="email" placeholder="Correo Electrónico" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+        </>
+      )}
+      <input type="text" placeholder="Correo Registrado / Usuario" value={username} onChange={e => setUsername(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+      <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+    </div>
+    {loginError && <p className="text-red-500 text-[10px] font-bold mt-4 text-center">{loginError}</p>}
+    <button onClick={isRegistering ? handleRegister : handleLogin} disabled={isLoading} className="w-full mt-6 py-4 bg-slate-950 text-white font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg text-[10px] uppercase tracking-widest">
+      {isLoading ? 'Verificando...' : (isRegistering ? 'Completar Registro' : 'Iniciar Sesión')}
+    </button>
+    <div className="mt-6 text-center">
+      <button onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }} className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:underline">
+        {isRegistering ? '¿Posee una cuenta? Acceder' : '¿Nuevo participante? Crear cuenta'}
+      </button>
+      <button onClick={() => setShowRecovery(true)} className="text-[10px] font-bold text-red-500 uppercase tracking-widest hover:underline ml-2">
+        ¿Olvidó su contraseña?
+      </button>
+    </div>
+  </>
+) : (
+  <>
+    <div className="space-y-4">
+      <input type="email" placeholder="Correo electrónico"
+             value={recoveryEmail}
+             onChange={e => setRecoveryEmail(e.target.value)}
+             className="w-full px-5 py-4 bg-slate-50 border border-slate-200 outline-none text-base font-medium focus:ring-1 focus:ring-[#2a2421] transition-all" />
+    </div>
+    {recoveryError && <p className="text-red-500 text-[10px] font-bold mt-4 text-center">{recoveryError}</p>}
+    {recoveryMessage && <p className="text-green-500 text-[10px] font-bold mt-4 text-center">{recoveryMessage}</p>}
+    <button onClick={handlePasswordRecovery} disabled={isLoading} className="w-full mt-6 py-4 bg-slate-950 text-white font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg text-[10px] uppercase tracking-widest">
+      {isLoading ? 'Enviando...' : 'Recuperar contraseña'}
+    </button>
+    <div className="mt-4 text-center">
+      <button onClick={() => { setShowRecovery(false); setRecoveryError(''); setRecoveryMessage(''); }} className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:underline">
+        Volver al login
+      </button>
+    </div>
+  </>
+)}
 
           <button onClick={() => { setSelectedCompany(null); setShowLogin(false); setIsRegistering(false); }} className="w-full mt-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-600">Volver a Selección</button>
         </div>
@@ -528,6 +565,12 @@ const PortalInicio = () => {
                 className="text-xs text-gray-600 border border-gray-300 px-3 py-1 rounded hover:bg-gray-50 transition-colors"
               >
                 Dashboard Rúbricas
+              </button>
+              <button
+                onClick={() => navigate('/dashboard-kpis')}
+                className="text-xs text-amber-900 bg-amber-50 border border-amber-300 font-bold px-3 py-1 rounded hover:bg-amber-100 transition-colors flex items-center gap-1"
+              >
+                📊 Dashboard Seguimiento & KPIs
               </button>
             </>
           ) : (

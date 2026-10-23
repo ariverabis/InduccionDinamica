@@ -330,6 +330,7 @@ export const abrirVentanaImpresionCalle = (reportData) => {
                 <div>
                   <div class="item-text-title">■ ${item.titulo}</div>
                   <div class="item-text-desc">${item.descripcion}</div>
+                  ${item.preguntasClave ? `<div style="font-size: 9.5px; font-style: italic; color: #475569; margin-top: 2px;">💬 Pregunta clave: "${item.preguntasClave}"</div>` : ''}
                 </div>
               </div>
             `;
@@ -552,6 +553,11 @@ export default function ReporteAcompanamientoCallePDF({ reportData, onClose, onP
                         <p className="text-[11px] text-slate-700 font-normal">
                           {item.descripcion}
                         </p>
+                        {item.preguntasClave && (
+                          <p className="text-[10px] italic text-slate-500 font-medium mt-0.5">
+                            💬 Pregunta clave: "{item.preguntasClave}"
+                          </p>
+                        )}
                       </div>
                     </div>
                   );

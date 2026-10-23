@@ -56,7 +56,12 @@ export default function AsignacionActividadesCalleModal({ asesor, onClose, onSav
           const asig = dbAsig[0];
           setSelectedBuddyId(asig.buddy_id || '');
           if (Array.isArray(asig.actividades_ids) && asig.actividades_ids.length > 0) {
-            setSelectedActividadIds(asig.actividades_ids);
+            let ids = [...asig.actividades_ids];
+            if (ids.includes('act-5')) {
+              ids = ids.filter(x => x !== 'act-5');
+              ids.push('act-5-s', 'act-5-a', 'act-5-b', 'act-5-e', 'act-5-r');
+            }
+            setSelectedActividadIds(ids);
           } else {
             // Seleccionar todas por defecto
             setSelectedActividadIds(actividades.map(a => a.id));
@@ -221,6 +226,24 @@ export default function AsignacionActividadesCalleModal({ asesor, onClose, onSav
                   <div className="space-y-2.5">
                     {items.map(item => {
                       const isSelected = selectedActividadIds.includes(item.id);
+                      const paso = item.pasoSaber || (
+                        item.id === 'act-5-s' ? 'S' :
+                        item.id === 'act-5-a' ? 'A' :
+                        item.id === 'act-5-b' ? 'B' :
+                        item.id === 'act-5-e' ? 'E' :
+                        item.id === 'act-5-r' ? 'R' : null
+                      );
+
+                      const pasoConfig = {
+                        S: { badge: 'bg-blue-600 text-white', label: 'PASO S' },
+                        A: { badge: 'bg-indigo-600 text-white', label: 'PASO A' },
+                        B: { badge: 'bg-amber-600 text-white', label: 'PASO B' },
+                        E: { badge: 'bg-emerald-600 text-white', label: 'PASO E' },
+                        R: { badge: 'bg-violet-600 text-white', label: 'PASO R' }
+                      };
+
+                      const cfg = paso ? pasoConfig[paso] : null;
+
                       return (
                         <label
                           key={item.id}
@@ -233,9 +256,21 @@ export default function AsignacionActividadesCalleModal({ asesor, onClose, onSav
                             onChange={() => {}} // Manejado por onClick contenedor
                             className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
                           />
-                          <div className="text-xs">
-                            <span className="font-bold text-slate-900 block">{item.titulo}</span>
-                            <span className="text-[11px] text-slate-600 block">{item.descripcion}</span>
+                          <div className="text-xs flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {cfg && (
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${cfg.badge}`}>
+                                  {cfg.label}
+                                </span>
+                              )}
+                              <span className="font-bold text-slate-900 block">{item.titulo}</span>
+                            </div>
+                            <span className="text-[11px] text-slate-600 block mt-0.5">{item.descripcion}</span>
+                            {item.preguntasClave && (
+                              <span className="text-[10px] text-blue-700 italic block mt-1">
+                                💬 Pregunta: "{item.preguntasClave}"
+                              </span>
+                            )}
                           </div>
                         </label>
                       );

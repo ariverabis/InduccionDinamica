@@ -27,6 +27,21 @@ export function generarPdfSeguimiento({
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 14;
 
+  // Resolver el nombre del asesor con todos los fallbacks posibles
+  const evalAdvisorName = evaluations?.find(e => e.advisor_name && e.advisor_name.trim())?.advisor_name;
+  const planAdvisorName = actionPlans?.find(p => p.advisor_name && p.advisor_name.trim())?.advisor_name;
+  const advisorFullName = (
+    advisor?.full_name ||
+    advisor?.nombre ||
+    advisor?.name ||
+    advisor?.advisor_name ||
+    evalAdvisorName ||
+    planAdvisorName ||
+    advisor?.email ||
+    'Asesor Comercial'
+  ).trim();
+  const advisorEmail = advisor?.email || advisor?.correo || advisor?.correo_corporativo || advisor?.usuario || 'N/A';
+
   // 1. Franja Superior Corporativa
   doc.setFillColor(15, 23, 42); // slate-900
   doc.rect(0, 0, pageWidth, 24, 'F');
@@ -73,11 +88,11 @@ export function generarPdfSeguimiento({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
-  doc.text(advisor?.full_name || 'Asesor Comercial', margin + 55, yPos + 6);
+  doc.text(advisorFullName, margin + 55, yPos + 6);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(advisor?.email || 'N/A', margin + 55, yPos + 13);
+  doc.text(advisorEmail, margin + 55, yPos + 13);
   doc.text(evaluatorName || 'Comité Evaluador', margin + 55, yPos + 20);
 
   // 3. Resumen Ejecutivo (Semáforo Global)
@@ -270,7 +285,7 @@ export function generarPdfSeguimiento({
   doc.line(margin + 5, yPos, margin + colWidth - 5, yPos);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.text(advisor?.full_name || 'Asesor Comercial', margin + (colWidth / 2), yPos + 4, { align: 'center' });
+  doc.text(advisorFullName, margin + (colWidth / 2), yPos + 4, { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.text('Firma del Asesor', margin + (colWidth / 2), yPos + 8, { align: 'center' });
@@ -314,7 +329,7 @@ export function generarPdfSeguimiento({
   }
 
   // Guardar / Descargar el archivo
-  const safeName = (advisor?.full_name || 'Asesor').replace(/[^a-zA-Z0-9]/g, '_');
+  const safeName = advisorFullName.replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `Seguimiento_PlanAccion_${safeName}_Mes_${month}.pdf`;
   doc.save(fileName);
 }

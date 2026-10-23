@@ -446,6 +446,12 @@ export default function DashboardSeguimiento() {
             <p className="text-sm text-gray-500 mt-1">{activeName} — {activeRole}</p>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              to="/imprimir-rubricas"
+              className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded hover:bg-indigo-100 transition-colors font-semibold flex items-center gap-1"
+            >
+              🖨️ Imprimir Rúbricas (Vacías)
+            </Link>
             <button
               onClick={() => setShowDriveTemplates(true)}
               className="text-xs text-gray-600 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50 transition-colors"

@@ -87,6 +87,7 @@ export default function EvaluacionMensual() {
   const [existingEvals, setExistingEvals] = useState({});
   const [scores, setScores] = useState({});
   const [comments, setComments] = useState('');
+  const [criteriaObservations, setCriteriaObservations] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -104,9 +105,24 @@ export default function EvaluacionMensual() {
           .from('profiles')
           .select('*')
           .eq('id', advisorId)
-          .single();
+          .maybeSingle();
         if (!error && data) {
           setAdvisor(data);
+        } else {
+          // Fallback a portal_afv.usuarios si el asesor fue registrado en portal_afv
+          const { data: afvData } = await supabase
+            .schema('portal_afv')
+            .from('usuarios')
+            .select('*')
+            .eq('id', advisorId)
+            .maybeSingle();
+          if (afvData) {
+            setAdvisor({
+              ...afvData,
+              full_name: afvData.nombre || afvData.usuario,
+              email: afvData.correo || afvData.correo_corporativo || afvData.usuario
+            });
+          }
         }
       } catch (err) {
         console.error("Error al cargar asesor:", err);
@@ -132,6 +148,12 @@ export default function EvaluacionMensual() {
             evalMap[ev.department] = ev;
           });
           setExistingEvals(evalMap);
+
+          // Si el asesor no tiene nombre cargado aún, rescatarlo de la evaluación
+          const evalName = data.find(ev => ev.advisor_name && ev.advisor_name.trim())?.advisor_name;
+          if (evalName) {
+            setAdvisor(prev => prev ? ({ ...prev, full_name: prev.full_name || evalName }) : { id: advisorId, full_name: evalName });
+          }
         }
       } catch (err) {
         console.error("Error al cargar evaluaciones:", err);
@@ -148,9 +170,11 @@ export default function EvaluacionMensual() {
     if (currentEval) {
       setScores(currentEval.scores || {});
       setComments(currentEval.comments || '');
+      setCriteriaObservations(currentEval.criteria_observations || {});
     } else {
       setScores({});
       setComments('');
+      setCriteriaObservations({});
     }
   }, [selectedDept, existingEvals]);
 
@@ -159,6 +183,10 @@ export default function EvaluacionMensual() {
 
   const handleScoreChange = (id, value) => {
     setScores(prev => ({ ...prev, [id]: value === 'N/A' ? 'N/A' : Number(value) }));
+  };
+
+  const handleCriteriaObservationChange = (id, text) => {
+    setCriteriaObservations(prev => ({ ...prev, [id]: text }));
   };
 
   const calculateAverage = () => {
@@ -185,6 +213,7 @@ export default function EvaluacionMensual() {
         department: selectedDept,
         scores: scores,
         comments: comments,
+        criteria_observations: criteriaObservations,
         average_score: avg,
         evaluator_id: profile?.id || portalUser?.id
       };
@@ -288,10 +317,10 @@ export default function EvaluacionMensual() {
               Evaluación Mes {month} {parseInt(month) === 3 ? '(Corte trimestral)' : parseInt(month) === 6 ? '(Corte semestral)' : ''}
             </span>
             <h1 style={{ fontSize: '22px', fontWeight: 600, color: '#000', marginTop: '12px', lineHeight: 1.25 }}>
-              {advisor?.full_name || 'Cargando asesor...'}
+              {advisor?.full_name || advisor?.nombre || advisor?.name || 'Cargando asesor...'}
             </h1>
             <p style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
-              Correo: {advisor?.email || 'N/A'}
+              Correo: {advisor?.email || advisor?.correo || advisor?.usuario || 'N/A'}
             </p>
           </div>
           <div className="flex items-center" style={{ gap: '12px' }}>
@@ -581,6 +610,39 @@ export default function EvaluacionMensual() {
                         </div>
                       </div>
                     )}
+
+                    {/* Observación por criterio */}
+                    <div style={{
+                      padding: '12px 16px',
+                      borderTop: '1px solid #f0f0f0',
+                      background: '#fafafa'
+                    }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '6px' }}>
+                        📝 Observación — {item.label}
+                      </label>
+                      <textarea
+                        style={{
+                          fontFamily: 'inherit',
+                          width: '100%',
+                          border: '1px solid #e2e2e2',
+                          borderRadius: '6px',
+                          padding: '8px 10px',
+                          fontSize: '13px',
+                          color: '#333',
+                          outline: 'none',
+                          resize: 'vertical',
+                          background: criteriaObservations[item.id] ? '#fffbf0' : '#fff',
+                          transition: 'border-color 150ms ease, background 150ms ease',
+                          minHeight: '56px'
+                        }}
+                        rows={2}
+                        value={criteriaObservations[item.id] || ''}
+                        onChange={(e) => handleCriteriaObservationChange(item.id, e.target.value)}
+                        placeholder={`¿Qué situación específica justifica esta nota? ¿Qué ocurre con "${item.label}" este mes?`}
+                        onFocus={e => { e.currentTarget.style.borderColor = '#a8a8a8'; e.currentTarget.style.background = '#fffbf0'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = '#e2e2e2'; }}
+                      />
+                    </div>
                   </div>
                 );
               })}
