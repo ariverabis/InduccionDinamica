@@ -206,5 +206,54 @@ export const kpiService = {
     } catch (e) {}
 
     return payload;
+  },
+
+  /**
+   * Elimina los KPIs de un asesor para un mes y año específico
+   */
+  async deleteKpi(id_asesor, mes_numero, anio) {
+    const numMes = Number(mes_numero);
+    const numAnio = Number(anio);
+    let deleted = false;
+
+    // 1. Intentar borrar en kpis_mensuales
+    try {
+      const { error } = await supabase
+        .schema('portal_afv')
+        .from('kpis_mensuales')
+        .delete()
+        .eq('id_asesor', id_asesor)
+        .eq('mes_numero', numMes)
+        .eq('anio', numAnio);
+
+      if (!error) {
+        deleted = true;
+      }
+    } catch (e) {}
+
+    // 2. Intentar borrar en seguimientos (fallback)
+    try {
+      const fechaProgramada = `${numAnio}-${String(numMes).padStart(2, '0')}-01`;
+      await supabase
+        .schema('portal_afv')
+        .from('seguimientos')
+        .delete()
+        .eq('id_asesor', id_asesor)
+        .eq('actividad', 'KPI_MENSUAL')
+        .eq('fecha_programada', fechaProgramada);
+      deleted = true;
+    } catch (e) {}
+
+    // 3. Eliminar de caché local
+    try {
+      const cached = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
+      const key = `${id_asesor}_${numMes}_${numAnio}`;
+      if (cached[key]) {
+        delete cached[key];
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cached));
+      }
+    } catch (e) {}
+
+    return deleted;
   }
 };

@@ -73,7 +73,7 @@ export default function DashboardSeguimientoMensual({ user, onBack, standalone =
   // State to track which advisors have their month details expanded
   const [expandedAdvisors, setExpandedAdvisors] = useState([]);
 
-  // Modal para cargar KPIs
+  // Modal para cargar/modificar KPIs
   const [modalKpiOpen, setModalKpiOpen] = useState(false);
   const [modalData, setModalData] = useState({
     id_asesor: '',
@@ -87,7 +87,46 @@ export default function DashboardSeguimientoMensual({ user, onBack, standalone =
     observaciones: ''
   });
   const [savingKpi, setSavingKpi] = useState(false);
+  const [deletingKpi, setDeletingKpi] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+  // Auto-rellena los campos del modal al cambiar asesor o periodo si ya existen KPIs
+  const handleModalAdvisorOrPeriodChange = (newAdvisorId, newMesNumero, newAnio, newMesNombre) => {
+    const advId = newAdvisorId !== undefined ? newAdvisorId : modalData.id_asesor;
+    const mesNum = newMesNumero !== undefined ? Number(newMesNumero) : Number(modalData.mes_numero);
+    const anioNum = newAnio !== undefined ? Number(newAnio) : Number(modalData.anio);
+    const mesNom = newMesNombre !== undefined ? newMesNombre : (MONTH_NAMES[Math.min(mesNum - 1, 11)] || modalData.mes_nombre);
+
+    const advObj = advisors.find(a => a.id === advId);
+    const key = `${advId}_${mesNum}_${anioNum}`;
+    const existing = kpisMap[key];
+
+    if (existing) {
+      setModalData({
+        id_asesor: advId,
+        nombre_asesor: advObj ? advObj.nombre : (existing.nombre_asesor || ''),
+        mes_numero: mesNum,
+        mes_nombre: mesNom,
+        anio: anioNum,
+        avaluo: existing.avaluo != null ? existing.avaluo : '',
+        efectividad: existing.efectividad != null ? existing.efectividad : '',
+        alcance_presupuesto: existing.alcance_presupuesto != null ? existing.alcance_presupuesto : '',
+        observaciones: existing.observaciones || ''
+      });
+    } else {
+      setModalData({
+        id_asesor: advId,
+        nombre_asesor: advObj ? advObj.nombre : '',
+        mes_numero: mesNum,
+        mes_nombre: mesNom,
+        anio: anioNum,
+        avaluo: '',
+        efectividad: '',
+        alcance_presupuesto: '',
+        observaciones: ''
+      });
+    }
+  };
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -396,23 +435,27 @@ const sortedRows = useMemo(() => {
     };
   }, [filteredRows]);
 
-  // Manejador para abrir modal de carga para una fila específica
+  // Manejador para abrir modal de carga/edición para una fila específica
   const handleOpenKpiModal = (row) => {
+    const key = `${row.id_asesor}_${row.mes_numero}_${row.anio}`;
+    const existing = kpisMap[key];
+
     setModalData({
       id_asesor: row.id_asesor,
       nombre_asesor: row.nombre,
       mes_numero: row.mes_numero,
-      mes_nombre: row.mes_nombre,
-      anio: row.anio,
-      avaluo: row.avaluo != null ? row.avaluo : '',
-      efectividad: row.efectividad != null ? row.efectividad : '',
-      alcance_presupuesto: row.alcance_presupuesto != null ? row.alcance_presupuesto : '',
-      observaciones: row.kpi_observaciones || ''
+      mes_nombre: row.mes_nombre || row.mes_label || MONTH_NAMES[Math.min(row.mes_numero - 1, 11)],
+      anio: row.anio || 2026,
+      avaluo: existing?.avaluo != null ? existing.avaluo : (row.avaluo != null ? row.avaluo : ''),
+      efectividad: existing?.efectividad != null ? existing.efectividad : (row.efectividad != null ? row.efectividad : ''),
+      alcance_presupuesto: existing?.alcance_presupuesto != null ? existing.alcance_presupuesto : (row.alcance_presupuesto != null ? row.alcance_presupuesto : ''),
+      observaciones: existing?.observaciones || row.kpi_observaciones || ''
     });
+    setSaveSuccessMsg('');
     setModalKpiOpen(true);
   };
 
-  // Guardar KPI desde el modal
+  // Guardar o Actualizar KPI desde el modal
   const handleSaveKpiSubmit = async (e) => {
     e.preventDefault();
     setSavingKpi(true);
@@ -456,6 +499,34 @@ const sortedRows = useMemo(() => {
       alert('Error al guardar los indicadores.');
     } finally {
       setSavingKpi(false);
+    }
+  };
+
+  // Eliminar KPI para el asesor y mes seleccionados
+  const handleDeleteKpiSubmit = async () => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar los indicadores de ${modalData.nombre_asesor} para el mes ${modalData.mes_numero} (${modalData.mes_nombre} ${modalData.anio})?`)) {
+      return;
+    }
+    setDeletingKpi(true);
+    setSaveSuccessMsg('');
+    try {
+      await kpiService.deleteKpi(modalData.id_asesor, modalData.mes_numero, modalData.anio);
+      const key = `${modalData.id_asesor}_${modalData.mes_numero}_${modalData.anio}`;
+      setKpisMap(prev => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+      setSaveSuccessMsg('🗑️ Indicadores eliminados exitosamente.');
+      setTimeout(() => {
+        setModalKpiOpen(false);
+        setSaveSuccessMsg('');
+      }, 1200);
+    } catch (err) {
+      console.error('Error eliminando KPI:', err);
+      alert('Error al eliminar los indicadores.');
+    } finally {
+      setDeletingKpi(false);
     }
   };
 
@@ -537,23 +608,15 @@ const sortedRows = useMemo(() => {
           <button
             onClick={() => {
               if (advisors.length > 0) {
-                setModalData({
-                  id_asesor: advisors[0].id,
-                  nombre_asesor: advisors[0].nombre,
-                  mes_numero: 1,
-                  mes_nombre: 'Enero',
-                  anio: 2026,
-                  avaluo: '',
-                  efectividad: '',
-                  alcance_presupuesto: '',
-                  observaciones: ''
-                });
+                const firstAdv = advisors[0];
+                handleModalAdvisorOrPeriodChange(firstAdv.id, 1, 2026, 'Enero');
+                setSaveSuccessMsg('');
                 setModalKpiOpen(true);
               }
             }}
             className="px-5 py-2.5 rounded-xl bg-amber-500 text-white font-black text-xs hover:bg-amber-600 shadow-sm hover:shadow transition-all flex items-center gap-2"
           >
-            <span>➕</span> Cargar Indicadores (KPIs)
+            <span>➕ / ✏️</span> Cargar o Modificar KPIs
           </button>
 
           <button
@@ -628,13 +691,13 @@ const sortedRows = useMemo(() => {
               onClick={() => setViewTab('mensual')}
               className={`px-3 py-1.5 rounded-lg transition-all ${viewTab === 'mensual' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
-              📑 Vista Mensual en Calle ({filteredRows.length})
+              👥 Vista por Asesor con Meses Desplegables ({consolidatedAdvisors.length})
             </button>
             <button
               onClick={() => setViewTab('consolidado')}
               className={`px-3 py-1.5 rounded-lg transition-all ${viewTab === 'consolidado' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
-              👥 Consolidado por Asesor ({consolidatedAdvisors.length})
+              📊 Resumen Consolidado ({consolidatedAdvisors.length})
             </button>
           </div>
         </div>
@@ -743,7 +806,7 @@ const sortedRows = useMemo(() => {
         )}
       </div>
 
-      {/* TABLA PRINCIPAL: VISTA MENSUAL EN CALLE */}
+      {/* TABLA PRINCIPAL: VISTA POR ASESOR CON MESES DESPLEGABLES */}
       {viewTab === 'mensual' && (
         <div className="rounded-3xl border border-slate-200 shadow-sm overflow-hidden" style={{backgroundColor: 'var(--color-surface)'}}>
           <div className="overflow-x-auto">
@@ -754,19 +817,19 @@ const sortedRows = useMemo(() => {
                   <th colSpan="5" className="bg-slate-900 px-4 py-2 text-center border-r border-slate-800">
                     Datos del Asesor y Asignación
                   </th>
-                  <th colSpan="2" className="bg-sky-700 px-4 py-2 text-center border-r border-sky-800">
-                    Periodo en Calle
+                  <th className="bg-sky-700 px-4 py-2 text-center border-r border-sky-800">
+                    Periodo
                   </th>
                   <th colSpan="3" className="bg-amber-600 px-4 py-2 text-center border-r border-amber-700">
-                    Indicadores Comerciales (KPIs a Cargar)
+                    Promedios Indicadores (KPIs)
                   </th>
                   <th colSpan="2" className="bg-emerald-700 px-4 py-2 text-center border-r border-emerald-800">
-                    Desempeño Mensual
+                    Desempeño General
                   </th>
                   <th colSpan="11" className="bg-indigo-700 px-4 py-2 text-center border-r border-indigo-800">
                     Calificaciones Proceso de Inducción (10 Instrumentos)
                   </th>
-                  <th className="bg-slate-800 px-4 py-2 text-center">Acciones</th>
+                  <th className="bg-slate-800 px-4 py-2 text-center min-w-[140px]">Desarrollo Mes a Mes</th>
                 </tr>
 
                 {/* HEADER DE COLUMNAS ESPECÍFICAS */}
@@ -777,15 +840,14 @@ const sortedRows = useMemo(() => {
                   <th className="px-3 py-3 border-r border-slate-200">Zona</th>
                   <th className="px-3 py-3 border-r border-slate-200">Ingreso</th>
 
-                  <th className="px-3 py-3 border-r border-slate-200 text-center bg-sky-50/50">N° Mes</th>
-                  <th className="px-3 py-3 border-r border-slate-200 min-w-[120px] bg-sky-50/50">Mes Calendario</th>
+                  <th className="px-3 py-3 border-r border-slate-200 text-center bg-sky-50/50">Meses en Calle</th>
 
-                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-amber-50 font-black text-amber-900">Avalúo</th>
-                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-amber-50 font-black text-amber-900">Efectividad</th>
-                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-amber-50 font-black text-amber-900">Alcance Presup.</th>
+                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-amber-50 font-black text-amber-900">Prom. Avalúo</th>
+                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-amber-50 font-black text-amber-900">Prom. Efectividad</th>
+                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-amber-50 font-black text-amber-900">Prom. Alcance</th>
 
-                  <th className="px-3 py-3 border-r border-slate-200 text-right bg-emerald-50">Prom. Desemp.</th>
-                  <th className="px-3 py-3 border-r border-slate-200 text-center bg-emerald-50">Eval. Depto</th>
+                  <th className="px-3 py-2 border-r border-slate-200 text-right bg-emerald-50">Prom. Ind.</th>
+                  <th className="px-3 py-2 border-r border-slate-200 text-center bg-emerald-50">Estatus Ind.</th>
 
                   {SUBMODULES_ORDER.map(sm => (
                     <th key={sm.id} title={sm.fullName} className="px-2 py-3 border-r border-slate-200 text-right bg-indigo-50/40 text-[9px] min-w-[70px]">
@@ -793,16 +855,15 @@ const sortedRows = useMemo(() => {
                     </th>
                   ))}
                   <th className="px-3 py-3 border-r border-slate-200 text-right bg-indigo-100 font-black text-indigo-900">Prom. Ind.</th>
-
-                  <th className="px-3 py-3 text-center">Acción</th>
+                  <th className="px-3 py-3 text-center bg-slate-100">Acción</th>
                 </tr>
               </thead>
 
-              {/* FILAS DE DATOS */}
+              {/* FILAS DE DATOS POR ASESOR */}
               <tbody className="divide-y divide-slate-100">
                 {consolidatedAdvisors.length === 0 ? (
                   <tr>
-                    <td colSpan="25" className="p-12 text-center text-slate-400 font-bold text-sm">
+                    <td colSpan="24" className="p-12 text-center text-slate-400 font-bold text-sm">
                       No se encontraron asesores con los filtros seleccionados.
                     </td>
                   </tr>
@@ -810,145 +871,297 @@ const sortedRows = useMemo(() => {
                   consolidatedAdvisors.map((r, index) => {
                     const empConfig = getCompanyConfig(r.empresa);
                     const isEven = index % 2 === 0;
+                    const isExpanded = expandedAdvisors.includes(r.id_asesor);
+                    const monthsForAdvisor = allMonthlyRows.filter(m => m.id_asesor === r.id_asesor);
 
-                    return (<>
-                      <tr key={r.id_asesor} className={`cursor-pointer hover:bg-blue-50/40 transition-colors ${isEven ? 'bg-white' : 'bg-slate-50/40'}`} onClick={() => {
-                        // Toggle expanded state for this advisor
-                        setExpandedAdvisors(prev =>
-                          prev.includes(r.id_asesor)
-                            ? prev.filter(id => id !== r.id_asesor)
-                            : [...prev, r.id_asesor]
-                        );
-                      }}>
-                        {/* Identificación */}
-                        <td className="px-3 py-2.5 font-mono text-[11px] text-slate-600 border-r border-slate-100">{r.cedula}</td>
-                        <td className="px-3 py-2.5 font-bold text-slate-900 border-r border-slate-100">{r.nombre}</td>
-                        <td className="px-3 py-2.5 border-r border-slate-100">
-                          <span
-                            className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
-                            style={{ backgroundColor: empConfig.bgHex, color: empConfig.textHex, border: `1px solid ${empConfig.borderHex}` }}
-                          >
-                            {empConfig.name}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 text-slate-600 text-[11px] border-r border-slate-100">{r.zona}</td>
-                        <td className="px-3 py-2.5 text-slate-500 text-[11px] border-r border-slate-100">{r.fecha_ingreso}</td>
-
-                        {/* Periodo */}
-                        <td className="px-3 py-2.5 text-center font-bold text-sky-800 bg-sky-50/30 border-r border-slate-100">
-                          Mes {r.mes_numero}
-                        </td>
-                        <td className="px-3 py-2.5 font-medium text-slate-700 bg-sky-50/30 border-r border-slate-100">
-                          {r.mes_label}
-                        </td>
-
-                        {/* KPIs a Llenar (Resaltados en amarillo/ámbar) */}
-                        <td className="px-3 py-2.5 text-right font-black border-r border-amber-200/60 bg-amber-50/50">
-                          {r.avaluo != null ? (
-                            <span className="text-amber-900 font-mono">{r.avaluo.toLocaleString()}</span>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenKpiModal(r)}
-                              className="text-[10px] text-amber-600 font-bold hover:underline"
-                            >
-                              + Cargar
-                            </button>
-                          )}
-                        </td>
-
-                        <td className="px-3 py-2.5 text-right font-black border-r border-amber-200/60 bg-amber-50/50">
-                          {r.efectividad != null ? (
-                            <span className="text-amber-900">{r.efectividad}%</span>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenKpiModal(r)}
-                              className="text-[10px] text-amber-600 font-bold hover:underline"
-                            >
-                              + Cargar
-                            </button>
-                          )}
-                        </td>
-
-                        <td className="px-3 py-2.5 text-right font-black border-r border-amber-200/60 bg-amber-50/50">
-                          {r.alcance_presupuesto != null ? (
-                            <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
-                              r.alcance_presupuesto >= 100 ? 'bg-emerald-100 text-emerald-800' :
-                              r.alcance_presupuesto >= 80 ? 'bg-amber-100 text-amber-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {r.alcance_presupuesto}%
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenKpiModal(r)}
-                              className="text-[10px] text-amber-600 font-bold hover:underline"
-                            >
-                              + Cargar
-                            </button>
-                          )}
-                        </td>
-
-                        {/* Desempeño mensual */}
-                        <td className="px-3 py-2.5 text-right font-black text-emerald-800 bg-emerald-50/30 border-r border-slate-100">
-                          {r.eval_promedio != null ? r.eval_promedio : '-'}
-                        </td>
-                        <td className="px-3 py-2.5 text-center text-slate-500 bg-emerald-50/30 border-r border-slate-100 text-[10px]">
-                          {r.eval_desarrollo != null ? `Des: ${r.eval_desarrollo}` : '-'}
-                        </td>
-
-                        {/* Notas individuales de inducción */}
-                        {r.subNotes.map((nota, i) => (
-                          <td key={i} className="px-2 py-2.5 text-right font-mono text-[10px] border-r border-slate-100 text-slate-700">
-                            {nota != null ? nota : '-'}
-                          </td>
-                        ))}
-
-                        {/* Promedio Inducción */}
-                        <td className="px-3 py-2.5 text-right font-black border-r border-slate-100 bg-indigo-50/40">
-                          {r.indPromedio != null ? (
-                            <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
-                              r.indPromedio >= 8 ? 'text-emerald-700' :
-                              r.indPromedio >= 6 ? 'text-blue-700' : 'text-amber-700'
-                            }`}>
-                              {r.indPromedio}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-
-                        {/* Botón de acción */}
-                        <td className="px-3 py-2.5 text-center">
-                          <button
-                            onClick={() => handleOpenKpiModal(r)}
-                            title="Editar o cargar indicadores de este mes"
-                            className="p-1 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors text-xs"
-                          >
-                            ✏️
-                          </button>
-                        </td>
-                      </tr>
-                      {expandedAdvisors.includes(r.id_asesor) && (
-                        <tr>
-                          <td colSpan="25" className="bg-slate-100 p-2">
-                            <div className="text-sm font-medium text-slate-700 mb-1">
-                              Meses evaluados para {r.nombre}:
+                    return (
+                      <React.Fragment key={r.id_asesor}>
+                        {/* Fila Resumen del Asesor (Clic para desplegar sus meses) */}
+                        <tr 
+                          onClick={() => {
+                            setExpandedAdvisors(prev =>
+                              prev.includes(r.id_asesor)
+                                ? prev.filter(id => id !== r.id_asesor)
+                                : [...prev, r.id_asesor]
+                            );
+                          }}
+                          className={`hover:bg-amber-50/30 transition-colors cursor-pointer ${isExpanded ? 'bg-amber-50/40' : (isEven ? 'bg-white' : 'bg-slate-50/40')}`}
+                        >
+                          {/* Identificación */}
+                          <td className="px-3 py-2.5 font-mono text-[11px] text-slate-600 border-r border-slate-100">{r.cedula}</td>
+                          <td className="px-3 py-2.5 font-bold text-slate-900 border-r border-slate-100">
+                            <div className="flex items-center justify-between gap-2">
+                              <span>{r.nombre}</span>
+                              <span className="text-[10px] text-amber-700 bg-amber-100/70 px-1.5 py-0.5 rounded font-bold">
+                                {isExpanded ? '▲ Ocultar' : '▼ Desplegar'}
+                              </span>
                             </div>
-                            <ul className="list-disc list-inside space-y-1">
-                              {allMonthlyRows
-                                .filter(m => m.id_asesor === r.id_asesor)
-                                .map((m, idx) => (
-                                  <li key={idx}>
-                                    {m.mes_label}: Avalúo {m.avaluo ?? '-'}, Efectividad {m.efectividad ?? '-'}%, Alcance {m.alcance_presupuesto ?? '-'}%
-                                  </li>
-                                ))}
-                            </ul>
+                          </td>
+                          <td className="px-3 py-2.5 border-r border-slate-100">
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
+                              style={{ backgroundColor: empConfig.bgHex, color: empConfig.textHex, border: `1px solid ${empConfig.borderHex}` }}
+                            >
+                              {empConfig.name}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-600 text-[11px] border-r border-slate-100">{r.zona}</td>
+                          <td className="px-3 py-2.5 text-slate-500 text-[11px] border-r border-slate-100">{r.fecha_ingreso}</td>
+
+                          {/* Periodo en calle */}
+                          <td className="px-3 py-2.5 text-center font-bold text-sky-800 bg-sky-50/30 border-r border-slate-100">
+                            <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 text-[11px] font-black">
+                              {r.mesesCalleCount} meses
+                            </span>
+                          </td>
+
+                          {/* Promedio Avalúo */}
+                          <td className="px-3 py-2.5 text-right font-black border-r border-amber-200/60 bg-amber-50/50">
+                            {r.avgAvaluo != null ? (
+                              <span className="text-amber-950 font-mono">{r.avgAvaluo.toLocaleString('es-VE', { maximumFractionDigits: 1 })}</span>
+                            ) : (
+                              <span className="text-slate-400 font-normal">-</span>
+                            )}
+                          </td>
+
+                          {/* Promedio Efectividad */}
+                          <td className="px-3 py-2.5 text-right font-black border-r border-amber-200/60 bg-amber-50/50">
+                            {r.avgEfect != null ? (
+                              <span className="text-amber-950">{r.avgEfect.toFixed(1)}%</span>
+                            ) : (
+                              <span className="text-slate-400 font-normal">-</span>
+                            )}
+                          </td>
+
+                          {/* Promedio Alcance */}
+                          <td className="px-3 py-2.5 text-right font-black border-r border-amber-200/60 bg-amber-50/50">
+                            {r.avgAlcance != null ? (
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
+                                r.avgAlcance >= 100 ? 'bg-emerald-100 text-emerald-800' :
+                                r.avgAlcance >= 80 ? 'bg-amber-100 text-amber-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {r.avgAlcance.toFixed(1)}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-normal">-</span>
+                            )}
+                          </td>
+
+                          {/* Promedio General / Estatus */}
+                          <td className="px-3 py-2.5 text-right font-black text-indigo-700 bg-emerald-50/20 border-r border-slate-100">
+                            {r.indPromedio != null ? r.indPromedio : '-'}
+                          </td>
+                          <td className="px-3 py-2.5 text-center border-r border-slate-100 bg-emerald-50/20 text-[10px]">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              r.estatusInd.includes('Completada') ? 'bg-emerald-100 text-emerald-800' :
+                              r.estatusInd.includes('En Proceso') ? 'bg-blue-100 text-blue-800' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {r.estatusInd}
+                            </span>
+                          </td>
+
+                          {/* Notas individuales de inducción */}
+                          {r.subNotes.map((nota, i) => (
+                            <td key={i} className="px-2 py-2.5 text-right font-mono text-[10px] border-r border-slate-100 text-slate-700">
+                              {nota != null ? nota : '-'}
+                            </td>
+                          ))}
+
+                          {/* Promedio Inducción */}
+                          <td className="px-3 py-2.5 text-right font-black border-r border-slate-100 bg-indigo-50/40">
+                            {r.indPromedio != null ? (
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
+                                r.indPromedio >= 8 ? 'text-emerald-700' :
+                                r.indPromedio >= 6 ? 'text-blue-700' : 'text-amber-700'
+                              }`}>
+                                {r.indPromedio}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </td>
+
+                          {/* Botón de acción para expandir */}
+                          <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => {
+                                setExpandedAdvisors(prev =>
+                                  prev.includes(r.id_asesor)
+                                    ? prev.filter(id => id !== r.id_asesor)
+                                    : [...prev, r.id_asesor]
+                                );
+                              }}
+                              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all flex items-center gap-1 mx-auto shadow-xs ${
+                                isExpanded
+                                  ? 'bg-amber-500 text-white border-amber-600 shadow-amber-200'
+                                  : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                              }`}
+                            >
+                              <span>{isExpanded ? '▲' : '▼'}</span>
+                              <span>{isExpanded ? 'Ocultar' : `Ver meses (${monthsForAdvisor.length})`}</span>
+                            </button>
                           </td>
                         </tr>
-                      )}
-                    
-                  </>);
-})
+
+                        {/* FILA EXPANDIDA: DESARROLLO DE EVALUACIONES E INDICADORES MES A MES */}
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan="24" className="bg-slate-50/90 p-4 lg:p-6 border-b-2 border-amber-300">
+                              <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-5 shadow-xs space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg">📈</span>
+                                    <div>
+                                      <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider">
+                                        Desarrollo de Evaluaciones e Indicadores Mes a Mes: <span className="text-blue-700 font-bold">{r.nombre}</span>
+                                      </h4>
+                                      <p className="text-[11px] text-slate-500 font-medium">
+                                        {monthsForAdvisor.length} periodos evaluados en calle. Haga clic en los valores o en "✏️ Modificar" para editar los indicadores.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                  <table className="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                      <tr className="bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider border-b border-slate-200">
+                                        <th className="px-3 py-2.5 border-r border-slate-200 text-center bg-sky-50 text-sky-900">Periodo</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200">Mes Calendario</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200 text-right bg-amber-50/80 text-amber-900 font-black">Avalúo</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200 text-right bg-amber-50/80 text-amber-900 font-black">Efectividad</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200 text-right bg-amber-50/80 text-amber-900 font-black">Alcance Presupuesto</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200 text-right bg-emerald-50/80 text-emerald-900 font-black">Prom. Desempeño</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200 text-center bg-emerald-50/50 text-emerald-900">Eval. Depto</th>
+                                        <th className="px-3 py-2.5 border-r border-slate-200">Observaciones</th>
+                                        <th className="px-3 py-2.5 text-center bg-slate-200/70 font-black">Acción</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                      {monthsForAdvisor.length === 0 ? (
+                                        <tr>
+                                          <td colSpan="9" className="p-4 text-center text-slate-400 font-bold">
+                                            No hay meses registrados aún para este asesor.
+                                          </td>
+                                        </tr>
+                                      ) : (
+                                        monthsForAdvisor.map((m, mIdx) => (
+                                          <tr key={mIdx} className="hover:bg-amber-50/20 transition-colors">
+                                            <td className="px-3 py-2 text-center font-bold text-sky-800 bg-sky-50/40 border-r border-slate-100">
+                                              Mes {m.mes_numero}
+                                            </td>
+                                            <td className="px-3 py-2 font-bold text-slate-800 border-r border-slate-100">
+                                              {m.mes_label}
+                                            </td>
+
+                                            {/* Avalúo */}
+                                            <td className="px-3 py-2 text-right font-black border-r border-amber-100 bg-amber-50/30">
+                                              {m.avaluo != null ? (
+                                                <div
+                                                  onClick={() => handleOpenKpiModal(m)}
+                                                  title="Clic para modificar Avalúo"
+                                                  className="inline-flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg bg-amber-100 text-amber-950 hover:bg-amber-200 transition-all font-mono font-black shadow-xs"
+                                                >
+                                                  <span>{Number(m.avaluo).toLocaleString()}</span>
+                                                  <span className="text-[10px] text-amber-700">✏️</span>
+                                                </div>
+                                              ) : (
+                                                <button
+                                                  onClick={() => handleOpenKpiModal(m)}
+                                                  className="text-[10px] text-amber-700 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded transition-all"
+                                                >
+                                                  + Cargar
+                                                </button>
+                                              )}
+                                            </td>
+
+                                            {/* Efectividad */}
+                                            <td className="px-3 py-2 text-right font-black border-r border-amber-100 bg-amber-50/30">
+                                              {m.efectividad != null ? (
+                                                <div
+                                                  onClick={() => handleOpenKpiModal(m)}
+                                                  title="Clic para modificar Efectividad"
+                                                  className="inline-flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg bg-amber-100 text-amber-950 hover:bg-amber-200 transition-all font-black shadow-xs"
+                                                >
+                                                  <span>{m.efectividad}%</span>
+                                                  <span className="text-[10px] text-amber-700">✏️</span>
+                                                </div>
+                                              ) : (
+                                                <button
+                                                  onClick={() => handleOpenKpiModal(m)}
+                                                  className="text-[10px] text-amber-700 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded transition-all"
+                                                >
+                                                  + Cargar
+                                                </button>
+                                              )}
+                                            </td>
+
+                                            {/* Alcance Presupuesto */}
+                                            <td className="px-3 py-2 text-right font-black border-r border-amber-100 bg-amber-50/30">
+                                              {m.alcance_presupuesto != null ? (
+                                                <div
+                                                  onClick={() => handleOpenKpiModal(m)}
+                                                  title="Clic para modificar Alcance del Presupuesto"
+                                                  className={`inline-flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg font-black transition-all shadow-xs ${
+                                                    m.alcance_presupuesto >= 100 ? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200' :
+                                                    m.alcance_presupuesto >= 80 ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' :
+                                                    'bg-red-100 text-red-900 hover:bg-red-200'
+                                                  }`}
+                                                >
+                                                  <span>{m.alcance_presupuesto}%</span>
+                                                  <span className="text-[10px]">✏️</span>
+                                                </div>
+                                              ) : (
+                                                <button
+                                                  onClick={() => handleOpenKpiModal(m)}
+                                                  className="text-[10px] text-amber-700 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded transition-all"
+                                                >
+                                                  + Cargar
+                                                </button>
+                                              )}
+                                            </td>
+
+                                            {/* Promedio Desempeño */}
+                                            <td className="px-3 py-2 text-right font-black text-emerald-800 bg-emerald-50/30 border-r border-slate-100">
+                                              {m.eval_promedio != null ? m.eval_promedio : '-'}
+                                            </td>
+
+                                            {/* Eval Depto */}
+                                            <td className="px-3 py-2 text-center text-slate-600 bg-emerald-50/20 border-r border-slate-100 text-[10px]">
+                                              {m.eval_desarrollo != null ? `Des: ${m.eval_desarrollo}` : '-'}
+                                            </td>
+
+                                            {/* Observaciones */}
+                                            <td className="px-3 py-2 text-slate-500 border-r border-slate-100 text-[11px] italic max-w-[200px] truncate" title={m.kpi_observaciones || ''}>
+                                              {m.kpi_observaciones ? `"${m.kpi_observaciones}"` : '-'}
+                                            </td>
+
+                                            {/* Acción */}
+                                            <td className="px-3 py-2 text-center">
+                                              <button
+                                                onClick={() => handleOpenKpiModal(m)}
+                                                title="Modificar indicadores de este mes"
+                                                className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 transition-all inline-flex items-center gap-1 shadow-xs"
+                                              >
+                                                <span>✏️</span>
+                                                <span>Modificar</span>
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ))
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -973,53 +1186,161 @@ const sortedRows = useMemo(() => {
                   <th className="px-3 py-3 border-r border-slate-800 text-center">Estatus Ind.</th>
                   <th className="px-3 py-3 border-r border-slate-800 text-right bg-amber-900">Prom. Avalúo</th>
                   <th className="px-3 py-3 border-r border-slate-800 text-right bg-amber-900">Prom. Efectividad</th>
-                  <th className="px-3 py-3 text-right bg-amber-900">Prom. Alcance Presupuesto</th>
+                  <th className="px-3 py-3 text-right bg-amber-900 border-r border-slate-800">Prom. Alcance Presupuesto</th>
+                  <th className="px-3 py-3 text-center bg-slate-800">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {consolidatedAdvisors.map((adv, idx) => {
                   const empConfig = getCompanyConfig(adv.empresa);
                   const isEven = idx % 2 === 0;
+                  const isExpanded = expandedAdvisors.includes(adv.id_asesor);
 
                   return (
-                    <tr key={adv.id_asesor} className={`hover:bg-slate-50 transition-colors ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}>
-                      <td className="px-3 py-3 font-mono text-slate-600 border-r border-slate-100">{adv.cedula}</td>
-                      <td className="px-3 py-3 font-bold text-slate-900 border-r border-slate-100">{adv.nombre}</td>
-                      <td className="px-3 py-3 border-r border-slate-100">
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
-                          style={{ backgroundColor: empConfig.bgHex, color: empConfig.textHex, border: `1px solid ${empConfig.borderHex}` }}
-                        >
-                          {empConfig.name}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-slate-600 border-r border-slate-100">{adv.zona}</td>
-                      <td className="px-3 py-3 text-center text-slate-500 border-r border-slate-100">{adv.fecha_ingreso}</td>
-                      <td className="px-3 py-3 text-center font-bold text-blue-700 border-r border-slate-100">
-                        {adv.mesesCalleCount} meses
-                      </td>
-                      <td className="px-3 py-3 text-right font-black text-indigo-700 border-r border-slate-100 bg-indigo-50/30">
-                        {adv.indPromedio != null ? adv.indPromedio : '-'}
-                      </td>
-                      <td className="px-3 py-3 text-center border-r border-slate-100">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          adv.estatusInd.includes('Completada') ? 'bg-emerald-100 text-emerald-800' :
-                          adv.estatusInd.includes('En Proceso') ? 'bg-blue-100 text-blue-800' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {adv.estatusInd}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-right font-bold text-amber-900 bg-amber-50/30 border-r border-slate-100">
-                        {adv.avgAvaluo != null ? adv.avgAvaluo.toLocaleString('es-VE', { maximumFractionDigits: 1 }) : '-'}
-                      </td>
-                      <td className="px-3 py-3 text-right font-bold text-amber-900 bg-amber-50/30 border-r border-slate-100">
-                        {adv.avgEfect != null ? adv.avgEfect.toFixed(1) + '%' : '-'}
-                      </td>
-                      <td className="px-3 py-3 text-right font-bold text-amber-900 bg-amber-50/30">
-                        {adv.avgAlcance != null ? adv.avgAlcance.toFixed(1) + '%' : '-'}
-                      </td>
-                    </tr>
+                    <React.Fragment key={adv.id_asesor}>
+                      <tr 
+                        className={`hover:bg-amber-50/30 transition-colors cursor-pointer ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}
+                        onClick={() => {
+                          setExpandedAdvisors(prev =>
+                            prev.includes(adv.id_asesor)
+                              ? prev.filter(id => id !== adv.id_asesor)
+                              : [...prev, adv.id_asesor]
+                          );
+                        }}
+                      >
+                        <td className="px-3 py-3 font-mono text-slate-600 border-r border-slate-100">{adv.cedula}</td>
+                        <td className="px-3 py-3 font-bold text-slate-900 border-r border-slate-100">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>{adv.nombre}</span>
+                            <span className="text-[10px] text-slate-400 font-normal">
+                              {isExpanded ? '▲ Ocultar' : '▼ Ver meses'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 border-r border-slate-100">
+                          <span
+                            className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-block"
+                            style={{ backgroundColor: empConfig.bgHex, color: empConfig.textHex, border: `1px solid ${empConfig.borderHex}` }}
+                          >
+                            {empConfig.name}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-slate-600 border-r border-slate-100">{adv.zona}</td>
+                        <td className="px-3 py-3 text-center text-slate-500 border-r border-slate-100">{adv.fecha_ingreso}</td>
+                        <td className="px-3 py-3 text-center font-bold text-blue-700 border-r border-slate-100">
+                          {adv.mesesCalleCount} meses
+                        </td>
+                        <td className="px-3 py-3 text-right font-black text-indigo-700 border-r border-slate-100 bg-indigo-50/30">
+                          {adv.indPromedio != null ? adv.indPromedio : '-'}
+                        </td>
+                        <td className="px-3 py-3 text-center border-r border-slate-100">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            adv.estatusInd.includes('Completada') ? 'bg-emerald-100 text-emerald-800' :
+                            adv.estatusInd.includes('En Proceso') ? 'bg-blue-100 text-blue-800' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {adv.estatusInd}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right font-bold text-amber-900 bg-amber-50/30 border-r border-slate-100">
+                          {adv.avgAvaluo != null ? adv.avgAvaluo.toLocaleString('es-VE', { maximumFractionDigits: 1 }) : '-'}
+                        </td>
+                        <td className="px-3 py-3 text-right font-bold text-amber-900 bg-amber-50/30 border-r border-slate-100">
+                          {adv.avgEfect != null ? adv.avgEfect.toFixed(1) + '%' : '-'}
+                        </td>
+                        <td className="px-3 py-3 text-right font-bold text-amber-900 bg-amber-50/30 border-r border-slate-100">
+                          {adv.avgAlcance != null ? adv.avgAlcance.toFixed(1) + '%' : '-'}
+                        </td>
+                        <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => {
+                              setExpandedAdvisors(prev =>
+                                prev.includes(adv.id_asesor)
+                                  ? prev.filter(id => id !== adv.id_asesor)
+                                  : [...prev, adv.id_asesor]
+                              );
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-all shadow-xs"
+                          >
+                            {isExpanded ? 'Cerrar' : 'Ver / Editar Meses'}
+                          </button>
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan="12" className="bg-slate-50/90 p-5 border-b border-slate-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <p className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                                <span>📅</span> Historial Mensual y KPIs de <span className="text-blue-700">{adv.nombre}</span>:
+                              </p>
+                              <span className="text-[10px] font-bold text-slate-500">
+                                Haga clic en "✏️ Modificar" en cualquier mes para actualizar sus valores.
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {allMonthlyRows
+                                .filter(m => m.id_asesor === adv.id_asesor)
+                                .map((m, mIdx) => {
+                                  const hasKpi = m.avaluo != null || m.efectividad != null || m.alcance_presupuesto != null;
+                                  return (
+                                    <div 
+                                      key={mIdx} 
+                                      className={`p-3.5 rounded-2xl border transition-all ${
+                                        hasKpi ? 'bg-white border-amber-300 shadow-xs' : 'bg-slate-100/70 border-slate-200'
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-slate-100">
+                                        <div>
+                                          <span className="text-[10px] font-black uppercase text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full mr-1.5">
+                                            Mes {m.mes_numero}
+                                          </span>
+                                          <span className="text-xs font-bold text-slate-800">{m.mes_label}</span>
+                                        </div>
+                                        <button
+                                          onClick={() => handleOpenKpiModal(m)}
+                                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 transition-all flex items-center gap-1 shadow-xs"
+                                        >
+                                          <span>✏️</span>
+                                          <span>{hasKpi ? 'Modificar' : 'Cargar'}</span>
+                                        </button>
+                                      </div>
+
+                                      <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                                        <div className="bg-amber-50/60 p-1.5 rounded-xl border border-amber-100">
+                                          <span className="block text-[9px] font-black text-amber-800 uppercase">Avalúo</span>
+                                          <span className="font-mono font-bold text-slate-800">
+                                            {m.avaluo != null ? Number(m.avaluo).toLocaleString() : '-'}
+                                          </span>
+                                        </div>
+                                        <div className="bg-amber-50/60 p-1.5 rounded-xl border border-amber-100">
+                                          <span className="block text-[9px] font-black text-amber-800 uppercase">Efectividad</span>
+                                          <span className="font-bold text-slate-800">
+                                            {m.efectividad != null ? `${m.efectividad}%` : '-'}
+                                          </span>
+                                        </div>
+                                        <div className="bg-amber-50/60 p-1.5 rounded-xl border border-amber-100">
+                                          <span className="block text-[9px] font-black text-amber-800 uppercase">Alcance</span>
+                                          <span className="font-bold text-slate-800">
+                                            {m.alcance_presupuesto != null ? `${m.alcance_presupuesto}%` : '-'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {m.kpi_observaciones && (
+                                        <p className="text-[10px] text-slate-500 mt-2 italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                          "{m.kpi_observaciones}"
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -1028,186 +1349,238 @@ const sortedRows = useMemo(() => {
         </div>
       )}
 
-      {/* MODAL PARA CARGAR INDICADORES MES A MES */}
-      {modalKpiOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 lg:p-8 shadow-2xl border border-slate-100 space-y-6">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-              <div>
-                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-full text-[10px] font-black uppercase tracking-wider">
-                  Carga Mensual de Gestión
-                </span>
-                <h3 className="text-xl font-black text-slate-900 mt-1">
-                  Cargar Indicadores del Asesor
-                </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Registre los tres indicadores para el periodo de evaluación seleccionado.
-                </p>
-              </div>
-              <button
-                onClick={() => setModalKpiOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-lg p-1"
-              >
-                ✕
-              </button>
-            </div>
+      {/* MODAL PARA CARGAR / MODIFICAR INDICADORES MES A MES */}
+      {modalKpiOpen && (() => {
+        const currentKey = `${modalData.id_asesor}_${modalData.mes_numero}_${modalData.anio}`;
+        const isExistingKpi = Boolean(kpisMap[currentKey] && (
+          kpisMap[currentKey].avaluo != null ||
+          kpisMap[currentKey].efectividad != null ||
+          kpisMap[currentKey].alcance_presupuesto != null
+        ));
 
-            {saveSuccessMsg && (
-              <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 text-center animate-in fade-in">
-                {saveSuccessMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleSaveKpiSubmit} className="space-y-4">
-              {/* Selector de Asesor */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Asesor Comercial
-                </label>
-                <select
-                  value={modalData.id_asesor}
-                  onChange={(e) => {
-                    const sel = advisors.find(a => a.id === e.target.value);
-                    setModalData(prev => ({
-                      ...prev,
-                      id_asesor: e.target.value,
-                      nombre_asesor: sel ? sel.nombre : ''
-                    }));
-                  }}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                >
-                  {advisors.map(adv => (
-                    <option key={adv.id} value={adv.id}>{adv.nombre} ({adv.empresa})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Selector de Mes y Año */}
-              <div className="grid grid-cols-2 gap-3">
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 lg:p-8 shadow-2xl border border-slate-100 space-y-5">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    N° de Mes en Calle
-                  </label>
-                  <select
-                    value={modalData.mes_numero}
-                    onChange={(e) => {
-                      const num = parseInt(e.target.value, 10);
-                      setModalData(prev => ({
-                        ...prev,
-                        mes_numero: num,
-                        mes_nombre: MONTH_NAMES[Math.min(num - 1, 11)]
-                      }));
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                      <option key={n} value={n}>Mes {n} de gestión</option>
-                    ))}
-                  </select>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    isExistingKpi ? 'bg-blue-100 text-blue-900 border border-blue-200' : 'bg-amber-100 text-amber-900 border border-amber-200'
+                  }`}>
+                    {isExistingKpi ? '✏️ Modo Modificación de Indicadores' : '➕ Nueva Carga de Indicadores'}
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">
+                    {isExistingKpi ? 'Modificar Indicadores del Asesor' : 'Cargar Indicadores del Asesor'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {isExistingKpi 
+                      ? 'Actualice los valores registrados para este periodo o elimine el registro si es necesario.'
+                      : 'Registre los tres indicadores para el periodo de evaluación seleccionado.'}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Mes Calendario / Año
-                  </label>
-                  <select
-                    value={modalData.mes_nombre}
-                    onChange={(e) => setModalData(prev => ({ ...prev, mes_nombre: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
-                  >
-                    {MONTH_NAMES.map(m => (
-                      <option key={m} value={m}>{m} 2026</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Input 1: Avalúo */}
-              <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-1">
-                <label className="block text-xs font-black text-amber-900 uppercase tracking-wide">
-                  1. Avalúo
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={modalData.avaluo}
-                  onChange={(e) => setModalData(prev => ({ ...prev, avaluo: e.target.value }))}
-                  placeholder="Ingrese el monto o valor del avalúo..."
-                  className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-amber-500"
-                />
-                <p className="text-[10px] text-amber-700">Monto valorado o tasación asignada al asesor en el periodo.</p>
-              </div>
-
-              {/* Input 2: Efectividad */}
-              <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-1">
-                <label className="block text-xs font-black text-amber-900 uppercase tracking-wide">
-                  2. Efectividad (%)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={modalData.efectividad}
-                  onChange={(e) => setModalData(prev => ({ ...prev, efectividad: e.target.value }))}
-                  placeholder="Porcentaje de efectividad (ej: 85.5)..."
-                  className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-amber-500"
-                />
-                <p className="text-[10px] text-amber-700">Porcentaje de clientes visitados vs con compra efectiva.</p>
-              </div>
-
-              {/* Input 3: Alcance del Presupuesto */}
-              <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-1">
-                <label className="block text-xs font-black text-amber-900 uppercase tracking-wide">
-                  3. Alcance del Presupuesto (%)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={modalData.alcance_presupuesto}
-                  onChange={(e) => setModalData(prev => ({ ...prev, alcance_presupuesto: e.target.value }))}
-                  placeholder="Porcentaje de cumplimiento de ventas (ej: 102.4)..."
-                  className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-amber-500"
-                />
-                <p className="text-[10px] text-amber-700">Porcentaje de ventas logradas sobre la cuota mensual.</p>
-              </div>
-
-              {/* Observaciones */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Observaciones / Comentarios Adicionales
-                </label>
-                <textarea
-                  rows={2}
-                  value={modalData.observaciones}
-                  onChange={(e) => setModalData(prev => ({ ...prev, observaciones: e.target.value }))}
-                  placeholder="Notas sobre el desempeño del mes, incidencias o acuerdos..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-                />
-              </div>
-
-              {/* Botones de acción del modal */}
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button
-                  type="button"
                   onClick={() => setModalKpiOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="text-slate-400 hover:text-slate-600 font-bold text-lg p-1"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingKpi}
-                  className="px-6 py-2 rounded-xl text-xs font-black bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-all disabled:opacity-50"
-                >
-                  {savingKpi ? 'Guardando...' : 'Guardar Indicadores'}
+                  ✕
                 </button>
               </div>
-            </form>
+
+              {saveSuccessMsg && (
+                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 text-center animate-in fade-in">
+                  {saveSuccessMsg}
+                </div>
+              )}
+
+              {isExistingKpi && !saveSuccessMsg && (
+                <div className="p-2.5 bg-blue-50/70 border border-blue-200/80 rounded-xl text-[11px] text-blue-900 flex items-center gap-2">
+                  <span>💡</span>
+                  <span>Este periodo ya cuenta con indicadores registrados. Puede modificarlos directamente y presionar "Actualizar Indicadores".</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveKpiSubmit} className="space-y-4">
+                {/* Selector de Asesor */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Asesor Comercial
+                  </label>
+                  <select
+                    value={modalData.id_asesor}
+                    onChange={(e) => {
+                      handleModalAdvisorOrPeriodChange(e.target.value, modalData.mes_numero, modalData.anio, modalData.mes_nombre);
+                    }}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                  >
+                    {advisors.map(adv => (
+                      <option key={adv.id} value={adv.id}>{adv.nombre} ({adv.empresa})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Selector de Mes y Año */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      N° de Mes
+                    </label>
+                    <select
+                      value={modalData.mes_numero}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        handleModalAdvisorOrPeriodChange(modalData.id_asesor, num, modalData.anio, MONTH_NAMES[Math.min(num - 1, 11)]);
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                        <option key={n} value={n}>Mes {n}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Mes Calendario
+                    </label>
+                    <select
+                      value={modalData.mes_nombre}
+                      onChange={(e) => {
+                        handleModalAdvisorOrPeriodChange(modalData.id_asesor, modalData.mes_numero, modalData.anio, e.target.value);
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      {MONTH_NAMES.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Año
+                    </label>
+                    <select
+                      value={modalData.anio}
+                      onChange={(e) => {
+                        const year = parseInt(e.target.value, 10);
+                        handleModalAdvisorOrPeriodChange(modalData.id_asesor, modalData.mes_numero, year, modalData.mes_nombre);
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      {[2025, 2026, 2027].map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Input 1: Avalúo */}
+                <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-1">
+                  <label className="block text-xs font-black text-amber-900 uppercase tracking-wide">
+                    1. Avalúo
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={modalData.avaluo}
+                    onChange={(e) => setModalData(prev => ({ ...prev, avaluo: e.target.value }))}
+                    placeholder="Ingrese el monto o valor del avalúo..."
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <p className="text-[10px] text-amber-700">Monto valorado o tasación asignada al asesor en el periodo.</p>
+                </div>
+
+                {/* Input 2: Efectividad */}
+                <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-1">
+                  <label className="block text-xs font-black text-amber-900 uppercase tracking-wide">
+                    2. Efectividad (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={modalData.efectividad}
+                    onChange={(e) => setModalData(prev => ({ ...prev, efectividad: e.target.value }))}
+                    placeholder="Porcentaje de efectividad (ej: 85.5)..."
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <p className="text-[10px] text-amber-700">Porcentaje de clientes visitados vs con compra efectiva.</p>
+                </div>
+
+                {/* Input 3: Alcance del Presupuesto */}
+                <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-1">
+                  <label className="block text-xs font-black text-amber-900 uppercase tracking-wide">
+                    3. Alcance del Presupuesto (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={modalData.alcance_presupuesto}
+                    onChange={(e) => setModalData(prev => ({ ...prev, alcance_presupuesto: e.target.value }))}
+                    placeholder="Porcentaje de cumplimiento de ventas (ej: 102.4)..."
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <p className="text-[10px] text-amber-700">Porcentaje de ventas logradas sobre la cuota mensual.</p>
+                </div>
+
+                {/* Observaciones */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Observaciones / Comentarios Adicionales
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={modalData.observaciones}
+                    onChange={(e) => setModalData(prev => ({ ...prev, observaciones: e.target.value }))}
+                    placeholder="Notas sobre el desempeño del mes, incidencias o acuerdos..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                  />
+                </div>
+
+                {/* Botones de acción del modal */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <div>
+                    {isExistingKpi && (
+                      <button
+                        type="button"
+                        disabled={deletingKpi || savingKpi}
+                        onClick={handleDeleteKpiSubmit}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        <span>🗑️</span>
+                        <span>{deletingKpi ? 'Eliminando...' : 'Eliminar Registro'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setModalKpiOpen(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingKpi || deletingKpi}
+                      className={`px-6 py-2 rounded-xl text-xs font-black text-white shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5 ${
+                        isExistingKpi 
+                          ? 'bg-blue-600 hover:bg-blue-700' 
+                          : 'bg-amber-500 hover:bg-amber-600'
+                      }`}
+                    >
+                      <span>{isExistingKpi ? '💾' : '➕'}</span>
+                      <span>{savingKpi ? 'Guardando...' : (isExistingKpi ? 'Actualizar Indicadores' : 'Guardar Indicadores')}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
