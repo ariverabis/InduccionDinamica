@@ -122,9 +122,11 @@ const InicioCarteraView = ({
         {saldoDepositoPendiente > 0 && (
           <div className="bg-sky-50 border border-sky-200 rounded-2xl p-3 flex items-center justify-between gap-2 shadow-xs animate-fadeIn">
             <div className="flex items-start gap-2">
-              <span className="text-sky-600 text-base mt-0.5">ℹ️</span>
+              <svg className="w-4 h-4 text-sky-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               <p className="text-[11px] text-slate-700 leading-tight">
-                Tienes pendiente registrar el depósito por un valor total de <b className="text-sky-950 font-bold">${saldoDepositoPendiente.toFixed(2)}</b>.
+                Tienes pendiente registrar el depósito por un valor total de <b className="text-sky-950 font-bold">${saldoDepositoPendiente.toFixed(2).replace('.', ',')}</b>.
               </p>
             </div>
             <button
@@ -145,10 +147,12 @@ const InicioCarteraView = ({
           clientesFiltrados.map(cli => {
             const esAlerta = cli.estadoRiesgo === 'ALERTA';
             const esCritico = cli.estadoRiesgo === 'CRITICOS';
+            const tieneRetenciones = cli.retenciones !== undefined && cli.retenciones > 0;
 
             return (
               <div
                 key={cli.id}
+                id={`card-cliente-${cli.codigo}`}
                 className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs hover:border-sky-300 transition-all flex flex-col"
               >
                 {/* Borde lateral de acento de riesgo */}
@@ -159,7 +163,7 @@ const InicioCarteraView = ({
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <h4 className="text-xs font-bold text-gray-900 leading-tight">
-                          {cli.nombre}
+                          {cli.nombre} - {cli.codigo}
                         </h4>
                         <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
                           {cli.codigo} {cli.zona}
@@ -176,36 +180,67 @@ const InicioCarteraView = ({
                       </span>
                     </div>
 
-                    {/* Bloque Financiero: Saldo Total vs Saldo Vencido */}
-                    <div className="grid grid-cols-2 gap-2 mt-3 text-xs border border-gray-100 rounded-xl overflow-hidden">
-                      <div className="p-2 bg-gray-50/70 border-r border-gray-100">
-                        <p className="text-[9px] text-gray-400 font-semibold uppercase">SALDO TOTAL</p>
-                        <p className="font-bold text-gray-900 mt-0.5">
-                          ${cli.saldoTotal.toFixed(2)}
-                        </p>
+                    {/* Bloque Financiero: Si tiene retención (Exacto a Imagen 2.jpeg) */}
+                    {tieneRetenciones ? (
+                      <div className="grid grid-cols-2 divide-x divide-y divide-sky-100 border border-sky-100 rounded-xl overflow-hidden mt-3 text-xs">
+                        <div className="p-2 bg-white">
+                          <p className="text-[8px] text-gray-400 font-bold uppercase">SALDO TOTAL</p>
+                          <p className="font-bold text-gray-900 mt-0.5 font-mono">
+                            ${cli.saldoTotal.toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+                        <div className="p-2 bg-red-50/60">
+                          <p className="text-[8px] text-red-600 font-bold uppercase">SALDO VENCIDO</p>
+                          <p className="font-bold text-red-600 mt-0.5 font-mono">
+                            ${cli.saldoVencido.toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+                        <div className="p-2 bg-white">
+                          <p className="text-[8px] text-gray-400 font-bold uppercase">RETENCIONES</p>
+                          <p className="font-bold text-sky-600 mt-0.5 font-mono">
+                            ${cli.retenciones.toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+                        <div className="p-2 bg-white">
+                          <p className="text-[8px] text-gray-400 font-bold uppercase">SIN RETENCIÓN</p>
+                          <p className="font-bold text-gray-600 mt-0.5 font-mono">
+                            ${cli.sinRetencion.toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-2 mt-3 text-xs border border-gray-100 rounded-xl overflow-hidden">
+                          <div className="p-2 bg-gray-50/70 border-r border-gray-100">
+                            <p className="text-[9px] text-gray-400 font-semibold uppercase">SALDO TOTAL</p>
+                            <p className="font-bold text-gray-900 mt-0.5 font-mono">
+                              ${cli.saldoTotal.toFixed(2).replace('.', ',')}
+                            </p>
+                          </div>
 
-                      <div className={`p-2 ${cli.saldoVencido > 0 ? 'bg-red-50/70' : 'bg-gray-50/70'}`}>
-                        <p className={`text-[9px] font-semibold uppercase ${cli.saldoVencido > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                          SALDO VENCIDO
-                        </p>
-                        <p className={`font-bold mt-0.5 ${cli.saldoVencido > 0 ? 'text-red-700' : 'text-gray-800'}`}>
-                          ${cli.saldoVencido.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
+                          <div className={`p-2 ${cli.saldoVencido > 0 ? 'bg-red-50/70' : 'bg-gray-50/70'}`}>
+                            <p className={`text-[9px] font-semibold uppercase ${cli.saldoVencido > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                              SALDO VENCIDO
+                            </p>
+                            <p className={`font-bold mt-0.5 font-mono ${cli.saldoVencido > 0 ? 'text-red-700' : 'text-gray-800'}`}>
+                              ${cli.saldoVencido.toFixed(2).replace('.', ',')}
+                            </p>
+                          </div>
+                        </div>
 
-                    {/* Nota Fiscal de Retención */}
-                    <div className="text-center my-2.5">
-                      <span className="text-[10px] text-gray-400 tracking-wider font-semibold uppercase">
-                        {cli.esAgenteRetencion ? 'ES AGENTE DE RETENCIÓN' : 'NO ES AGENTE DE RETENCIÓN'}
-                      </span>
-                    </div>
+                        <div className="text-center my-2">
+                          <span className="text-[9px] text-gray-400 tracking-wider font-semibold uppercase">
+                            NO ES AGENTE DE RETENCIÓN
+                          </span>
+                        </div>
+                      </>
+                    )}
 
-                    {/* Botón Acción Principal */}
+                    {/* Botón Acción Principal (Exacto a Imagen 2.jpeg) */}
                     <button
+                      id={`btn-gestionar-cobro-${cli.codigo}`}
                       onClick={() => onSeleccionarCliente(cli)}
-                      className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                      className="w-full mt-3 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                     >
                       <span>Gestionar cobro</span>
                       <span>→</span>

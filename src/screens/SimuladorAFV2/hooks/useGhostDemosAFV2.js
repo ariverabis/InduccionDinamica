@@ -15,7 +15,10 @@ export function useGhostDemosAFV2({
   saldoDepositoPendiente,
   handleReciboGenerado,
   handleRetencionRegistrada,
-  handleDepositoRegistrado
+  handleDepositoRegistrado,
+  setMostrarModalMetodos,
+  setMetodoSeleccionado,
+  setPagoInfoActual
 }) {
   const isRunningRef = useRef(false);
   const isPausedRef = useRef(false);
@@ -110,53 +113,116 @@ export function useGhostDemosAFV2({
     }
   };
 
-  // 1. DEMO: GENERAR RECIBO DE COBRO
+  // 1. DEMO: GENERAR RECIBO DE COBRO (MODO AUTOMÁTICO - 10 PASOS GUION.TXT)
   const runDemoRecibo = async () => {
     setTabInferior('inicio');
     setVistaActual('cartera');
     await mover(160, 200);
-    await decir('¡Bienvenido al Modo Guiado de AFV 2.0! Vamos a generar un recibo de cobro.', 2400);
+    await decir('¡Bienvenido al proceso de Cobranza Automática de AFV 2.0!', 2400);
 
-    // Paso 1: Seleccionar cliente
-    await decir('Paso 1: Localizamos al cliente con saldo pendiente y presionamos "Gestionar cobro".', 2600);
-    await mover(160, 420);
+    // Paso 1 y 2: Localizar al cliente y pulsar Gestión de Cobro (Imagen 2 -> Imagen 1)
+    await decir('Paso 1: Localizamos al cliente COMERCIALIZADORA & FERRETERIA UNIVERSO (Código 2550266).', 2600);
+    const cliUniverso = clientes.find(c => c.codigo === '2550266') || clientes[0];
+    setClienteSeleccionado(cliUniverso);
+    await mover(160, 395);
     await click();
-    const cli = clientes.find(c => c.codigo === '2550979') || clientes[1];
-    setClienteSeleccionado(cli);
-    setVistaActual('saldo_cuenta');
+    setVistaActual('cliente_detalle');
 
-    // Paso 2: Saldo de cuenta -> Generar recibo
+    // Paso 2: En la ficha de cliente, pulsar Generar recibo de cobro (Imagen 1)
     await sleep(800);
-    await decir('Paso 2: En la pantalla de Saldo de Cuenta, presionamos el botón azul "Generar recibo".', 2600);
-    await mover(80, 580);
+    await decir('Paso 2: En la Ficha del Cliente observamos el saldo vencido ($196,01) y pulsamos "Generar recibo de cobro".', 2800);
+    await mover(160, 480);
     await click();
+    if (setMostrarModalMetodos) setMostrarModalMetodos(true);
+
+    // Paso 3: Ventana de forma de pago -> Seleccionar Depósitos en tránsito (13% desc.) (Imagen 3)
+    await sleep(800);
+    await decir('Paso 3: Seleccionamos la forma de pago: "Deposito En Transito (USD)" que otorga un 13% de descuento.', 3000);
+    await mover(160, 260);
+    await click();
+    if (setMetodoSeleccionado) {
+      setMetodoSeleccionado({
+        id: 'dep_transito_usd',
+        nombre: 'Deposito En Transito (USD)',
+        moneda: 'USD',
+        descuento: 13
+      });
+    }
+    if (setMostrarModalMetodos) setMostrarModalMetodos(false);
     setVistaActual('generar_recibo');
 
-    // Paso 3: Confirmar método y emitir recibo
-    await sleep(800);
-    await decir('Paso 3: Verificamos facturas, método de pago y tasa oficial del día.', 2600);
-    await mover(160, 360);
-    await sleep(600);
-    await mover(160, 585);
-    await decir('Paso 4: Presionamos "Emitir Recibo" para procesar el pago.', 2200);
+    // Paso 4: Pantalla Recibo de Cobro -> Desmarcar masivo con Base + 25% IVA (Imagen 4 -> Imagen 5)
+    await sleep(900);
+    await decir('Paso 4: Por defecto el modo es automático. Pulsamos "Base + 25% IVA" para deseleccionar todas las facturas.', 3000);
+    await mover(80, 150);
     await click();
+    const btnBaseElem = document.getElementById('btn-toggle-base-25');
+    if (btnBaseElem) btnBaseElem.click();
 
-    // Simular guardado
-    const facturasCli = facturas.filter(f => f.clienteId === cli.id);
-    const totalUSD = facturasCli.reduce((acc, f) => acc + f.saldoUSD, 0);
+    // Paso 5: Marcar check de factura 07087080 -> Subtotal $10,94 y Total $9,52 con 13% desc. (Imagen 6)
+    await sleep(900);
+    await decir('Paso 5: Marcamos la casilla "Base + 25% IVA" de la factura 07087080 ($10,94). Con el 13% de descuento, el total queda en $9,52.', 3400);
+    await mover(80, 355);
+    await click();
+    const chkItem = document.getElementById('chk-base-fac-u1');
+    if (chkItem) chkItem.click();
+
+    // Paso 6: Pulsar botón Registrar en la barra inferior (Imagen 6)
+    await sleep(900);
+    await decir('Paso 6: Con el total a pagar calculado en $9,52, pulsamos el botón azul "Registrar".', 2600);
+    await mover(250, 635);
+    await click();
+    const btnRegistrarBottom = document.getElementById('btn-registrar-recibo-bottom');
+    if (btnRegistrarBottom) btnRegistrarBottom.click();
+
+    // Paso 7 y 8: Modal Registrar Pago -> Monto $10 USD, Sobrepago $0,48 y Soporte de billetes (Imagen 8 y 9)
+    await sleep(900);
+    await decir('Paso 7: El cliente entrega $10,00 USD en efectivo. Al pagar $10 USD sobre $9,52, el sistema detecta un sobrepago de $0,48 como saldo a favor.', 3400);
+    await mover(220, 320);
+    await sleep(600);
+
+    await decir('Paso 8: Adjuntamos el soporte fotográfico de los billetes recibidos mediante la opción Cámara / Galería.', 2800);
+    await mover(160, 480);
+    await click();
+    const btnAdjunto = document.getElementById('btn-adjunto-galeria');
+    if (btnAdjunto) btnAdjunto.click();
+
+    await sleep(700);
+    await mover(220, 580);
+    await click();
+    const btnModalConfirmar = document.getElementById('btn-modal-confirmar-pago');
+    if (btnModalConfirmar) btnModalConfirmar.click();
+
+    // Paso 9: Modal ¡Registro completado! (Imagen 10)
+    await sleep(800);
+    await decir('Paso 9: ¡Registro completado exitosamente por $10,00 USD! Pulsamos el botón "Cerrar".', 2600);
+    await mover(160, 440);
+    await click();
+    const btnCerrarComp = document.getElementById('btn-cerrar-registro-completado');
+    if (btnCerrarComp) btnCerrarComp.click();
+
+    // Paso 10: Pantalla de Gmail con PDF adjunto (Imagen 11)
+    await sleep(800);
+    await decir('Paso 10: Se genera automáticamente la pantalla de Gmail con el soporte del recibo en PDF adjunto. Pulsamos "Enviar".', 3200);
+    await mover(250, 25);
+    await click();
+    const btnEnviarGmail = document.getElementById('btn-gmail-enviar');
+    if (btnEnviarGmail) btnEnviarGmail.click();
+
+    // Registrar en el estado central
     handleReciboGenerado({
-      clienteId: cli.id,
-      clienteNombre: cli.nombre,
-      facturasIds: facturasCli.map(f => f.id),
-      montoUSD: totalUSD,
-      montoBs: totalUSD * 904.37,
-      metodo: 'Transferencia Bancaria',
-      referencia: 'TRF-DEMO-2026',
+      clienteId: cliUniverso.id,
+      clienteNombre: cliUniverso.nombre,
+      facturasIds: ['fac-u1'],
+      montoUSD: 10.00,
+      montoBs: 10.00 * 904.37,
+      metodo: 'Deposito En Transito (USD)',
+      referencia: 'REC-00043',
       tasaCambio: 904.37
     });
 
-    await sleep(1500);
-    await decir('✓ ¡Recibo emitido con éxito! El saldo de la factura quedó cancelado.', 2500);
+    await sleep(2200);
+    await decir('✓ ¡Proceso de Recibo Automático culminado con éxito! Recibo emitido y soporte compartido.', 3000);
   };
 
   // 2. DEMO: CARGAR RETENCIÓN DE IVA

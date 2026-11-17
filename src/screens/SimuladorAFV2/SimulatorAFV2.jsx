@@ -10,12 +10,15 @@ import {
 } from './data/mockCobranzasAFV2';
 
 import InicioCarteraView from './views/InicioCarteraView';
+import ClienteDetalleView from './views/ClienteDetalleView';
 import SaldoCuentaView from './views/SaldoCuentaView';
 import CargarRetencionesView from './views/CargarRetencionesView';
 import HistorialView from './views/HistorialView';
 import GenerarReciboView from './views/GenerarReciboView';
 import RegistrarDepositoView from './views/RegistrarDepositoView';
+import GmailShareView from './views/GmailShareView';
 
+import ModalMetodoPago from './components/ModalMetodoPago';
 import ModalDetalleFactura from './components/ModalDetalleFactura';
 import ModalGenerarEstado from './components/ModalGenerarEstado';
 import ModalEditarRetencion from './components/ModalEditarRetencion';
@@ -34,11 +37,21 @@ const SimulatorAFV2 = () => {
 
   // Navegación interna de la app móvil
   const [tabInferior, setTabInferior] = useState('inicio'); // 'inicio' | 'historial' | 'perfil'
-  const [vistaActual, setVistaActual] = useState('cartera'); // 'cartera' | 'saldo_cuenta' | 'cargar_retenciones' | 'generar_recibo' | 'depositar'
+  const [vistaActual, setVistaActual] = useState('cartera'); // 'cartera' | 'cliente_detalle' | 'saldo_cuenta' | 'cargar_retenciones' | 'generar_recibo' | 'depositar' | 'gmail_share'
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
 
-  // Saldo de depósito pendiente (Banner en inicio)
-  const [saldoDepositoPendiente, setSaldoDepositoPendiente] = useState(745.62);
+  // Método de pago activo para el recibo
+  const [mostrarModalMetodos, setMostrarModalMetodos] = useState(false);
+  const [metodoSeleccionado, setMetodoSeleccionado] = useState({
+    id: 'dep_transito_usd',
+    nombre: 'Deposito En Transito (USD)',
+    moneda: 'USD',
+    descuento: 13
+  });
+  const [pagoInfoActual, setPagoInfoActual] = useState(null);
+
+  // Saldo de depósito pendiente (Banner en inicio - Exacto a Imagen 2.jpeg: $1.985,00)
+  const [saldoDepositoPendiente, setSaldoDepositoPendiente] = useState(1985.00);
 
   // Modales
   const [facturaDetalle, setFacturaDetalle] = useState(null);
@@ -75,13 +88,16 @@ const SimulatorAFV2 = () => {
     saldoDepositoPendiente,
     handleReciboGenerado: (r) => handleReciboGenerado(r),
     handleRetencionRegistrada: (ret) => handleRetencionRegistrada(ret),
-    handleDepositoRegistrado: (dep) => handleDepositoRegistrado(dep)
+    handleDepositoRegistrado: (dep) => handleDepositoRegistrado(dep),
+    setMostrarModalMetodos,
+    setMetodoSeleccionado,
+    setPagoInfoActual
   });
 
   // Manejadores de acciones
   const handleSeleccionarCliente = (cli) => {
     setClienteSeleccionado(cli);
-    setVistaActual('saldo_cuenta');
+    setVistaActual('cliente_detalle');
   };
 
   const handleReciboGenerado = (nuevoRecibo) => {
@@ -374,12 +390,21 @@ const SimulatorAFV2 = () => {
                 />
               )}
 
+              {vistaActual === 'cliente_detalle' && clienteSeleccionado && (
+                <ClienteDetalleView
+                  cliente={clienteSeleccionado}
+                  onVolver={() => setVistaActual('cartera')}
+                  onVerSaldoCuenta={() => setVistaActual('saldo_cuenta')}
+                  onGenerarRecibo={() => setMostrarModalMetodos(true)}
+                />
+              )}
+
               {vistaActual === 'saldo_cuenta' && clienteSeleccionado && (
                 <SaldoCuentaView
                   cliente={clienteSeleccionado}
                   facturas={facturas}
                   onVolver={() => setVistaActual('cartera')}
-                  onGenerarRecibo={() => setVistaActual('generar_recibo')}
+                  onGenerarRecibo={() => setMostrarModalMetodos(true)}
                   onCargarRetenciones={() => setVistaActual('cargar_retenciones')}
                   onVerDetalleFactura={(fac) => setFacturaDetalle(fac)}
                   onAbrirModalEstado={() => setMostrarModalEstado(true)}
@@ -400,8 +425,25 @@ const SimulatorAFV2 = () => {
                 <GenerarReciboView
                   cliente={clienteSeleccionado}
                   facturas={facturas}
-                  onVolver={() => setVistaActual('saldo_cuenta')}
-                  onReciboGeneradoExitosamente={handleReciboGenerado}
+                  metodoInicial={metodoSeleccionado}
+                  onVolver={() => setVistaActual('cliente_detalle')}
+                  onAbrirModalMetodos={() => setMostrarModalMetodos(true)}
+                  onAbrirGmailShare={(info) => {
+                    setPagoInfoActual(info);
+                    setVistaActual('gmail_share');
+                  }}
+                  onReciboCompletado={handleReciboGenerado}
+                />
+              )}
+
+              {vistaActual === 'gmail_share' && clienteSeleccionado && (
+                <GmailShareView
+                  cliente={clienteSeleccionado}
+                  pagoInfo={pagoInfoActual}
+                  onVolver={() => setVistaActual('cartera')}
+                  onEnviarExitoso={() => {
+                    setVistaActual('cartera');
+                  }}
                 />
               )}
 
@@ -416,44 +458,46 @@ const SimulatorAFV2 = () => {
           )}
         </div>
 
-        {/* Barra de Navegación Inferior Móvil (INICIO - HISTORIAL - PERFIL) */}
-        <nav className="h-14 bg-white border-t border-gray-200 flex items-center justify-around px-2 shrink-0 z-30 shadow-md">
-          <button
-            onClick={() => { setTabInferior('inicio'); setVistaActual('cartera'); }}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold transition-colors ${
-              tabInferior === 'inicio' ? 'text-sky-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span>INICIO</span>
-          </button>
+        {/* Barra de Navegación Inferior Móvil (INICIO - HISTORIAL - PERFIL) - Oculta en pantalla de Gmail */}
+        {vistaActual !== 'gmail_share' && (
+          <nav className="h-14 bg-white border-t border-gray-200 flex items-center justify-around px-2 shrink-0 z-30 shadow-md">
+            <button
+              onClick={() => { setTabInferior('inicio'); setVistaActual('cartera'); }}
+              className={`flex flex-col items-center gap-1 text-[9px] font-bold transition-colors ${
+                tabInferior === 'inicio' ? 'text-sky-600' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>INICIO</span>
+            </button>
 
-          <button
-            onClick={() => setTabInferior('historial')}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold transition-colors ${
-              tabInferior === 'historial' ? 'text-sky-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>HISTORIAL</span>
-          </button>
+            <button
+              onClick={() => setTabInferior('historial')}
+              className={`flex flex-col items-center gap-1 text-[9px] font-bold transition-colors ${
+                tabInferior === 'historial' ? 'text-sky-600' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>HISTORIAL</span>
+            </button>
 
-          <button
-            onClick={() => setTabInferior('perfil')}
-            className={`flex flex-col items-center gap-1 text-[9px] font-bold transition-colors ${
-              tabInferior === 'perfil' ? 'text-sky-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span>PERFIL</span>
-          </button>
-        </nav>
+            <button
+              onClick={() => setTabInferior('perfil')}
+              className={`flex flex-col items-center gap-1 text-[9px] font-bold transition-colors ${
+                tabInferior === 'perfil' ? 'text-sky-600' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>PERFIL</span>
+            </button>
+          </nav>
+        )}
 
         {/* Barra de navegación de gestos (Home indicator Android) */}
         <div className="h-4 bg-white flex justify-center items-center pb-1">
@@ -463,6 +507,17 @@ const SimulatorAFV2 = () => {
       </div>
 
       {/* Modales Compartidos */}
+      {mostrarModalMetodos && (
+        <ModalMetodoPago
+          onSelectMetodo={(m) => {
+            setMetodoSeleccionado(m);
+            setMostrarModalMetodos(false);
+            setVistaActual('generar_recibo');
+          }}
+          onClose={() => setMostrarModalMetodos(false)}
+        />
+      )}
+
       {facturaDetalle && (
         <ModalDetalleFactura
           factura={facturaDetalle}

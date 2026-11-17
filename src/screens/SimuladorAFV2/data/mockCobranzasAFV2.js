@@ -3,7 +3,53 @@
 
 export const TASA_BCV = 904.37; // Tasa para que coincidan los cálculos de pantalla (ej: $29.41 * 904.37 = 26.597,57 Bs.)
 
+export const METODOS_PAGO_AFV2 = [
+  { id: 'trf_ves', nombre: 'Transferencia (VES)', moneda: 'VES', descuento: 5, icono: 'bank' },
+  { id: 'dep_transito_usd', nombre: 'Deposito En Transito (USD)', moneda: 'USD', descuento: 13, icono: 'cash' },
+  { id: 'dep_usd', nombre: 'Deposito (USD)', moneda: 'USD', descuento: 13, icono: 'inbox' },
+  { id: 'trf_intl_usd', nombre: 'Transferencia Internacional (USD)', moneda: 'USD', descuento: 15, icono: 'globe' },
+  { id: 'pos_usd', nombre: 'Pos (USD)', moneda: 'USD', descuento: 13, icono: 'device' }
+];
+
 export const CLIENTES_MOCK = [
+  {
+    id: 'cli-universo',
+    codigo: '2550266',
+    zona: 'Z075',
+    nombre: 'COMERCIALIZADORA & FERRETERIA UNIVERSO, C.A',
+    rif: 'J-25502660-1',
+    estadoRiesgo: 'ALERTA',
+    esAgenteRetencion: true,
+    saldoTotal: 614.48,
+    saldoVencido: 196.01,
+    saldoNoVencido: 418.47,
+    retenciones: 57.37,
+    sinRetencion: 557.11,
+    facturasVencidasCount: 3,
+    facturaMasAntiguaDias: 17,
+    ultimaVisita: '--/--/----',
+    ultimaCompra: '2026-11-16',
+    facturasPendientes: 3
+  },
+  {
+    id: 'cli-jj',
+    codigo: '2571003',
+    zona: 'Z075',
+    nombre: 'COMERCIALIZADORA LOS JJ, C.A',
+    rif: 'J-25710030-4',
+    estadoRiesgo: 'SANOS',
+    esAgenteRetencion: false,
+    saldoTotal: 1024.10,
+    saldoVencido: 0.00,
+    saldoNoVencido: 1024.10,
+    retenciones: 0.00,
+    sinRetencion: 1024.10,
+    facturasVencidasCount: 0,
+    facturaMasAntiguaDias: 0,
+    ultimaVisita: '10/11/2026',
+    ultimaCompra: '12/11/2026',
+    facturasPendientes: 1
+  },
   {
     id: 'cli-1',
     codigo: '2525003',
@@ -15,6 +61,12 @@ export const CLIENTES_MOCK = [
     saldoTotal: 5143.73,
     saldoVencido: 2706.59,
     saldoNoVencido: 2437.14,
+    retenciones: 0.00,
+    sinRetencion: 5143.73,
+    facturasVencidasCount: 2,
+    facturaMasAntiguaDias: 25,
+    ultimaVisita: '05/11/2026',
+    ultimaCompra: '01/11/2026',
     facturasPendientes: 3
   },
   {
@@ -85,6 +137,86 @@ export const CLIENTES_MOCK = [
 ];
 
 export const FACTURAS_MOCK = [
+  // Facturas de COMERCIALIZADORA & FERRETERIA UNIVERSO, C.A (cli-universo) - Imagen 1, 4, 5, 6
+  {
+    id: 'fac-u1',
+    numero: '07087080',
+    portal: 'PORTALD',
+    clienteId: 'cli-universo',
+    clienteNombre: 'COMERCIALIZADORA & FERRETERIA UNIVERSO, C.A',
+    clienteCodigo: '2550266',
+    clienteZona: 'Z075',
+    fechaEmision: '01/10/2026',
+    fechaVencimiento: '31/10/2026',
+    fechaVencPlazo: '01/10/2026',
+    importeUSD: 145.47,
+    saldoUSD: 125.88,
+    estado: 'Vencida',
+    esAgenteRetencion: true,
+    baseMas25IVA: 10.94,
+    retencionMonto: 14.69,
+    articulos: [
+      { codigo: 'SKU-0708', descripcion: 'Bombillo LED 12W E27 Luz Blanca', cantidad: 40, precioUnitario: 2.50, subtotal: 100.00 },
+      { codigo: 'SKU-9021', descripcion: 'Toma Doble Polarizado Bticino', cantidad: 15, precioUnitario: 3.03, subtotal: 45.47 }
+    ],
+    asientosContables: [
+      { cuenta: '1.1.02.01.001 - Cuentas por Cobrar Comerciales Clientes', debe: 145.47, haber: 0.00 },
+      { cuenta: '2.1.03.01.002 - IVA Débito Fiscal por Pagar (16%)', debe: 0.00, haber: 20.06 },
+      { cuenta: '4.1.01.01.001 - Ingresos por Ventas de Material Eléctrico', debe: 0.00, haber: 125.41 }
+    ]
+  },
+  {
+    id: 'fac-u2',
+    numero: '07089104',
+    portal: 'PORTALD',
+    clienteId: 'cli-universo',
+    clienteNombre: 'COMERCIALIZADORA & FERRETERIA UNIVERSO, C.A',
+    clienteCodigo: '2550266',
+    clienteZona: 'Z075',
+    fechaEmision: '15/10/2026',
+    fechaVencimiento: '14/11/2026',
+    fechaVencPlazo: '15/10/2026',
+    importeUSD: 85.00,
+    saldoUSD: 70.13,
+    estado: 'Vencida',
+    esAgenteRetencion: true,
+    baseMas25IVA: 25.50,
+    retencionMonto: 9.80,
+    articulos: [
+      { codigo: 'SKU-3310', descripcion: 'Interruptor Simple Bticino', cantidad: 30, precioUnitario: 2.83, subtotal: 85.00 }
+    ],
+    asientosContables: [
+      { cuenta: '1.1.02.01.001 - Cuentas por Cobrar Comerciales Clientes', debe: 85.00, haber: 0.00 },
+      { cuenta: '2.1.03.01.002 - IVA Débito Fiscal por Pagar (16%)', debe: 0.00, haber: 11.72 },
+      { cuenta: '4.1.01.01.001 - Ingresos por Ventas', debe: 0.00, haber: 73.28 }
+    ]
+  },
+  {
+    id: 'fac-u3',
+    numero: '07101140',
+    portal: 'PORTALD',
+    clienteId: 'cli-universo',
+    clienteNombre: 'COMERCIALIZADORA & FERRETERIA UNIVERSO, C.A',
+    clienteCodigo: '2550266',
+    clienteZona: 'Z075',
+    fechaEmision: '05/11/2026',
+    fechaVencimiento: '05/12/2026',
+    fechaVencPlazo: '05/11/2026',
+    importeUSD: 418.47,
+    saldoUSD: 418.47,
+    estado: 'Pendiente',
+    esAgenteRetencion: true,
+    baseMas25IVA: 150.00,
+    retencionMonto: 32.88,
+    articulos: [
+      { codigo: 'SKU-4412', descripcion: 'Cable THW 12 AWG 100m Cabel', cantidad: 4, precioUnitario: 104.62, subtotal: 418.47 }
+    ],
+    asientosContables: [
+      { cuenta: '1.1.02.01.001 - Cuentas por Cobrar Comerciales Clientes', debe: 418.47, haber: 0.00 },
+      { cuenta: '2.1.03.01.002 - IVA Débito Fiscal por Pagar (16%)', debe: 0.00, haber: 57.72 },
+      { cuenta: '4.1.01.01.001 - Ingresos por Ventas de Cables', debe: 0.00, haber: 360.75 }
+    ]
+  },
   // Facturas de FERRE CONSTRUCCIÓN EL PATRÓN (cli-2)
   {
     id: 'fac-1',

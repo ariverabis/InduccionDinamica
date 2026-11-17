@@ -1,0 +1,23 @@
+nnota Este sistema tiene dos opciones para generar el recibo: automático o manual.
+Resaltamos que si se pulsa el botón de Pagar manual, se habilita dicha opción; si no, está por defecto la opción de Pago automático.
+El botón superior derecho que está debajo del botón azul "Retención".
+1. Primero seleccionamos el botón Gestión de cobranza. imagen 1.jpeg
+
+2. Segundo, seleccionamos al cliente y pulsamos el botón Gestión de cobro. imagen 2.jpeg 
+3. Luego aparece la ventana de la forma de pago.   Seleccionamos Depósitos en tránsito (tiene 13% de descuento).imagen 3.jpeg
+4. Una vez que seleccionamos la forma de pago, el sistema nos desglosa las facturas que están pendientes por cobrar. Podemos pulsar el botón: BASE+25%IVA EN AZUL Va a deshabilitar el 25% del IVA+BASE  y va a quitar la selección de todas las facturas que aparecen pendientes. Si pulsamos el botón azul que dice Retención, selecciona todas PARTE O FRACCION relacionada con la retención. de todas las facturas, y si volvemos a pulsar el botón, las vuelve a seleccionar. imagen 4. recordemos que si el cliente es agente de retención se habilita esta opción sino es agente de retención se ve gris opaco y no de ja seleccionar es decir inhabilita el cuadro check 
+5. Luego, en el checklist donde dice "Base más 25% de IVA" y marca 10.24, seleccionamos solamente ese check. Abajo aparece $612.56 USD o el monto total de las facturas seleccionadas.
+mosca que esste ejercicios debe aparecer abajo no 612,56 sino 9.52 que es el monto 10.94 menos el 13% que es el descuento por forma de pago deposito en transito seleccionado. 
+6. Luego le damos al botón Registrar. 
+
+
+7. Luego de seleccionar la factura, el paso siguiente (la pantalla siguiente o la número 8) es marcar la fecha de la transacción. Validamos el pago y nos damos cuenta de que hay un sobrepago, porque se están pagando $10 USD y era $9.52, ya que hay un descuento del 13% pero el cliente pagó $10 USD. Dice que se genera un excedente.
+
+8. Le damos abajo al botón azul Registrar. Indica que se generó un excedente, la pantalla se extiende hacia abajo y aparece la opción de la cámara, de la galería o de PDF, que permite cargar la imagen asociada a los billetes del pago. imagen 9.jpeg
+
+la imagen 9.jpeg es la extesion hacia abajo de la imagen8.jpeg
+
+9. Le damos al botón de abajo que dice Registrar e indica un mensaje con un botón verde que dice "Registro completado".
+imagen 10.jpeg
+
+10. Pulsamos el botón Cerrar y se genera la funcionalidad de Gmail, que adjunta el recibo, adjunta el soporte de pago, la foto de los billetes y permite seleccionar el destinatario adonde se enviará el correo. imagen 11.jpeg
