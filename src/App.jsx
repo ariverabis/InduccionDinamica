@@ -37,6 +37,7 @@ import EvaluacionMensual from './pages/EvaluacionMensual';
 import FormatoImpresionRubricas from './pages/FormatoImpresionRubricas';
 
 import DashboardSeguimientoMensual from './screens/Portal/DashboardSeguimientoMensual';
+import SimulatorAFV2 from './screens/SimuladorAFV2/SimulatorAFV2';
 
 function App() {
   return (
@@ -50,6 +51,11 @@ function App() {
           <Route path="/simulador" element={
             <ErrorBoundary>
               <Simulator />
+            </ErrorBoundary>
+          } />
+          <Route path="/simulador-afv2" element={
+            <ErrorBoundary>
+              <SimulatorAFV2 />
             </ErrorBoundary>
           } />
           

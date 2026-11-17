@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FerIA</title>
+<link rel="stylesheet" href="css/feria.css">
+<link rel="stylesheet" href="css/postulacion.css">
+<link rel="stylesheet" href="css/acabado.css">
+<link rel="stylesheet" href="css/vitrina.css">
+</head>
+<body>
+
+<main class="gate" id="login-gate">
+  <div class="gate-rings" aria-hidden="true"><span></span><span></span></div>
+  <div class="gate-grid">
+    <div class="gate-copy">
+      <div class="kicker">Edición trimestral de IA y automatización</div>
+      <h1 class="word">Fer<b>IA</b></h1>
+      <p class="slogan">Muestra lo que hiciste. Aprende lo que otros hicieron.</p>
+      <p class="meta">Abierta a todos los cargos · Todas las empresas del grupo · Venezuela, Colombia y Costa Rica</p>
+      <div class="gate-card">
+        <div class="lbl">Ingresa para postular y ver la vitrina</div>
+        <button type="button" class="gbtn" id="btn-google">
+          <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          <span>Entrar con Google</span>
+        </button>
+        <p class="gate-n">Solo con tu correo corporativo del grupo.</p>
+        <p class="fmsg" id="login-msg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="stage">
+      <canvas class="mobius" id="mobius-gate" role="img" aria-label="Banda de Möbius en tres dimensiones que gira; un punto recorre su superficie"></canvas>
+      <div class="hint">Arrastra para girarla</div>
+    </div>
+  </div>
+</main>
+
+<div id="app" hidden>
+
+<nav class="nav" aria-label="Secciones">
+  <div class="wrap">
+    <a class="mark" href="#inicio"><span>Fer</span><b>IA</b></a>
+    <ul>
+      <li><a class="l" href="#mobius-por-que">La banda</a></li>
+      <li><a class="l" href="#por-que">¿Por qué?</a></li>
+      <li><a class="l" href="#convocatoria">Convocatoria</a></li>
+      <li><a class="l" href="#postular">Postular</a></li>
+      <li><a class="l" href="#mis-iniciativas">Mis iniciativas</a></li>
+      <li><a class="l" href="#formatos">Formatos</a></li>
+      <li><a class="l" href="#vitrina">Vitrina</a></li>
+    </ul>
+    <div class="user">
+      <span class="l correo" id="nav-correo"></span>
+      <a class="l admin-link" id="nav-admin" href="admin.html" hidden>Administración</a>
+      <button type="button" class="l" id="btn-salir">Salir</button>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero" id="inicio">
+  <div class="hero-grid">
+    <div>
+      <div class="kicker">Edición trimestral de IA y automatización</div>
+      <h1 class="word">Fer<b>IA</b></h1>
+      <p class="slogan">Muestra lo que hiciste. Aprende lo que otros hicieron.</p>
+      <p class="meta">Abierta a todos los cargos · Todas las empresas del grupo · Venezuela, Colombia y Costa Rica</p>
+      <div class="count">
+        <div class="lbl">1.ª Edición</div>
+        <div class="month">Diciembre 2026</div>
+        <div class="when">Modalidad híbrida. Todos son bienvenidos.</div>
+      </div>
+    </div>
+    <div class="stage">
+      <canvas class="mobius" id="mobius" role="img" aria-label="Banda de Möbius en tres dimensiones que gira; un punto recorre su superficie"></canvas>
+      <div class="hint">Arrastra para girarla</div>
+    </div>
+  </div>
+</header>
+
+<section class="s" id="mobius-por-que">
+  <div class="head"><h2>¿Por qué la banda de Möbius?</h2></div>
+  <div class="why">
+    <div><b>Una sola cara</b><p>No hay "los de sistemas" y "los demás". Quien presenta y quien aprende están en la misma superficie.</p></div>
+    <div><b>La idea vuelve distinta</b><p>Un punto necesita dos vueltas para regresar. Una iniciativa sale de un área, pasa por otra y vuelve mejorada.</p></div>
+    <div><b>Nunca termina</b><p>Cada trimestre arranca donde terminó el anterior. Es la mejor forma de explicar por qué la feria es recurrente.</p></div>
+  </div>
+</section>
+
+<section class="s" id="por-que">
+  <div class="head"><h2>¿Por qué hacerla?</h2><p>Lo que nos dejó el primer encuentro, cuando solo presentó el área de control.</p></div>
+  <div class="cols3">
+    <div class="box"><h3>Contagio entre pares</h3><p>Un equipo reacio a aprender se sumó a la transformación digital después de ver a sus compañeros mostrando resultados reales.</p></div>
+    <div class="box"><h3>Talento escondido</h3><p>Descubrimos jóvenes con un potencial que no teníamos en el radar. La feria los pone frente a toda la organización.</p></div>
+    <div class="box"><h3>Sin rutina, se olvida</h3><p>Quisimos repetirla y no pasó. Por eso ahora es trimestral, obligatoria, con fechas fijas y un dueño.</p></div>
+  </div>
+</section>
+
+<section class="s" id="convocatoria">
+  <div class="head"><h2>La convocatoria</h2><p>Qué es una feria de iniciativas de IA, quién participa y cómo postular.</p></div>
+  <div class="explain">
+    <div class="explain-q">
+      <h3>¿Qué es una iniciativa de IA?</h3>
+      <p>Cualquier forma en que usaste inteligencia artificial o una automatización para hacer tu trabajo más rápido o mejor. No tiene que ser un sistema: un prompt que te arma el reporte, un Excel que se llena solo o un mensaje de WhatsApp que ya no escribes a mano cuentan.</p>
+      <h3>¿Y por qué una feria?</h3>
+      <p>Porque hoy esas soluciones viven en la computadora de quien las hizo. En FerIA las mostramos para que otras áreas las copien, para aprender de un compañero en vez de un curso y para reconocer a quien las creó.</p>
+    </div>
+    <div class="explain-ex">
+      <span class="via-n">Ejemplos según tu trabajo</span>
+      <ul>
+        <li><b>Asesor de ventas:</b> una plantilla con IA para responder pedidos por WhatsApp</li>
+        <li><b>Cobranza:</b> una macro que cruza depósitos con facturas</li>
+        <li><b>Logística:</b> una hoja que ordena las entregas por zona</li>
+        <li><b>Talento humano:</b> validaciones automáticas antes de cerrar la nómina</li>
+        <li><b>Mercadeo:</b> fichas de producto redactadas con IA</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cols3" style="margin-top:16px">
+    <div class="box"><h3>Abierta a todos</h3><p>Cualquier cargo, área, empresa o país. Individual o en equipo.</p></div>
+    <div class="box"><h3>¿Qué se inscribe?</h3><p>Iniciativas de IA o automatización en uso o en piloto. Un prompt que ahorra horas o un Excel que se llena solo, cuentan.</p></div>
+    <div class="box"><h3>¿Qué se pide?</h3><p>El problema, lo que hiciste, el resultado y una imagen para la vitrina. El video y el enlace para que otros la repliquen son opcionales. <a href="#postular">Ver el formulario</a>.</p></div>
+  </div>
+</section>
+
+<section class="s" id="postular">
+  <div class="head"><h2>El formulario de postulación</h2></div>
+  <div class="form-wrap">
+    <aside class="prep">
+      <h3>Antes de empezar, ten a mano</h3>
+      <ul class="check">
+        <li>Un dato de cómo era antes: horas, errores o reclamos</li>
+        <li>Un dato de cómo es ahora</li>
+        <li>Una imagen de la iniciativa (obligatoria): es la que se muestra en la vitrina</li>
+        <li>Opcional: un video explicativo de hasta 2 minutos</li>
+        <li>Opcional: un enlace (Drive u otro) a la plantilla, el archivo, la carpeta o el prompt, con permiso de lectura para todo el grupo</li>
+      </ul>
+    </aside>
+    <div id="form-root"></div>
+  </div>
+</section>
+
+<section class="s" id="mis-iniciativas">
+  <div class="head"><h2>Mis iniciativas</h2><p>Las que postulaste con tu correo. Puedes enviar información actualizada y cada cambio queda registrado.</p></div>
+  <div id="mis-root"></div>
+</section>
+
+<section class="s" id="formatos">
+  <div class="head"><h2>Formatos y duración</h2><p>Cómo pasas de postularte a tener tu formato, día y hora.</p></div>
+  <ol class="steps3">
+    <li><span class="via-n">1 · Al postular</span><b>Propones tu formato</b><p>En el paso 4 del formulario eliges 15 minutos, 30 minutos o exposición con mesa de trabajo. Si no sabes, el comité decide.</p></li>
+    <li><span class="via-n">2 · Revisión del comité</span><b>El comité confirma o sugiere otro</b><p>Revisa todas las postulaciones juntas. La mesa de trabajo se da a las iniciativas que otras áreas pueden copiar y que traen su enlace.</p></li>
+    <li><span class="via-n">3 · Antes de la feria</span><b>Recibes tu formato, día y hora</b><p>Te llega por correo y WhatsApp, con el enlace para agregarlo a tu calendario y la fecha del ensayo.</p></li>
+  </ol>
+  <div class="cols3">
+    <div class="box"><span class="via-n">15 minutos</span><h3>Exposición corta</h3><p>Una solución puntual que se entiende con una demostración: un prompt, una macro, un reporte automático.</p></div>
+    <div class="box"><span class="via-n">30 minutos</span><h3>Exposición completa</h3><p>Una solución con más contexto: varios pasos, varias herramientas o un cambio de proceso.</p></div>
+    <div class="box via-strong"><span class="via-n">20 + 40 minutos</span><h3>Exposición y mesa de trabajo</h3><p>Para iniciativas que otras áreas pueden replicar. Tras la exposición, una mesa con cupo limitado trabaja cómo adaptarla y sale con compromisos de réplica.</p></div>
+  </div>
+  <p class="note"><b>Las mesas corren en paralelo:</b> los 20 minutos de exposición van en el escenario y los 40 de mesa en una sala aparte, mientras el escenario sigue con la siguiente iniciativa. Máximo tres mesas al mismo tiempo.</p>
+</section>
+
+<section class="s" id="vitrina">
+  <div class="head"><h2>La vitrina</h2></div>
+  <div class="lema">
+    <p class="lema-big">Muestra lo que hiciste.<br>Aprende lo que otros hicieron.</p>
+    <p class="lema-sub">Las iniciativas aprobadas, de la más reciente a la más antigua. Haz clic en una para ver el detalle.</p>
+  </div>
+  <div class="vt" id="vt" role="region" aria-roledescription="carrusel" aria-label="Iniciativas aprobadas" hidden>
+    <div class="vt-viewport" id="vt-viewport">
+      <div class="vt-track" id="cards"></div>
+    </div>
+    <div class="vt-ctl" id="vt-ctl" hidden>
+      <button type="button" class="fbtn fbtn-sec vt-flecha" id="vt-prev" aria-controls="cards" aria-label="Iniciativa anterior"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg></button>
+      <div class="vt-pos">
+        <span class="vt-puntos" id="vt-puntos" aria-hidden="true"></span>
+        <span class="vt-pos-t num" id="vt-pos-t" aria-live="off"></span>
+      </div>
+      <button type="button" class="fbtn fbtn-sec vt-flecha" id="vt-next" aria-controls="cards" aria-label="Iniciativa siguiente"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg></button>
+    </div>
+  </div>
+  <p class="vt-msg" id="vt-msg" role="status" aria-live="polite"></p>
+  <p class="empty" id="vitrina-vacia" hidden>Todavía no hay iniciativas. ¡Sé el primero en postular la tuya!</p>
+  <dialog class="vm" id="vitrina-modal" aria-labelledby="vm-titulo">
+    <form method="dialog" class="vm-bar">
+      <button type="submit" class="vm-cerrar" id="vm-cerrar">Cerrar</button>
+    </form>
+    <div class="vm-video" id="vm-video" hidden></div>
+    <div class="vm-body">
+      <h2 id="vm-titulo"></h2>
+      <p class="vm-meta" id="vm-meta"></p>
+      <div class="vm-sec"><h3>¿Qué hace?</h3><p id="vm-que-hace"></p></div>
+      <div class="vm-sec"><h3>¿Qué problema resolvía?</h3><p id="vm-problema"></p></div>
+      <div class="vm-sec" id="vm-tiempo">
+        <h3>Tiempo invertido en la tarea</h3>
+        <div class="vm-ab num">
+          <div><h3>Antes</h3><p id="vm-antes"></p></div>
+          <div><h3>Ahora</h3><p id="vm-ahora"></p></div>
+        </div>
+      </div>
+      <a class="vm-enlace" id="vm-enlace" href="#" target="_blank" rel="noopener" hidden>Abrir el enlace para replicarla</a>
+      <div class="vm-sec vt-pres-m" id="vm-pres" hidden>
+        <h3>Presentación</h3>
+        <p class="vt-fecha" id="vm-pres-fecha"></p>
+        <a class="fbtn fbtn-sec fbtn-sm vt-cal" id="vm-cal" href="#" target="_blank" rel="noopener">Crear recordatorio en el calendario</a>
+      </div>
+      <div class="vt-acc vm-acc" id="vm-acc"></div>
+      <p class="vt-msg" id="vm-msg" role="status" aria-live="polite"></p>
+    </div>
+  </dialog>
+</section>
+
+
+<footer><span>FerIA</span><span>Edición trimestral de IA y automatización</span></footer>
+</div>
+
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script defer src="js/config.js"></script>
+<script defer src="js/supabase.js"></script>
+<script defer src="js/auth.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="js/nav.js"></script>
+<script defer src="js/mobius.js"></script>
+<script defer src="js/formatos.js"></script>
+<script defer src="js/vitrina.js"></script>
+<script defer src="js/postulacion.js"></script>
+<script defer src="js/mis-iniciativas.js"></script>
+</body>
+</html>

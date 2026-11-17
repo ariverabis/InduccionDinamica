@@ -570,7 +570,7 @@ const handleLogout = async () => {
                 onClick={() => navigate('/dashboard-kpis')}
                 className="text-xs text-amber-900 bg-amber-50 border border-amber-300 font-bold px-3 py-1 rounded hover:bg-amber-100 transition-colors flex items-center gap-1"
               >
-                📊 Dashboard Seguimiento & KPIs
+                Dashboard Seguimiento & KPIs
               </button>
             </>
           ) : (
@@ -597,59 +597,59 @@ const handleLogout = async () => {
           <p className="text-sm text-gray-500 mt-1">Siga los módulos establecidos para la validación de sus competencias técnicas en el sistema AFV.</p>
         </div>
 
-        {/* ─── SECCIÓN 01: Filiación ─── */}
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold text-gray-400 w-6 text-right">01</span>
-            <div className="w-px h-4 bg-gray-200" />
-            <h2 className="text-sm font-bold text-gray-800">Filiación Académica e Inducción</h2>
+        {/* ─── SECCIÓN 01: Registro de Asesores e Inducción ─── */}
+        <section className="bg-gray-100 border border-gray-300/80 rounded-2xl p-6 shadow-xs">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-7 h-7 rounded-lg bg-white border border-gray-300 text-gray-800 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">01</span>
+            <div className="w-px h-4 bg-gray-400" />
+            <h2 className="text-sm font-bold text-gray-800">Registro de Asesores e Inducción</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pl-9">
-            <div className="border border-gray-200 rounded p-4 flex gap-3 items-start hover:bg-gray-50 transition-colors">
-              <span className="text-base mt-0.5">📝</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Censo Curricular</p>
-                <button
-                  onClick={() => {
-                    const baseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZv8PrDzzlCpq7fsqkBYlAOSkAzsRBmUEDz4A-901r3cpJOg/viewform?usp=pp_url";
-                    const params = `&entry.1319823054=${encodeURIComponent(userSession.nombre || '')}` +
-                      `&entry.1185854057=${encodeURIComponent(userSession.correo || '')}` +
-                      `&entry.553997044=${encodeURIComponent(userSession.clave || '')}` +
-                      `&entry.523342047=${encodeURIComponent(selectedCompany || '')}`;
-                    window.open(baseUrl + params, '_blank');
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-1"
-                >
-                  Registrar datos →
-                </button>
+                <p className="text-xs text-gray-400 mt-1">Ficha de ingreso del asesor</p>
               </div>
+              <button
+                onClick={() => {
+                  const baseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZv8PrDzzlCpq7fsqkBYlAOSkAzsRBmUEDz4A-901r3cpJOg/viewform?usp=pp_url";
+                  const params = `&entry.1319823054=${encodeURIComponent(userSession.nombre || '')}` +
+                    `&entry.1185854057=${encodeURIComponent(userSession.correo || '')}` +
+                    `&entry.553997044=${encodeURIComponent(userSession.clave || '')}` +
+                    `&entry.523342047=${encodeURIComponent(selectedCompany || '')}`;
+                  window.open(baseUrl + params, '_blank');
+                }}
+                className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-3 block text-left"
+              >
+                Registrar datos →
+              </button>
             </div>
-            <div onClick={() => navigate('/sds')} className="border border-gray-200 rounded p-4 flex gap-3 items-start hover:bg-gray-50 transition-colors cursor-pointer">
-              <span className="text-base mt-0.5">⚙️</span>
+            <div onClick={() => navigate('/sds')} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Configuración Técnica</p>
                 <p className="text-xs text-gray-400 mt-1">Inducción de aplicaciones</p>
               </div>
+              <p className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-3">Ver configuración →</p>
             </div>
-            <div onClick={() => window.open(currentBrand.manualLink, '_blank')} className="border border-gray-200 rounded p-4 flex gap-3 items-start hover:bg-gray-50 transition-colors cursor-pointer">
-              <span className="text-base mt-0.5">📖</span>
+            <div onClick={() => window.open(currentBrand.manualLink, '_blank')} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Manual Codex SKU</p>
-                <p className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-1">Guía de usuario →</p>
+                <p className="text-xs text-gray-400 mt-1">Catálogo maestro de productos</p>
               </div>
+              <p className="text-xs text-gray-500 hover:text-gray-900 underline underline-offset-2 mt-3">Guía de usuario →</p>
             </div>
           </div>
         </section>
 
         {/* ─── SECCIÓN 02: Simuladores ─── */}
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold text-gray-400 w-6 text-right">02</span>
+        <section className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center shrink-0">02</span>
             <div className="w-px h-4 bg-gray-200" />
             <h2 className="text-sm font-bold text-gray-800">Entrenamiento en Simuladores</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-9">
-            <div className="border border-gray-200 rounded p-4 flex flex-col gap-3 hover:bg-gray-50 transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-5 flex flex-col justify-between gap-3 hover:bg-gray-100/60 hover:border-gray-300 transition-all">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Simulador de Ventas</p>
                 <p className="text-xs text-gray-400 mt-1">Laboratorio de práctica para creación de pedidos y gestión de inventario.</p>
@@ -661,10 +661,10 @@ const handleLogout = async () => {
                 Iniciar laboratorio →
               </button>
             </div>
-            <div className="border border-gray-200 rounded p-4 flex flex-col gap-3 hover:bg-gray-50 transition-colors">
+            <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-5 flex flex-col justify-between gap-3 hover:bg-gray-100/60 hover:border-gray-300 transition-all">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Simulador de Cobranzas</p>
-                <p className="text-xs text-gray-400 mt-1">Validación de flujos financieros, recibos y depósitos bancarios.</p>
+                <p className="text-xs text-gray-400 mt-1">Validación de flujos financieros, recibos y depósitos bancarios tradicionales.</p>
               </div>
               <button
                 onClick={() => navigate('/simulador', { state: { proceso: 'cobranza' } })}
@@ -673,28 +673,43 @@ const handleLogout = async () => {
                 Iniciar gestión →
               </button>
             </div>
+            <div className="bg-sky-50/60 border border-sky-200 rounded-xl p-5 flex flex-col justify-between gap-3 hover:bg-sky-100/60 hover:border-sky-300 transition-all ring-1 ring-sky-500/10">
+              <div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-sky-950">Simulador AFV 2.0</p>
+                  <span className="text-[9px] font-bold bg-sky-600 text-white px-2 py-0.5 rounded-full uppercase">Nuevo</span>
+                </div>
+                <p className="text-xs text-sky-800/80 mt-1">Gestión móvil de cobranzas: recibos, retenciones, relación de depósito, historial y estados de cuenta.</p>
+              </div>
+              <button
+                onClick={() => navigate('/simulador-afv2')}
+                className="text-xs bg-sky-700 hover:bg-sky-800 text-white font-bold px-4 py-2 rounded transition-colors w-fit shadow-xs"
+              >
+                Iniciar AFV 2.0 →
+              </button>
+            </div>
           </div>
         </section>
 
         {/* ─── SECCIÓN 03: Módulos Técnicos ─── */}
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold text-gray-400 w-6 text-right">03</span>
-            <div className="w-px h-4 bg-gray-200" />
+        <section className="bg-gray-100 border border-gray-300/80 rounded-2xl p-6 shadow-xs">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-7 h-7 rounded-lg bg-white border border-gray-300 text-gray-800 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">03</span>
+            <div className="w-px h-4 bg-gray-400" />
             <h2 className="text-sm font-bold text-gray-800">Módulos de Formación Técnica</h2>
           </div>
-          <div className="pl-9">
+          <div>
             {loadingSubmodules ? (
               <p className="text-xs text-gray-400 py-6">Cargando temas...</p>
             ) : submodulesList.length === 0 ? (
-              <p className="text-xs text-gray-400 py-6 border border-dashed border-gray-200 rounded text-center">No hay temas técnicos asignados aún.</p>
+              <p className="text-xs text-gray-400 py-6 border border-dashed border-gray-200 rounded-xl bg-white text-center">No hay temas técnicos asignados aún.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {submodulesList.map((sub) => (
                   <div
                     key={sub.id}
                     onClick={() => { setSelectedSubmodule(sub); setShowExerciseModal(true); }}
-                    className="border border-gray-200 rounded p-4 cursor-pointer hover:bg-gray-50 transition-colors group"
+                    className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-gray-300 hover:shadow-xs transition-all group"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <p className="text-sm font-semibold text-gray-800 leading-snug">{sub.nombre_tarea}</p>
@@ -714,21 +729,18 @@ const handleLogout = async () => {
         </section>
 
         {/* ─── SECCIÓN 04: Roleplay ─── */}
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold text-gray-400 w-6 text-right">04</span>
+        <section className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center shrink-0">04</span>
             <div className="w-px h-4 bg-gray-200" />
             <h2 className="text-sm font-bold text-gray-800">Prácticas Situacionales y Roleplay</h2>
           </div>
-          <div className="pl-9">
+          <div>
             <div
               onClick={() => setShowRoleplayModal(true)}
-              className="border border-gray-200 rounded p-6 flex items-center gap-5 cursor-pointer hover:bg-gray-50 transition-colors group"
+              className="bg-gray-50/70 border border-gray-200 rounded-xl p-6 flex items-center justify-between gap-5 cursor-pointer hover:bg-gray-100/60 hover:border-gray-300 transition-all group"
             >
-              <div className="w-10 h-10 border border-gray-200 rounded flex items-center justify-center text-lg shrink-0 group-hover:bg-gray-100 transition-colors">
-                🎭
-              </div>
-              <div className="flex-1">
+              <div>
                 <p className="text-sm font-semibold text-gray-800">Módulo de Roleplay Digital</p>
                 <p className="text-xs text-gray-400 mt-1">Seleccione uno de los escenarios situacionales y suba sus evidencias aquí.</p>
               </div>
@@ -737,28 +749,25 @@ const handleLogout = async () => {
           </div>
         </section>
 
-        {/* ─── SECCIÓN 06: Plan Focalizado (visible para todos) ─── */}
+        {/* ─── SECCIÓN 05: Plan Focalizado (visible para todos) ─── */}
         {userSession && (
-          <section>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-bold text-gray-400 w-6 text-right">06</span>
-              <div className="w-px h-4 bg-gray-200" />
+          <section className="bg-gray-100 border border-gray-300/80 rounded-2xl p-6 shadow-xs">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="w-7 h-7 rounded-lg bg-white border border-gray-300 text-gray-800 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">05</span>
+              <div className="w-px h-4 bg-gray-400" />
               <h2 className="text-sm font-bold text-gray-800">Plan Focalizado de Ventas</h2>
             </div>
-            <div className="pl-9">
+            <div>
               <div
                 onClick={() => setShowPlanFocalizado(true)}
-                className="border border-gray-200 rounded p-6 flex items-center gap-5 cursor-pointer hover:bg-gray-50 transition-colors group"
+                className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-between gap-5 cursor-pointer hover:border-gray-300 hover:shadow-xs transition-all group"
               >
-                <div className="w-10 h-10 border border-gray-200 rounded flex items-center justify-center text-lg shrink-0 group-hover:bg-gray-100 transition-colors">
-                  📊
-                </div>
-                <div className="flex-1">
+                <div>
                   <p className="text-sm font-semibold text-gray-800">Crear / Ver mi Plan Focalizado</p>
                   <p className="text-xs text-gray-400 mt-1">Marcas a impulsar, pedido propuesto, material POP, asesoría y condiciones comerciales.</p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {['Marcas & Clientes', 'Pedido Propuesto', 'Marketing POP', 'Asesoría', 'Condiciones'].map(tag => (
-                      <span key={tag} className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded">{tag}</span>
+                      <span key={tag} className="text-xs text-gray-400 border border-gray-200 bg-gray-50 px-2 py-0.5 rounded">{tag}</span>
                     ))}
                   </div>
                 </div>
@@ -768,14 +777,14 @@ const handleLogout = async () => {
           </section>
         )}
 
-        {/* ─── SECCIÓN 05: Evaluación y Certificación ─── */}
-        <section id="evaluaciones">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold text-gray-400 w-6 text-right">05</span>
+        {/* ─── SECCIÓN 06: Evaluación y Certificación ─── */}
+        <section id="evaluaciones" className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center shrink-0">06</span>
             <div className="w-px h-4 bg-gray-200" />
             <h2 className="text-sm font-bold text-gray-800">Evaluación de Competencias y Certificación</h2>
           </div>
-          <div className="pl-9 border border-gray-200 rounded p-6 space-y-4">
+          <div className="space-y-4">
             <p className="text-xs text-gray-400 uppercase tracking-widest">Fase de Validación Sumativa</p>
             <p className="text-sm text-gray-600">Tras completar los módulos formativos, proceda con la validación de sus competencias académicas.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -788,10 +797,10 @@ const handleLogout = async () => {
                 <div
                   key={ex.t}
                   onClick={() => ex.l && window.open(ex.l, '_blank')}
-                  className={`p-3 border rounded flex items-center justify-between group transition-colors ${ex.l ? 'border-gray-200 hover:border-gray-400 hover:bg-gray-50 cursor-pointer' : 'border-gray-100 opacity-40 cursor-not-allowed'}`}
+                  className={`p-3.5 border rounded-lg flex items-center justify-between group transition-all ${ex.l ? 'bg-gray-50/70 border-gray-200 hover:border-gray-400 hover:bg-gray-100/60 cursor-pointer' : 'bg-gray-50/30 border-gray-100 opacity-40 cursor-not-allowed'}`}
                 >
                   <span className="text-sm text-gray-700">{ex.t}</span>
-                  {ex.l && <span className="text-gray-300 group-hover:text-gray-600 transition-colors text-sm">→</span>}
+                  {ex.l && <span className="text-gray-400 group-hover:text-gray-700 transition-colors text-sm">→</span>}
                 </div>
               ))}
             </div>
@@ -830,8 +839,8 @@ const handleLogout = async () => {
 
             <div className="p-6 md:p-8 flex flex-col h-full">
               <header className="mb-6 text-center md:text-left border-b pb-4">
-                <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4">
-                  <span className="text-3xl">🎭</span> Módulo de Roleplay Digital
+                <h2 className="text-2xl font-black text-slate-900">
+                  Módulo de Roleplay Digital
                 </h2>
                 <p className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mt-1">Seleccione su desafío para iniciar la práctica</p>
               </header>
@@ -874,7 +883,7 @@ const handleLogout = async () => {
                         <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Instrucción:</h4>
                         <p className="text-xs text-slate-600 leading-relaxed font-medium italic">{selectedEscenario.descripcion_tarea}</p>
                         {selectedEscenario.pdf_url && (
-                          <button onClick={() => window.open(selectedEscenario.pdf_url, '_blank')} className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-xl text-[8px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2">📄 Abrir Guía PDF</button>
+                          <button onClick={() => window.open(selectedEscenario.pdf_url, '_blank')} className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-xl text-[8px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2">Abrir Guía PDF</button>
                         )}
                       </div>
                     </div>
@@ -896,16 +905,15 @@ const handleLogout = async () => {
 
                               <div className="grid grid-cols-2 gap-3">
                                 {enviada.pdf_catalogo_url && (
-                                  <button onClick={() => window.open(enviada.pdf_catalogo_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📒 Ver Catálogo</button>
+                                  <button onClick={() => window.open(enviada.pdf_catalogo_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">Ver Catálogo</button>
                                 )}
                                 {enviada.pdf_afv_url && (
-                                  <button onClick={() => window.open(enviada.pdf_afv_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">📱 Ver AFV</button>
+                                  <button onClick={() => window.open(enviada.pdf_afv_url, '_blank')} className="py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">Ver AFV</button>
                                 )}
                               </div>
 
                               {enviada.nota_ejercicio !== null ? (
                                 <div className="mt-2 p-5 bg-green-50 border border-green-200 rounded-xl relative overflow-hidden">
-                                  <div className="absolute right-0 bottom-0 text-6xl opacity-10 translate-x-4 translate-y-4">🏆</div>
                                   <div className="flex items-center gap-3 mb-2">
                                     <span className="bg-green-500 text-white w-10 h-10 flex items-center justify-center rounded-xl font-black text-lg shadow-sm">{enviada.nota_ejercicio}</span>
                                     <div>
@@ -914,12 +922,11 @@ const handleLogout = async () => {
                                     </div>
                                   </div>
                                   {enviada.feedback_evaluador && (
-                                    <p className="text-[10px] text-green-800 mt-4 font-medium p-3 bg-green-100/50 rounded-lg">💬 {enviada.feedback_evaluador}</p>
+                                    <p className="text-[10px] text-green-800 mt-4 font-medium p-3 bg-green-100/50 rounded-lg">{enviada.feedback_evaluador}</p>
                                   )}
                                 </div>
                               ) : (
                                 <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
-                                  <span className="text-2xl animate-pulse">⏳</span>
                                   <div>
                                     <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest">En Revisión</h4>
                                     <p className="text-[10px] text-amber-700 font-medium">Su escenario ha sido enviado y está esperando evaluación por parte del equipo académico.</p>
@@ -934,21 +941,21 @@ const handleLogout = async () => {
                         return (
                           <>
                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                              <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas ✨</h4>
+                              <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Speech de Ventas</h4>
                               <textarea value={speechVentas} onChange={(e) => setSpeechVentas(e.target.value)} placeholder="Escriba su guion aquí..." className="w-full h-24 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 transition-all font-medium"></textarea>
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-dashed border-2">
-                              <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales 📂</h4>
+                              <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Evidencias Digitales</h4>
                               <div className="grid grid-cols-2 gap-3">
                                 <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileCatalogo ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                  <span className="text-xl mb-1">{fileCatalogo ? '✅' : '📒'}</span>
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
+                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter truncate w-full mb-1">{fileCatalogo ? fileCatalogo.name : 'PDF Catálogo'}</span>
+                                  <span className="text-[8px] text-blue-600 font-bold underline">{fileCatalogo ? 'Archivo listo' : 'Seleccionar'}</span>
                                   <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileCatalogo(e.target.files[0])} />
                                 </label>
                                 <label className={`p-4 rounded-xl border flex flex-col items-center text-center cursor-pointer transition-all ${fileAfv ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                                  <span className="text-xl mb-1">{fileAfv ? '✅' : '📱'}</span>
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter truncate w-full">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
+                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter truncate w-full mb-1">{fileAfv ? fileAfv.name : 'PDF AFV (Op)'}</span>
+                                  <span className="text-[8px] text-blue-600 font-bold underline">{fileAfv ? 'Archivo listo' : 'Seleccionar'}</span>
                                   <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFileAfv(e.target.files[0])} />
                                 </label>
                               </div>
@@ -968,7 +975,7 @@ const handleLogout = async () => {
                         disabled={isUploading}
                         className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
                       >
-                        {isUploading ? '🚀 ENVIANDO...' : '🚀 Enviar Desafío Situacional a Evaluación'}
+                        {isUploading ? 'ENVIANDO...' : 'Enviar Desafío Situacional a Evaluación'}
                       </button>
                     </div>
                   )}
@@ -989,15 +996,15 @@ const handleLogout = async () => {
 
             <div className="p-8">
               <header className="mb-8 border-b pb-4">
-                <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                  <span className="text-2xl">📘</span> Registro de Ejercicio
+                <h2 className="text-xl font-black text-slate-900">
+                  Registro de Ejercicio
                 </h2>
                 <p className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mt-1">{selectedSubmodule?.nombre_tarea}</p>
               </header>
 
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Propuesta / Speech ✨</h4>
+                  <h4 className="text-xs font-black text-slate-900 uppercase mb-3">1. Mi Propuesta / Speech</h4>
                   <textarea
                     value={exerciseSpeech}
                     onChange={(e) => setExerciseSpeech(e.target.value)}
@@ -1007,9 +1014,9 @@ const handleLogout = async () => {
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Soporte (Documento o Foto) 📂</h4>
+                  <h4 className="text-xs font-black text-slate-900 uppercase mb-3">2. Soporte (Documento o Foto)</h4>
                   <label className={`p-6 rounded-2xl border-2 border-dashed flex flex-col items-center text-center cursor-pointer transition-all ${exerciseFile ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-300'}`}>
-                    <span className="text-3xl mb-2">{exerciseFile ? '✅' : '📤'}</span>
+                    <span className="text-xs font-bold text-slate-500 mb-1">{exerciseFile ? 'Archivo seleccionado' : 'Haga clic para subir'}</span>
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{exerciseFile ? exerciseFile.name : 'Subir PDF o Imagen'}</span>
                     <input type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setExerciseFile(e.target.files[0])} />
                   </label>
@@ -1022,7 +1029,7 @@ const handleLogout = async () => {
                     disabled={isUploading}
                     className="w-full py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all disabled:opacity-50"
                   >
-                    {isUploading ? '🚀 ENVIANDO...' : '🚀 Guardar Constancia de Ejercicio'}
+                    {isUploading ? 'ENVIANDO...' : 'Guardar Constancia de Ejercicio'}
                   </button>
                 </div>
               </div>
